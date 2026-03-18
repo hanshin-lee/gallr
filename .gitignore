@@ -38,3 +38,8 @@ iosApp/DerivedData/
 # macOS
 .DS_Store
 Thumbs.db
+
+# Web (web/)
+web/node_modules/
+web/dist/
+web/.cache/

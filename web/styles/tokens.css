@@ -1,0 +1,87 @@
+/* ============================================================
+   gallr Web — Design Tokens
+   Mirrors the Minimalist Monochrome design system (spec 002).
+   All visual constants live here. No hardcoded values elsewhere.
+   ============================================================ */
+
+/* Self-hosted web fonts
+   WOFF2 files are copied from @fontsource npm packages by
+   scripts/copy-fonts.js (runs as part of `npm run build`).
+   font-display: swap — renders system fallback immediately,
+   swaps to custom font when loaded (no FOIT).
+   Metric overrides minimise Cumulative Layout Shift vs. Georgia.
+   -------------------------------------------------------------- */
+
+@font-face {
+  font-family: "Playfair Display";
+  src: url("/fonts/playfair-display-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Playfair Display";
+  src: url("/fonts/playfair-display-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  size-adjust: 102%;
+  ascent-override: 90%;
+  descent-override: 22%;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/jetbrains-mono-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Design token custom properties
+   -------------------------------------------------------------- */
+
+:root {
+  /* Color — strictly monochrome, no accent colours */
+  --color-ink:           #000000;
+  --color-paper:         #ffffff;
+  --color-paper-alt:     #f5f5f5;
+  --color-ink-secondary: #525252;
+
+  /* Typography */
+  --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-meta:    "JetBrains Mono", "Courier New", Courier, monospace;
+
+  /* Shape — 0px everywhere, no exceptions */
+  --radius: 0px;
+
+  /* Borders */
+  --border-ink:      1px solid var(--color-ink);
+  --border-section:  4px solid var(--color-ink);
+  --border-hairline: 1px solid var(--color-ink-secondary);
+
+  /* Spacing scale */
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  16px;
+  --space-lg:  32px;
+  --space-xl:  64px;
+  --space-2xl: 96px;
+
+  /* Layout */
+  --max-width:          960px;
+  --page-padding-x:     var(--space-md);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --page-padding-x: var(--space-lg);
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --page-padding-x: var(--space-xl);
+  }
+}

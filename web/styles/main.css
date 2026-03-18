@@ -1,0 +1,398 @@
+/* ============================================================
+   gallr Web — Main Styles
+   All values use tokens from tokens.css.
+   No hardcoded colours, fonts, radii, or border widths.
+   ============================================================ */
+
+/* ── Reset ───────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Base ────────────────────────────────────────────────── */
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  line-height: 1.6;
+  min-height: 100vh;
+  /* Prevent horizontal overflow at all viewports */
+  overflow-x: hidden;
+}
+
+/* ── Skip link (accessibility) ───────────────────────────── */
+
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: var(--space-md);
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-meta);
+  font-size: 0.875rem;
+  padding: var(--space-sm) var(--space-md);
+  text-decoration: none;
+  border-radius: var(--radius);
+  z-index: 9999;
+}
+
+.skip-link:focus {
+  top: var(--space-md);
+}
+
+/* ── Layout helpers ───────────────────────────────────────── */
+
+.hero__inner,
+.features__inner,
+.downloads__inner,
+.about__inner,
+.coming-soon__inner,
+.site-footer__inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--page-padding-x);
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+
+.btn {
+  display: inline-block;
+  font-family: var(--font-meta);
+  font-size: 0.875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius);
+  cursor: pointer;
+  /* Minimum touch target: 44px height */
+  min-height: 44px;
+  line-height: calc(44px - 2 * var(--space-sm));
+  transition: background-color 100ms ease, color 100ms ease, border-color 100ms ease;
+}
+
+.btn--primary {
+  background-color: var(--color-ink);
+  color: var(--color-paper);
+  border: var(--border-ink);
+}
+
+.btn--primary:hover {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+}
+
+.btn--outline {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  border: var(--border-ink);
+}
+
+.btn--outline:hover {
+  background-color: var(--color-ink);
+  color: var(--color-paper);
+}
+
+.btn:focus-visible {
+  outline: 3px solid var(--color-ink);
+  outline-offset: 3px;
+}
+
+/* ── Section separators ──────────────────────────────────── */
+
+#features,
+#downloads,
+#about {
+  border-top: var(--border-section);
+}
+
+/* ── Hero ────────────────────────────────────────────────── */
+
+.hero {
+  padding: var(--space-2xl) 0;
+  background-color: var(--color-paper);
+}
+
+.hero__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.hero__headline {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.25rem, 6vw, 4.5rem);
+  line-height: 1.1;
+  color: var(--color-ink);
+  letter-spacing: -0.02em;
+}
+
+.hero__tagline {
+  margin-top: var(--space-md);
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  color: var(--color-ink-secondary);
+  max-width: 52ch;
+  line-height: 1.5;
+}
+
+.hero__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+/* ── Features ────────────────────────────────────────────── */
+
+.features {
+  padding: var(--space-xl) 0;
+}
+
+.features__heading {
+  font-family: var(--font-meta);
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+  margin-bottom: var(--space-xl);
+}
+
+.features__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-xl);
+}
+
+@media (min-width: 768px) {
+  .features__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .features__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.feature-entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.feature-entry__headline {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  color: var(--color-ink);
+}
+
+.feature-entry__description {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--color-ink);
+  line-height: 1.6;
+}
+
+/* ── Card Mockup ─────────────────────────────────────────── */
+
+.card-mockup {
+  border: var(--border-ink);
+  border-radius: var(--radius);
+  background-color: var(--color-paper-alt);
+  padding: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.card-mockup__header {
+  margin-bottom: var(--space-sm);
+}
+
+.card-mockup__label {
+  font-family: var(--font-meta);
+  font-size: 0.625rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+}
+
+.card-mockup__rule {
+  border: none;
+  border-top: var(--border-hairline);
+  margin-bottom: var(--space-sm);
+}
+
+.card-mockup__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.125rem;
+  line-height: 1.2;
+  color: var(--color-ink);
+  margin-bottom: var(--space-xs);
+}
+
+.card-mockup__venue {
+  font-family: var(--font-meta);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+  margin-bottom: var(--space-xs);
+}
+
+.card-mockup__dates {
+  font-family: var(--font-meta);
+  font-size: 0.75rem;
+  color: var(--color-ink-secondary);
+}
+
+/* ── Downloads ───────────────────────────────────────────── */
+
+.downloads {
+  padding: var(--space-xl) 0;
+  background-color: var(--color-paper-alt);
+}
+
+.downloads__heading {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  color: var(--color-ink);
+  margin-bottom: var(--space-md);
+}
+
+.downloads__tagline {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--color-ink-secondary);
+  margin-bottom: var(--space-lg);
+}
+
+.downloads__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+/* ── About ───────────────────────────────────────────────── */
+
+.about {
+  padding: var(--space-xl) 0;
+}
+
+.about__heading {
+  font-family: var(--font-meta);
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+  margin-bottom: var(--space-xl);
+}
+
+.about__body {
+  max-width: 70ch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.about__body p {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--color-ink);
+}
+
+/* ── Coming Soon page ────────────────────────────────────── */
+
+.coming-soon {
+  padding: var(--space-2xl) 0;
+}
+
+.coming-soon__headline {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  color: var(--color-ink);
+  margin-bottom: var(--space-md);
+}
+
+.coming-soon__body {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--color-ink-secondary);
+  margin-bottom: var(--space-lg);
+  max-width: 40ch;
+}
+
+/* ── Site Header ─────────────────────────────────────────── */
+
+.site-header {
+  border-bottom: var(--border-hairline);
+  padding: var(--space-md) 0;
+}
+
+.site-header__inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+}
+
+.site-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  text-decoration: none;
+  color: var(--color-ink);
+}
+
+.site-logo__mark {
+  display: block;
+  flex-shrink: 0;
+}
+
+.site-logo__wordmark {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
+
+.site-footer {
+  border-top: var(--border-hairline);
+  padding: var(--space-lg) 0;
+  margin-top: var(--space-xl);
+}
+
+.site-footer__copy {
+  font-family: var(--font-meta);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: var(--color-ink-secondary);
+}
+
+/* ── Focus rings (accessibility) ─────────────────────────── */
+
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--color-ink);
+  outline-offset: 3px;
+}
