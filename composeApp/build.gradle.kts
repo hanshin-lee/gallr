@@ -21,6 +21,11 @@ kotlin {
             baseName = "composeApp"
             isStatic = true
         }
+        iosTarget.compilations.getByName("main") {
+            val NMapsMap by cinterops.creating {
+                definitionFile.set(project.file("src/nativeInterop/cinterop/NMapsMap.def"))
+            }
+        }
     }
 
     sourceSets {
@@ -41,6 +46,8 @@ kotlin {
             implementation(libs.activity.compose)
             implementation(libs.datastore.preferences.core)
             implementation(libs.kotlinx.coroutines.android)
+            implementation(libs.naver.map.sdk)
+            implementation(libs.naver.map.compose)
         }
     }
 }
