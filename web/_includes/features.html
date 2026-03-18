@@ -1,0 +1,21 @@
+<section id="features" class="features" aria-labelledby="features-heading">
+  <div class="features__inner">
+    <h2 id="features-heading" class="features__heading">Features</h2>
+
+    <div class="features__grid">
+      {% for feature in features %}
+      <article id="{{ feature.id }}" class="feature-entry" aria-labelledby="feature-{{ feature.id }}-title">
+        <h3 id="feature-{{ feature.id }}-title" class="feature-entry__headline">
+          {{ feature.headline }}
+        </h3>
+        <p class="feature-entry__description">{{ feature.description }}</p>
+
+        {% if feature.mockup %}
+          {% set mockup = feature.mockup %}
+          {% include "card-mockup.html" %}
+        {% endif %}
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>

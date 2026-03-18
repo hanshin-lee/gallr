@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>gallr — Discover Art Exhibitions Near You</title>
+  <meta name="description" content="gallr helps you discover ongoing and upcoming art and cultural exhibitions in your city. Bookmark favourites and filter by region, opening dates, and editor's picks." />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="gallr — Discover Art Exhibitions Near You" />
+  <meta property="og:description" content="Discover ongoing and upcoming art and cultural exhibitions in your city." />
+  <meta property="og:type" content="website" />
+
+  <!-- Preload critical above-the-fold font (Playfair Display 700) -->
+  <link rel="preload" as="font" type="font/woff2"
+        href="/fonts/playfair-display-700.woff2" crossorigin />
+
+  <!-- Design tokens (color, typography, spacing) -->
+  <link rel="stylesheet" href="/styles/tokens.css" />
+
+  <!-- Section styles -->
+  <link rel="stylesheet" href="/styles/main.css" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+</head>
+<body>
+  <!-- Skip navigation for keyboard/screen reader users -->
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="/" class="site-logo" aria-label="gallr — home">
+        <img src="/logos/b-arch-pin.svg" width="28" height="28" alt="" aria-hidden="true" class="site-logo__mark"/>
+        <span class="site-logo__wordmark">gallr</span>
+      </a>
+    </div>
+  </header>
+
+  <main id="main-content">
+    {{ content | safe }}
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <p class="site-footer__copy">&copy; 2026 gallr</p>
+    </div>
+  </footer>
+</body>
+</html>
