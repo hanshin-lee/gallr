@@ -1,0 +1,40 @@
+# Gradle
+.gradle/
+build/
+out/
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+local.properties
+
+# IntelliJ / Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+
+# Kotlin Native
+*.kexe
+*.dSYM/
+
+# iOS / Xcode
+xcuserdata/
+*.xcworkspace/xcuserdata
+iosApp/Pods/
+iosApp/DerivedData/
+*.xcarchive
+
+# Environment
+.env
+.env.*
+*.log
+
+# macOS
+.DS_Store
+Thumbs.db
