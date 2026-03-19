@@ -9,17 +9,17 @@ import kotlinx.serialization.Serializable
 data class ExhibitionDto(
     val id: String,
     val name: String,
-    @SerialName("venueName") val venueName: String,
+    @SerialName("venue_name") val venueName: String,
     val city: String,
     val region: String,
-    @SerialName("openingDate") val openingDate: String,
-    @SerialName("closingDate") val closingDate: String,
-    val isFeatured: Boolean,
-    val isEditorsPick: Boolean,
+    @SerialName("opening_date") val openingDate: String,
+    @SerialName("closing_date") val closingDate: String,
+    @SerialName("is_featured") val isFeatured: Boolean,
+    @SerialName("is_editors_pick") val isEditorsPick: Boolean,
     val latitude: Double? = null,
     val longitude: Double? = null,
     val description: String = "",
-    val coverImageUrl: String? = null,
+    @SerialName("cover_image_url") val coverImageUrl: String? = null,
 ) {
     fun toDomain(): Exhibition = Exhibition(
         id = id,
