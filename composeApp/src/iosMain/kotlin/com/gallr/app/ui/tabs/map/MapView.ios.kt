@@ -2,10 +2,11 @@ package com.gallr.app.ui.tabs.map
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.uikit.UIKitInteropInteractionMode
-import androidx.compose.ui.uikit.UIKitInteropProperties
-import androidx.compose.ui.uikit.UIKitView
+import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
+import androidx.compose.ui.viewinterop.UIKitInteropProperties
+import androidx.compose.ui.viewinterop.UIKitView
 import com.gallr.shared.data.model.ExhibitionMapPin
 import kotlinx.cinterop.ExperimentalForeignApi
 import NMapsMap.NMFCameraPosition
@@ -18,7 +19,7 @@ private const val SEOUL_LAT = 37.5665
 private const val SEOUL_LNG = 126.9780
 private const val INITIAL_ZOOM = 10.0
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, ExperimentalComposeUiApi::class)
 @Composable
 actual fun MapView(
     pins: List<ExhibitionMapPin>,
@@ -30,11 +31,9 @@ actual fun MapView(
     UIKitView(
         factory = {
             val mapView = NMFMapView()
-            val cameraPosition = NMFCameraPosition(
-                target = NMGLatLng(SEOUL_LAT, SEOUL_LNG),
-                zoom = INITIAL_ZOOM,
-            )
-            mapView.moveCamera(NMFCameraUpdate(position = cameraPosition))
+            val target = NMGLatLng.latLngWithLat(SEOUL_LAT, lng = SEOUL_LNG)
+            val cameraPosition = NMFCameraPosition.cameraPosition(target, zoom = INITIAL_ZOOM)
+            mapView.moveCamera(NMFCameraUpdate.cameraUpdateWithPosition(cameraPosition))
             mapView
         },
         modifier = modifier,
@@ -49,7 +48,7 @@ actual fun MapView(
             // Add one marker per pin
             pins.forEach { pin ->
                 val marker = NMFMarker()
-                marker.position = NMGLatLng(pin.latitude, pin.longitude)
+                marker.position = NMGLatLng.latLngWithLat(pin.latitude, lng = pin.longitude)
                 marker.captionText = pin.name
                 marker.touchHandler = { _ ->
                     onMarkerTap(pin)

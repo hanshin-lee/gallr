@@ -2,20 +2,27 @@ import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.io.File
 
-// Locate the NMapsMap.xcframework resolved by Xcode's SPM.
-// Returns the path to the correct slice directory for a given target name.
-fun nmapsFrameworkSlice(slice: String): String {
+// Locate an SPM-resolved xcframework in DerivedData by name.
+// Returns the path to the correct slice directory for cinterop -F flags.
+fun nmapsXcframeworkSlice(xcframeworkName: String, slice: String): String {
     val derivedData = File(System.getProperty("user.home"), "Library/Developer/Xcode/DerivedData")
     val xcframework = derivedData.walkTopDown()
-        .maxDepth(12)
-        .firstOrNull { it.isDirectory && it.name == "NMapsMap.xcframework" && !it.path.contains("__MACOSX") }
+        .maxDepth(14)
+        .firstOrNull { it.isDirectory && it.name == "$xcframeworkName.xcframework" && !it.path.contains("__MACOSX") }
         ?: error(
-            "NMapsMap.xcframework not found in DerivedData.\n" +
-            "Add the SPM package 'https://github.com/navermaps/SPM-NMapsMap' in Xcode " +
-            "and do one Xcode build to resolve it."
+            "$xcframeworkName.xcframework not found in DerivedData.\n" +
+            "Open iosApp in Xcode and do one build to resolve SPM packages."
         )
     return xcframework.resolve(slice).absolutePath
 }
+
+fun nmapsFrameworkSlice(slice: String): String = nmapsXcframeworkSlice("NMapsMap", slice)
+fun nmapsGeometrySlice(slice: String): String = nmapsXcframeworkSlice("NMapsGeometry", slice)
+
+// Path to stub frameworks that satisfy missing SDK references on Xcode 26.
+// UIUtilities.framework is referenced by UIKitDefines.h but not shipped in the
+// iPhoneSimulator 26 SDK. The stub satisfies the #import without providing real symbols.
+val cinteropStubsDir: String = project.file("src/nativeInterop/stubs").absolutePath
 
 // Returns the SDK sysroot via xcrun so cinterop uses the correct system headers.
 fun xcrunSdkPath(sdk: String): String =
@@ -47,7 +54,7 @@ kotlin {
         compilations.getByName("main") {
             val NMapsMap by cinterops.creating {
                 definitionFile.set(project.file("src/nativeInterop/cinterop/NMapsMap.def"))
-                compilerOpts("-F", nmapsFrameworkSlice("ios-arm64_x86_64-simulator"), "-isysroot", xcrunSdkPath("iphonesimulator"), "-fno-modules")
+                compilerOpts("-F", nmapsFrameworkSlice("ios-arm64_x86_64-simulator"), "-F", nmapsGeometrySlice("ios-arm64_x86_64-simulator"), "-F", cinteropStubsDir, "-isysroot", xcrunSdkPath("iphonesimulator"), "-fno-modules")
             }
         }
     }
@@ -56,7 +63,7 @@ kotlin {
         compilations.getByName("main") {
             val NMapsMap by cinterops.creating {
                 definitionFile.set(project.file("src/nativeInterop/cinterop/NMapsMap.def"))
-                compilerOpts("-F", nmapsFrameworkSlice("ios-arm64"), "-isysroot", xcrunSdkPath("iphoneos"), "-fno-modules")
+                compilerOpts("-F", nmapsFrameworkSlice("ios-arm64"), "-F", nmapsGeometrySlice("ios-arm64"), "-F", cinteropStubsDir, "-isysroot", xcrunSdkPath("iphoneos"), "-fno-modules")
             }
         }
     }
@@ -65,7 +72,7 @@ kotlin {
         compilations.getByName("main") {
             val NMapsMap by cinterops.creating {
                 definitionFile.set(project.file("src/nativeInterop/cinterop/NMapsMap.def"))
-                compilerOpts("-F", nmapsFrameworkSlice("ios-arm64_x86_64-simulator"), "-isysroot", xcrunSdkPath("iphonesimulator"), "-fno-modules")
+                compilerOpts("-F", nmapsFrameworkSlice("ios-arm64_x86_64-simulator"), "-F", nmapsGeometrySlice("ios-arm64_x86_64-simulator"), "-F", cinteropStubsDir, "-isysroot", xcrunSdkPath("iphonesimulator"), "-fno-modules")
             }
         }
     }
