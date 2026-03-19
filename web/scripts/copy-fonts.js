@@ -7,14 +7,17 @@ const path = require("path");
 
 const FONT_MAP = [
   {
-    src: "node_modules/@fontsource/playfair-display/files",
-    patterns: ["playfair-display-latin-400-normal.woff2", "playfair-display-latin-700-normal.woff2"],
-    dest: ["public/fonts/playfair-display-400.woff2", "public/fonts/playfair-display-700.woff2"],
-  },
-  {
-    src: "node_modules/@fontsource/jetbrains-mono/files",
-    patterns: ["jetbrains-mono-latin-400-normal.woff2"],
-    dest: ["public/fonts/jetbrains-mono-400.woff2"],
+    src: "node_modules/@fontsource/inter/files",
+    patterns: [
+      "inter-latin-400-normal.woff2",
+      "inter-latin-500-normal.woff2",
+      "inter-latin-700-normal.woff2",
+    ],
+    dest: [
+      "public/fonts/inter-400.woff2",
+      "public/fonts/inter-500.woff2",
+      "public/fonts/inter-700.woff2",
+    ],
   },
 ];
 
