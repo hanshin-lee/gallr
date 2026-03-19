@@ -1,40 +1,36 @@
 /* ============================================================
    gallr Web — Design Tokens
-   Mirrors the Minimalist Monochrome design system (spec 002).
+   Mirrors the Reductionist design system (spec 006).
    All visual constants live here. No hardcoded values elsewhere.
    ============================================================ */
 
 /* Self-hosted web fonts
-   WOFF2 files are copied from @fontsource npm packages by
+   WOFF2 files are copied from @fontsource/inter by
    scripts/copy-fonts.js (runs as part of `npm run build`).
    font-display: swap — renders system fallback immediately,
    swaps to custom font when loaded (no FOIT).
-   Metric overrides minimise Cumulative Layout Shift vs. Georgia.
    -------------------------------------------------------------- */
 
 @font-face {
-  font-family: "Playfair Display";
-  src: url("/fonts/playfair-display-400.woff2") format("woff2");
+  font-family: "Inter";
+  src: url("/fonts/inter-400.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Playfair Display";
-  src: url("/fonts/playfair-display-700.woff2") format("woff2");
+  font-family: "Inter";
+  src: url("/fonts/inter-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/inter-700.woff2") format("woff2");
   font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-  size-adjust: 102%;
-  ascent-override: 90%;
-  descent-override: 22%;
-}
-
-@font-face {
-  font-family: "JetBrains Mono";
-  src: url("/fonts/jetbrains-mono-400.woff2") format("woff2");
-  font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
@@ -43,15 +39,16 @@
    -------------------------------------------------------------- */
 
 :root {
-  /* Color — strictly monochrome, no accent colours */
+  /* Color — monochrome base + single orange accent */
   --color-ink:           #000000;
   --color-paper:         #ffffff;
   --color-paper-alt:     #f5f5f5;
   --color-ink-secondary: #525252;
+  --color-accent:        #FF5400;
 
-  /* Typography */
-  --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
-  --font-meta:    "JetBrains Mono", "Courier New", Courier, monospace;
+  /* Typography — neo-grotesque sans-serif throughout */
+  --font-display: "Inter", system-ui, -apple-system, Arial, sans-serif;
+  --font-meta:    "Inter", system-ui, -apple-system, Arial, sans-serif;
 
   /* Shape — 0px everywhere, no exceptions */
   --radius: 0px;
