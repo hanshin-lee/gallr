@@ -21,12 +21,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.gallr.app.ui.theme.GallrMotion
+import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.shared.data.model.Exhibition
 
 @Composable
@@ -83,11 +83,11 @@ fun ExhibitionCard(
         shadowElevation = 0.dp,
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(GallrSpacing.md),
             verticalAlignment = Alignment.Top,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                // ── Exhibition name: dominant serif, PlayfairDisplay Bold ────
+                // ── Exhibition name: Inter Bold, dominant element ──────────
                 Text(
                     text = exhibition.name,
                     style = MaterialTheme.typography.titleLarge,
@@ -95,9 +95,9 @@ fun ExhibitionCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(GallrSpacing.xs))
 
-                // ── Venue & city: JetBrainsMono, uppercase, letter-spaced ───
+                // ── Venue & city: Inter Medium, uppercase, letter-spaced ──
                 Text(
                     text = exhibition.venueName.uppercase(),
                     style = MaterialTheme.typography.labelMedium,
@@ -111,14 +111,14 @@ fun ExhibitionCard(
                     color = secondaryColor,
                 )
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(GallrSpacing.sm))
 
-                // ── Hairline divider between metadata and date ───────────────
+                // ── Hairline divider between metadata and date ────────────
                 HorizontalDivider(thickness = 1.dp, color = dividerColor)
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(GallrSpacing.sm))
 
-                // ── Date range: JetBrainsMono ────────────────────────────────
+                // ── Date range: Inter labelMedium ─────────────────────────
                 Text(
                     text = "${exhibition.openingDate} – ${exhibition.closingDate}",
                     style = MaterialTheme.typography.labelMedium,

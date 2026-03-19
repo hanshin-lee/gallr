@@ -1,51 +1,62 @@
 package com.gallr.app.ui.tabs.map
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.remember
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
+import androidx.compose.ui.viewinterop.UIKitInteropProperties
+import androidx.compose.ui.viewinterop.UIKitView
 import com.gallr.shared.data.model.ExhibitionMapPin
+import kotlinx.cinterop.ExperimentalForeignApi
+import NMapsMap.NMFCameraPosition
+import NMapsMap.NMFCameraUpdate
+import NMapsMap.NMFMapView
+import NMapsMap.NMFMarker
+import NMapsMap.NMGLatLng
 
-/**
- * iOS stub map implementation.
- *
- * TODO: Replace with MapKit (UIKitView interop) or Mapbox v9 once the map provider is
- * decided (FR-017). This stub renders a placeholder so the project compiles and runs on iOS.
- */
+private const val SEOUL_LAT = 37.5665
+private const val SEOUL_LNG = 126.9780
+private const val INITIAL_ZOOM = 10.0
+
+@OptIn(ExperimentalForeignApi::class, ExperimentalComposeUiApi::class)
 @Composable
 actual fun MapView(
     pins: List<ExhibitionMapPin>,
     onMarkerTap: (ExhibitionMapPin) -> Unit,
     modifier: Modifier,
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color(0xFFE0E8D8)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = "🗺 Map view (${pins.size} markers)\nMap SDK: TBD",
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        pins.forEachIndexed { index, pin ->
-            Box(
-                modifier = Modifier
-                    .offset(x = (index * 24 - pins.size * 12).dp, y = 40.dp)
-                    .size(14.dp)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape)
-                    .clickable { onMarkerTap(pin) },
-            )
-        }
-    }
+    val activeMarkers = remember { mutableListOf<NMFMarker>() }
+
+    UIKitView(
+        factory = {
+            val mapView = NMFMapView()
+            val target = NMGLatLng.latLngWithLat(SEOUL_LAT, lng = SEOUL_LNG)
+            val cameraPosition = NMFCameraPosition.cameraPosition(target, zoom = INITIAL_ZOOM)
+            mapView.moveCamera(NMFCameraUpdate.cameraUpdateWithPosition(cameraPosition))
+            mapView
+        },
+        modifier = modifier,
+        properties = UIKitInteropProperties(
+            interactionMode = UIKitInteropInteractionMode.NonCooperative,
+        ),
+        update = { mapView ->
+            // Remove existing markers
+            activeMarkers.forEach { it.mapView = null }
+            activeMarkers.clear()
+
+            // Add one marker per pin
+            pins.forEach { pin ->
+                val marker = NMFMarker()
+                marker.position = NMGLatLng.latLngWithLat(pin.latitude, lng = pin.longitude)
+                marker.captionText = pin.name
+                marker.touchHandler = { _ ->
+                    onMarkerTap(pin)
+                    true
+                }
+                marker.mapView = mapView
+                activeMarkers.add(marker)
+            }
+        },
+    )
 }

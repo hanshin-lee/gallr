@@ -17,16 +17,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import com.gallr.app.ui.theme.GallrAccent
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 /**
- * Minimalist Monochrome navigation bar.
+ * Reductionist navigation bar.
  *
- * Active tab is indicated by a 4dp solid black top border — no colored pill, no ripple.
- * Labels use JetBrainsMono (labelLarge), uppercase.
+ * Active tab is indicated by a 4dp #FF5400 top border — the sole orange element in the nav bar.
+ * Labels use Inter Medium (labelLarge), uppercase.
  */
 @Composable
 fun GallrNavigationBar(
@@ -78,13 +78,13 @@ private fun RowScope.GallrNavItem(
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Active indicator: 4dp solid black top border
+        // Active indicator: 4dp #FF5400 top border (GallrAccent.activeIndicator)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(4.dp)
                 .background(
-                    if (selected) MaterialTheme.colorScheme.onBackground else Color.Transparent,
+                    if (selected) GallrAccent.activeIndicator else MaterialTheme.colorScheme.background,
                 ),
         )
         Text(

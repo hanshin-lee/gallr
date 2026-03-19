@@ -25,7 +25,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -150,14 +149,14 @@ private fun MapModeButton(
             .sizeIn(minHeight = 44.dp)
             .selectable(selected = selected, onClick = onClick, role = Role.RadioButton),
         shape = RectangleShape,
-        color = if (selected) Color.Black else Color.White,
-        border = BorderStroke(1.dp, Color.Black),
+        color = if (selected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.background,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelLarge,
-                color = if (selected) Color.White else Color.Black,
+                color = if (selected) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(vertical = 10.dp),
             )
         }
