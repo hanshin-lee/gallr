@@ -1,3 +1,4 @@
 language = Objective-C
-modules = NMapsMap
+headers = NMapsMap/NMapsMap.h
+headerFilter = NMapsMap/**
 package = NMapsMap

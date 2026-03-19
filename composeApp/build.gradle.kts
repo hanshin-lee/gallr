@@ -1,5 +1,31 @@
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.io.File
+
+// Locate the NMapsMap.xcframework resolved by Xcode's SPM.
+// Returns the path to the correct slice directory for a given target name.
+fun nmapsFrameworkSlice(slice: String): String {
+    val derivedData = File(System.getProperty("user.home"), "Library/Developer/Xcode/DerivedData")
+    val xcframework = derivedData.walkTopDown()
+        .maxDepth(12)
+        .firstOrNull { it.isDirectory && it.name == "NMapsMap.xcframework" && !it.path.contains("__MACOSX") }
+        ?: error(
+            "NMapsMap.xcframework not found in DerivedData.\n" +
+            "Add the SPM package 'https://github.com/navermaps/SPM-NMapsMap' in Xcode " +
+            "and do one Xcode build to resolve it."
+        )
+    return xcframework.resolve(slice).absolutePath
+}
+
+// Returns the SDK sysroot via xcrun so cinterop uses the correct system headers.
+fun xcrunSdkPath(sdk: String): String =
+    ProcessBuilder("xcrun", "--sdk", sdk, "--show-sdk-path")
+        .start()
+        .inputStream
+        .bufferedReader()
+        .readLine()
+        ?.trim()
+        ?: error("xcrun failed to locate SDK: $sdk")
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -16,14 +42,30 @@ kotlin {
         }
     }
 
-    listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach { iosTarget ->
-        iosTarget.binaries.framework {
-            baseName = "composeApp"
-            isStatic = true
-        }
-        iosTarget.compilations.getByName("main") {
+    iosX64 {
+        binaries.framework { baseName = "composeApp"; isStatic = true }
+        compilations.getByName("main") {
             val NMapsMap by cinterops.creating {
                 definitionFile.set(project.file("src/nativeInterop/cinterop/NMapsMap.def"))
+                compilerOpts("-F", nmapsFrameworkSlice("ios-arm64_x86_64-simulator"), "-isysroot", xcrunSdkPath("iphonesimulator"), "-fno-modules")
+            }
+        }
+    }
+    iosArm64 {
+        binaries.framework { baseName = "composeApp"; isStatic = true }
+        compilations.getByName("main") {
+            val NMapsMap by cinterops.creating {
+                definitionFile.set(project.file("src/nativeInterop/cinterop/NMapsMap.def"))
+                compilerOpts("-F", nmapsFrameworkSlice("ios-arm64"), "-isysroot", xcrunSdkPath("iphoneos"), "-fno-modules")
+            }
+        }
+    }
+    iosSimulatorArm64 {
+        binaries.framework { baseName = "composeApp"; isStatic = true }
+        compilations.getByName("main") {
+            val NMapsMap by cinterops.creating {
+                definitionFile.set(project.file("src/nativeInterop/cinterop/NMapsMap.def"))
+                compilerOpts("-F", nmapsFrameworkSlice("ios-arm64_x86_64-simulator"), "-isysroot", xcrunSdkPath("iphonesimulator"), "-fno-modules")
             }
         }
     }
