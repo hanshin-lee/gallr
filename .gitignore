@@ -43,3 +43,6 @@ Thumbs.db
 web/node_modules/
 web/dist/
 web/.cache/
+
+# iOS credential config (if using separate Config.swift pattern)
+# iosApp/iosApp/Config.swift
