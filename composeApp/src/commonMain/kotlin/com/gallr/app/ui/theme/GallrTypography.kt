@@ -8,154 +8,139 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import gallr.composeapp.generated.resources.JetBrainsMono_Regular
-import gallr.composeapp.generated.resources.PlayfairDisplay_Bold
-import gallr.composeapp.generated.resources.PlayfairDisplay_BoldItalic
-import gallr.composeapp.generated.resources.PlayfairDisplay_Italic
-import gallr.composeapp.generated.resources.PlayfairDisplay_Regular
+import gallr.composeapp.generated.resources.Inter_Bold
+import gallr.composeapp.generated.resources.Inter_Medium
+import gallr.composeapp.generated.resources.Inter_Regular
 import gallr.composeapp.generated.resources.Res
-import gallr.composeapp.generated.resources.SourceSerif4_Bold
-import gallr.composeapp.generated.resources.SourceSerif4_Regular
 import org.jetbrains.compose.resources.Font
 
-// ── Font families (must be created inside a @Composable) ─────────────────────
+// ── Font family (must be created inside a @Composable) ───────────────────────
+// Inter: neo-grotesque sans-serif, neutral and functional.
+// Prerequisite: Inter_Regular.ttf, Inter_Medium.ttf, Inter_Bold.ttf must be
+// present in composeApp/src/commonMain/composeResources/font/.
 
 @Composable
-private fun playfairDisplay() = FontFamily(
-    Font(Res.font.PlayfairDisplay_Regular, FontWeight.Normal, FontStyle.Normal),
-    Font(Res.font.PlayfairDisplay_Bold, FontWeight.Bold, FontStyle.Normal),
-    Font(Res.font.PlayfairDisplay_Italic, FontWeight.Normal, FontStyle.Italic),
-    Font(Res.font.PlayfairDisplay_BoldItalic, FontWeight.Bold, FontStyle.Italic),
-)
-
-@Composable
-private fun sourceSerif4() = FontFamily(
-    Font(Res.font.SourceSerif4_Regular, FontWeight.Normal, FontStyle.Normal),
-    Font(Res.font.SourceSerif4_Bold, FontWeight.Bold, FontStyle.Normal),
-)
-
-@Composable
-private fun jetBrainsMono() = FontFamily(
-    Font(Res.font.JetBrainsMono_Regular, FontWeight.Normal, FontStyle.Normal),
+private fun inter() = FontFamily(
+    Font(Res.font.Inter_Regular, FontWeight.Normal, FontStyle.Normal),
+    Font(Res.font.Inter_Medium, FontWeight.Medium, FontStyle.Normal),
+    Font(Res.font.Inter_Bold, FontWeight.Bold, FontStyle.Normal),
 )
 
 // ── Typography scale ──────────────────────────────────────────────────────────
 
 @Composable
 fun gallrTypography(): Typography {
-    val display = playfairDisplay()
-    val serif = sourceSerif4()
-    val mono = jetBrainsMono()
+    val sans = inter()
 
     return Typography(
-        // Display — PlayfairDisplay, large headers
+        // Display — large screen titles
         displayLarge = TextStyle(
-            fontFamily = display,
-            fontWeight = FontWeight.Bold,
-            fontSize = 56.sp,
-            letterSpacing = (-0.025).em,
-            lineHeight = 64.sp,
-        ),
-        displayMedium = TextStyle(
-            fontFamily = display,
+            fontFamily = sans,
             fontWeight = FontWeight.Bold,
             fontSize = 40.sp,
             letterSpacing = (-0.025).em,
             lineHeight = 48.sp,
         ),
-        displaySmall = TextStyle(
-            fontFamily = display,
-            fontWeight = FontWeight.Normal,
+        displayMedium = TextStyle(
+            fontFamily = sans,
+            fontWeight = FontWeight.Bold,
             fontSize = 32.sp,
-            letterSpacing = (-0.025).em,
+            letterSpacing = (-0.015).em,
             lineHeight = 40.sp,
         ),
-        // Headline — PlayfairDisplay, section titles
+        displaySmall = TextStyle(
+            fontFamily = sans,
+            fontWeight = FontWeight.Medium,
+            fontSize = 24.sp,
+            letterSpacing = 0.em,
+            lineHeight = 32.sp,
+        ),
+        // Headline — section titles
         headlineLarge = TextStyle(
-            fontFamily = display,
+            fontFamily = sans,
             fontWeight = FontWeight.Bold,
             fontSize = 40.sp,
-            letterSpacing = (-0.025).em,
+            letterSpacing = (-0.015).em,
             lineHeight = 48.sp,
         ),
         headlineMedium = TextStyle(
-            fontFamily = display,
+            fontFamily = sans,
             fontWeight = FontWeight.Bold,
             fontSize = 32.sp,
-            letterSpacing = (-0.025).em,
+            letterSpacing = (-0.015).em,
             lineHeight = 40.sp,
         ),
         headlineSmall = TextStyle(
-            fontFamily = display,
-            fontWeight = FontWeight.Normal,
+            fontFamily = sans,
+            fontWeight = FontWeight.Medium,
             fontSize = 24.sp,
-            letterSpacing = (-0.025).em,
+            letterSpacing = 0.em,
             lineHeight = 32.sp,
         ),
-        // Title — PlayfairDisplay for card names
+        // Title — card titles and list headers
         titleLarge = TextStyle(
-            fontFamily = display,
+            fontFamily = sans,
             fontWeight = FontWeight.Bold,
             fontSize = 24.sp,
-            letterSpacing = (-0.025).em,
+            letterSpacing = 0.em,
             lineHeight = 32.sp,
         ),
         titleMedium = TextStyle(
-            fontFamily = display,
-            fontWeight = FontWeight.Normal,
-            fontSize = 20.sp,
+            fontFamily = sans,
+            fontWeight = FontWeight.Medium,
+            fontSize = 18.sp,
             letterSpacing = 0.em,
-            lineHeight = 28.sp,
+            lineHeight = 26.sp,
         ),
         titleSmall = TextStyle(
-            fontFamily = serif,
-            fontWeight = FontWeight.Normal,
-            fontSize = 18.sp,
+            fontFamily = sans,
+            fontWeight = FontWeight.Medium,
+            fontSize = 16.sp,
             letterSpacing = 0.em,
-            lineHeight = 24.sp,
+            lineHeight = 22.sp,
         ),
-        // Body — SourceSerif4 for readable prose
+        // Body — readable prose
         bodyLarge = TextStyle(
-            fontFamily = serif,
-            fontWeight = FontWeight.Normal,
-            fontSize = 18.sp,
-            letterSpacing = 0.em,
-            lineHeight = 28.sp,
-        ),
-        bodyMedium = TextStyle(
-            fontFamily = serif,
+            fontFamily = sans,
             fontWeight = FontWeight.Normal,
             fontSize = 16.sp,
             letterSpacing = 0.em,
             lineHeight = 24.sp,
         ),
-        bodySmall = TextStyle(
-            fontFamily = serif,
+        bodyMedium = TextStyle(
+            fontFamily = sans,
             fontWeight = FontWeight.Normal,
             fontSize = 14.sp,
             letterSpacing = 0.em,
             lineHeight = 20.sp,
         ),
-        // Label — JetBrainsMono for dates, metadata, chips
-        labelLarge = TextStyle(
-            fontFamily = mono,
-            fontWeight = FontWeight.Normal,
-            fontSize = 14.sp,
-            letterSpacing = 0.1.em,
-            lineHeight = 20.sp,
-        ),
-        labelMedium = TextStyle(
-            fontFamily = mono,
+        bodySmall = TextStyle(
+            fontFamily = sans,
             fontWeight = FontWeight.Normal,
             fontSize = 12.sp,
-            letterSpacing = 0.1.em,
+            letterSpacing = 0.em,
+            lineHeight = 18.sp,
+        ),
+        // Label — tab labels, chip labels, metadata, dates
+        labelLarge = TextStyle(
+            fontFamily = sans,
+            fontWeight = FontWeight.Medium,
+            fontSize = 13.sp,
+            letterSpacing = 0.04.em,
+            lineHeight = 18.sp,
+        ),
+        labelMedium = TextStyle(
+            fontFamily = sans,
+            fontWeight = FontWeight.Normal,
+            fontSize = 12.sp,
+            letterSpacing = 0.04.em,
             lineHeight = 16.sp,
         ),
         labelSmall = TextStyle(
-            fontFamily = mono,
+            fontFamily = sans,
             fontWeight = FontWeight.Normal,
-            fontSize = 10.sp,
-            letterSpacing = 0.1.em,
+            fontSize = 11.sp,
+            letterSpacing = 0.05.em,
             lineHeight = 16.sp,
         ),
     )

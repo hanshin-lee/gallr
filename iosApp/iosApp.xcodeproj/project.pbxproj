@@ -7,19 +7,20 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0778B9CA0B1C2D3E4F5A6B7C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1889CADB1C2D3E4F5A6B7C8D /* Preview Assets.xcassets */; };
+		191BCE8D2F6B35E20094114D /* NMapsMap in Frameworks */ = {isa = PBXBuildFile; productRef = 191BCE8C2F6B35E20094114D /* NMapsMap */; };
 		A11B2C3D4E5F6A7B8C9D0E1F /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22C3D4E5F6A7B8C9D0E1F2A /* iOSApp.swift */; };
 		C33D4E5F6A7B8C9D0E1F2A3B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D44E5F6A7B8C9D0E1F2A3B4C /* ContentView.swift */; };
 		E55F6A7B8C9D0E1F2A3B4C5D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F66A7B8C9D0E1F2A3B4C5D6E /* Assets.xcassets */; };
-		0778B9CA0B1C2D3E4F5A6B7C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1889CADB1C2D3E4F5A6B7C8D /* Preview Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1889CADB1C2D3E4F5A6B7C8D /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		299ADBEC2D3E4F5A6B7C8D9E /* iosApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A9BCDEF0A1B2C3D4E5F6A7B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B22C3D4E5F6A7B8C9D0E1F2A /* iOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSApp.swift; sourceTree = "<group>"; };
 		D44E5F6A7B8C9D0E1F2A3B4C /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		F66A7B8C9D0E1F2A3B4C5D6E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		1889CADB1C2D3E4F5A6B7C8D /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		2A9BCDEF0A1B2C3D4E5F6A7B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -27,26 +28,19 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				191BCE8D2F6B35E20094114D /* NMapsMap in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		4BBCEDF04F5A6B7C8D9EAFB0 /* gallr */ = {
+		4BBCEDF04F5A6B7C8D9EAFB0 = {
 			isa = PBXGroup;
 			children = (
 				5CCDEF015A6B7C8D9EAFB0C1 /* iosApp */,
 				6DDEF1026B7C8D9EAFB0C1D2 /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		6DDEF1026B7C8D9EAFB0C1D2 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				299ADBEC2D3E4F5A6B7C8D9E /* iosApp.app */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 		5CCDEF015A6B7C8D9EAFB0C1 /* iosApp */ = {
@@ -59,6 +53,14 @@
 				7EEEF2037C8D9EAFB0C1D2E3 /* Preview Content */,
 			);
 			path = iosApp;
+			sourceTree = "<group>";
+		};
+		6DDEF1026B7C8D9EAFB0C1D2 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				299ADBEC2D3E4F5A6B7C8D9E /* iosApp.app */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 		7EEEF2037C8D9EAFB0C1D2E3 /* Preview Content */ = {
@@ -113,7 +115,10 @@
 				en,
 				Base,
 			);
-			mainGroup = 4BBCEDF04F5A6B7C8D9EAFB0 /* gallr */;
+			mainGroup = 4BBCEDF04F5A6B7C8D9EAFB0;
+			packageReferences = (
+				191BCE8B2F6B35E20094114D /* XCRemoteSwiftPackageReference "SPM-NMapsMap" */,
+			);
 			productRefGroup = 6DDEF1026B7C8D9EAFB0C1D2 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -300,7 +305,6 @@
 					"$(inherited)",
 					"$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 				);
-				GENERATE_INFOPLIST_FILE = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -331,7 +335,6 @@
 					"$(inherited)",
 					"$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 				);
-				GENERATE_INFOPLIST_FILE = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -372,6 +375,24 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		191BCE8B2F6B35E20094114D /* XCRemoteSwiftPackageReference "SPM-NMapsMap" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/navermaps/SPM-NMapsMap";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.23.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		191BCE8C2F6B35E20094114D /* NMapsMap */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 191BCE8B2F6B35E20094114D /* XCRemoteSwiftPackageReference "SPM-NMapsMap" */;
+			productName = NMapsMap;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = E544586934EAFB0C1D2E3F40 /* Project object */;
 }
