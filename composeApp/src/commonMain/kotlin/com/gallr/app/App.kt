@@ -7,11 +7,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -33,6 +35,8 @@ import gallr.composeapp.generated.resources.Res
 import gallr.composeapp.generated.resources.logo
 import org.jetbrains.compose.resources.painterResource
 
+private const val PRIVACY_POLICY_URL = "https://gallrmap.com/privacy"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun App(
@@ -48,6 +52,7 @@ fun App(
 
         Scaffold(
             topBar = {
+                val uriHandler = LocalUriHandler.current
                 TopAppBar(
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -60,6 +65,15 @@ fun App(
                             Text(
                                 text = "gallr",
                                 style = MaterialTheme.typography.titleMedium,
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { uriHandler.openUri(PRIVACY_POLICY_URL) }) {
+                            Text(
+                                text = "ⓘ",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onBackground,
                             )
                         }
                     },
