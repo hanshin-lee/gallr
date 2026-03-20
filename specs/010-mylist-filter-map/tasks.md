@@ -84,7 +84,7 @@ specs/010-mylist-filter-map/quickstart.md                                    ←
 **Purpose**: Full acceptance verification and commit.
 
 - [X] T010 [P] Run quickstart.md acceptance checklist (`specs/010-mylist-filter-map/quickstart.md`): verify SC-001 (MYLIST pin appears within 1s), SC-002 (filter list within 300ms), SC-003 (zero "FILTERED" instances), SC-004 (100% bookmarked exhibitions with locations appear as pins) — document pass/fail for each criterion
-- [ ] T011 Commit all changes on branch `010-mylist-filter-map`: stage `shared/src/commonMain/kotlin/com/gallr/shared/data/model/MapDisplayMode.kt`, `composeApp/src/commonMain/kotlin/com/gallr/app/viewmodel/TabsViewModel.kt`, `composeApp/src/commonMain/kotlin/com/gallr/app/ui/tabs/map/MapScreen.kt`, any `ListScreen.kt` changes, and all spec files under `specs/010-mylist-filter-map/` — write commit message describing the MYLIST rename and map pin rewiring
+- [X] T011 Commit all changes on branch `010-mylist-filter-map`: stage `shared/src/commonMain/kotlin/com/gallr/shared/data/model/MapDisplayMode.kt`, `composeApp/src/commonMain/kotlin/com/gallr/app/viewmodel/TabsViewModel.kt`, `composeApp/src/commonMain/kotlin/com/gallr/app/ui/tabs/map/MapScreen.kt`, any `ListScreen.kt` changes, and all spec files under `specs/010-mylist-filter-map/` — write commit message describing the MYLIST rename and map pin rewiring
 
 ---
 
