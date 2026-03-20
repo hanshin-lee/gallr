@@ -64,33 +64,7 @@ class TabsViewModel(
             initialValue = ExhibitionListState.Loading,
         )
 
-    // ── Map display mode + pins (US3) ───────────────────────────────────────
-
-    private val _mapDisplayMode = MutableStateFlow(MapDisplayMode.FILTERED)
-    val mapDisplayMode: StateFlow<MapDisplayMode> = _mapDisplayMode
-
-    fun setMapDisplayMode(mode: MapDisplayMode) {
-        _mapDisplayMode.value = mode
-    }
-
-    val filteredMapPins: StateFlow<List<ExhibitionMapPin>> =
-        combine(_allExhibitions, _filterState) { state, filter ->
-            (state as? ExhibitionListState.Success)
-                ?.exhibitions
-                ?.filter { filter.matches(it) }
-                ?.mapNotNull { it.toMapPin() }
-                ?: emptyList()
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
-    val allMapPins: StateFlow<List<ExhibitionMapPin>> =
-        combine(_allExhibitions) { states ->
-            (states[0] as? ExhibitionListState.Success)
-                ?.exhibitions
-                ?.mapNotNull { it.toMapPin() }
-                ?: emptyList()
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
-    // ── Bookmarks (US4) ─────────────────────────────────────────────────────
+    // ── Bookmarks ────────────────────────────────────────────────────────────
 
     val bookmarkedIds: StateFlow<Set<String>> =
         bookmarkRepository.observeBookmarkedIds()
@@ -105,6 +79,32 @@ class TabsViewModel(
             }
         }
     }
+
+    // ── Map display mode + pins ──────────────────────────────────────────────
+
+    private val _mapDisplayMode = MutableStateFlow(MapDisplayMode.MY_LIST)
+    val mapDisplayMode: StateFlow<MapDisplayMode> = _mapDisplayMode
+
+    fun setMapDisplayMode(mode: MapDisplayMode) {
+        _mapDisplayMode.value = mode
+    }
+
+    val myListMapPins: StateFlow<List<ExhibitionMapPin>> =
+        combine(_allExhibitions, bookmarkedIds) { state, bookmarked ->
+            (state as? ExhibitionListState.Success)
+                ?.exhibitions
+                ?.filter { it.id in bookmarked }
+                ?.mapNotNull { it.toMapPin() }
+                ?: emptyList()
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val allMapPins: StateFlow<List<ExhibitionMapPin>> =
+        combine(_allExhibitions) { states ->
+            (states[0] as? ExhibitionListState.Success)
+                ?.exhibitions
+                ?.mapNotNull { it.toMapPin() }
+                ?: emptyList()
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     // ── Data loading ────────────────────────────────────────────────────────
 
