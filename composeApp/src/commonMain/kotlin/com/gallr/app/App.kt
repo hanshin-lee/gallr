@@ -41,9 +41,11 @@ import com.gallr.app.ui.theme.GallrTheme
 import com.gallr.app.viewmodel.TabsViewModel
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Exhibition
+import com.gallr.shared.data.model.ThemeMode
 import com.gallr.shared.repository.BookmarkRepository
 import com.gallr.shared.repository.ExhibitionRepository
 import com.gallr.shared.repository.LanguageRepository
+import com.gallr.shared.repository.ThemeRepository
 import gallr.composeapp.generated.resources.Res
 import gallr.composeapp.generated.resources.ic_settings
 import gallr.composeapp.generated.resources.logo
@@ -57,12 +59,15 @@ fun App(
     exhibitionRepository: ExhibitionRepository,
     bookmarkRepository: BookmarkRepository,
     languageRepository: LanguageRepository,
+    themeRepository: ThemeRepository,
 ) {
-    GallrTheme {
-        val viewModel: TabsViewModel = viewModel(
-            factory = TabsViewModel.factory(exhibitionRepository, bookmarkRepository, languageRepository),
-        )
+    val viewModel: TabsViewModel = viewModel(
+        factory = TabsViewModel.factory(exhibitionRepository, bookmarkRepository, languageRepository, themeRepository),
+    )
 
+    val currentThemeMode by viewModel.themeMode.collectAsState()
+
+    GallrTheme(themeMode = currentThemeMode) {
         val lang by viewModel.language.collectAsState()
         val bookmarkedIds by viewModel.bookmarkedIds.collectAsState()
         var selectedTab by remember { mutableIntStateOf(0) }
@@ -118,6 +123,35 @@ fun App(
                                 ),
                                 shape = androidx.compose.ui.graphics.RectangleShape,
                             ) {
+                                // ── Theme selection ──
+                                val themeLabel = when (currentThemeMode) {
+                                    ThemeMode.LIGHT -> if (lang == AppLanguage.KO) "라이트" else "Light"
+                                    ThemeMode.DARK -> if (lang == AppLanguage.KO) "다크" else "Dark"
+                                    ThemeMode.SYSTEM -> if (lang == AppLanguage.KO) "시스템" else "System"
+                                }
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = if (lang == AppLanguage.KO) "테마: $themeLabel"
+                                                   else "Theme: $themeLabel",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color = MaterialTheme.colorScheme.onBackground,
+                                        )
+                                    },
+                                    onClick = {
+                                        val next = when (currentThemeMode) {
+                                            ThemeMode.SYSTEM -> ThemeMode.LIGHT
+                                            ThemeMode.LIGHT -> ThemeMode.DARK
+                                            ThemeMode.DARK -> ThemeMode.SYSTEM
+                                        }
+                                        viewModel.setThemeMode(next)
+                                    },
+                                    colors = MenuDefaults.itemColors(
+                                        textColor = MaterialTheme.colorScheme.onBackground,
+                                    ),
+                                )
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                // ── Language toggle ──
                                 DropdownMenuItem(
                                     text = {
                                         Text(
@@ -136,6 +170,7 @@ fun App(
                                     ),
                                 )
                                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                // ── Privacy policy ──
                                 DropdownMenuItem(
                                     text = {
                                         Text(

@@ -9,7 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
-import com.gallr.shared.data.model.ExhibitionMapPin
 import kotlinx.cinterop.CValue
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
@@ -17,8 +16,17 @@ import NMapsMap.NMFCameraPosition
 import NMapsMap.NMFCameraUpdate
 import NMapsMap.NMFMapView
 import NMapsMap.NMFMarker
+import NMapsMap.NMFOverlayImage
 import NMapsMap.NMGLatLng
 import platform.CoreGraphics.CGRect
+import platform.CoreGraphics.CGRectMake
+import platform.CoreGraphics.CGSizeMake
+import platform.UIKit.UIBezierPath
+import platform.UIKit.UIColor
+import platform.UIKit.UIGraphicsBeginImageContextWithOptions
+import platform.UIKit.UIGraphicsEndImageContext
+import platform.UIKit.UIGraphicsGetImageFromCurrentImageContext
+import platform.UIKit.UIImage
 import platform.UIKit.UIScreen
 import platform.UIKit.UIView
 
@@ -26,15 +34,6 @@ private const val SEOUL_LAT = 37.5665
 private const val SEOUL_LNG = 126.9780
 private const val INITIAL_ZOOM = 10.0
 
-/**
- * UIView container that prevents NMFMapView's Metal layer from receiving a
- * zero drawable size when CMP 1.8.0 temporarily sets the interop view frame
- * to CGRect.zero during its layout measurement pass.
- *
- * layoutSubviews is skipped when bounds are zero so the zero frame is never
- * propagated to NMFMapView's CAMetalLayer. All non-zero frame updates from
- * CMP's layout pass propagate normally, keeping Metal always at a valid size.
- */
 @OptIn(ExperimentalForeignApi::class)
 private class NMFMapContainerView @OverrideInit constructor(
     frame: CValue<CGRect>,
@@ -50,19 +49,59 @@ private class NMFMapContainerView @OverrideInit constructor(
     }
 }
 
+/**
+ * Creates a pin-shaped UIImage filled with the exact accent color #FF5400.
+ */
+@OptIn(ExperimentalForeignApi::class)
+private fun createAccentMarkerImage(): UIImage {
+    val w = 32.0
+    val h = 44.0
+    val radius = w / 2.0
+
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(w, h), false, UIScreen.mainScreen.scale)
+
+    val accent = UIColor(red = 1.0, green = 0.325, blue = 0.0, alpha = 1.0) // #FF5400
+
+    // Circle head
+    accent.setFill()
+    val circle = UIBezierPath.bezierPathWithOvalInRect(CGRectMake(0.0, 0.0, w, w))
+    circle.fill()
+
+    // Pointed tail
+    val tail = UIBezierPath()
+    tail.moveToPoint(CGPointMake(0.0, radius))
+    tail.addLineToPoint(CGPointMake(radius, h))
+    tail.addLineToPoint(CGPointMake(w, radius))
+    tail.closePath()
+    tail.fill()
+
+    // White inner dot
+    UIColor.whiteColor.setFill()
+    val dot = UIBezierPath.bezierPathWithOvalInRect(
+        CGRectMake(radius - radius * 0.35, radius - radius * 0.35, radius * 0.7, radius * 0.7)
+    )
+    dot.fill()
+
+    val image = UIGraphicsGetImageFromCurrentImageContext()
+    UIGraphicsEndImageContext()
+    return image!!
+}
+
+// CGPoint helper
+@OptIn(ExperimentalForeignApi::class)
+private fun CGPointMake(x: Double, y: Double) = platform.CoreGraphics.CGPointMake(x, y)
+
 @OptIn(ExperimentalForeignApi::class, ExperimentalComposeUiApi::class)
 @Composable
 actual fun MapView(
-    pins: List<ExhibitionMapPin>,
-    onMarkerTap: (ExhibitionMapPin) -> Unit,
+    locations: List<MapLocation>,
+    onLocationTap: (MapLocation) -> Unit,
     modifier: Modifier,
 ) {
     val activeMarkers = remember { mutableListOf<NMFMarker>() }
     val mapRef = remember { arrayOfNulls<NMFMapView>(1) }
+    val markerImage = remember { NMFOverlayImage.overlayImageWithImage(createAccentMarkerImage()) }
 
-    // Box participates in the Column's weight layout (390×541dp available).
-    // UIKitView fills the Box with fillMaxSize(), giving the embedded UIKit
-    // view a concrete non-zero frame so NMFMapView's CAMetalLayer stays valid.
     Box(modifier = modifier) {
         UIKitView(
             factory = {
@@ -85,12 +124,13 @@ actual fun MapView(
                 val mapView = mapRef[0] ?: return@UIKitView
                 activeMarkers.forEach { it.mapView = null }
                 activeMarkers.clear()
-                pins.forEach { pin ->
+                locations.forEach { location ->
                     val marker = NMFMarker()
-                    marker.position = NMGLatLng.latLngWithLat(pin.latitude, lng = pin.longitude)
-                    marker.captionText = pin.name
+                    marker.position = NMGLatLng.latLngWithLat(location.latitude, lng = location.longitude)
+                    marker.captionText = location.label
+                    marker.iconImage = markerImage
                     marker.touchHandler = { _ ->
-                        onMarkerTap(pin)
+                        onLocationTap(location)
                         true
                     }
                     marker.mapView = mapView

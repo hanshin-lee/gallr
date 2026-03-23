@@ -10,10 +10,12 @@ import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.ExhibitionMapPin
 import com.gallr.shared.data.model.FilterState
 import com.gallr.shared.data.model.MapDisplayMode
+import com.gallr.shared.data.model.ThemeMode
 import com.gallr.shared.data.model.toMapPin
 import com.gallr.shared.repository.BookmarkRepository
 import com.gallr.shared.repository.ExhibitionRepository
 import com.gallr.shared.repository.LanguageRepository
+import com.gallr.shared.repository.ThemeRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -32,7 +34,18 @@ class TabsViewModel(
     private val exhibitionRepository: ExhibitionRepository,
     private val bookmarkRepository: BookmarkRepository,
     private val languageRepository: LanguageRepository,
+    private val themeRepository: ThemeRepository,
 ) : ViewModel() {
+
+    // ── Theme ─────────────────────────────────────────────────────────────────
+
+    val themeMode: StateFlow<ThemeMode> =
+        themeRepository.observeThemeMode()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThemeMode.SYSTEM)
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch { themeRepository.setThemeMode(mode) }
+    }
 
     // ── Language ──────────────────────────────────────────────────────────────
 
@@ -223,9 +236,10 @@ class TabsViewModel(
             exhibitionRepository: ExhibitionRepository,
             bookmarkRepository: BookmarkRepository,
             languageRepository: LanguageRepository,
+            themeRepository: ThemeRepository,
         ): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                TabsViewModel(exhibitionRepository, bookmarkRepository, languageRepository)
+                TabsViewModel(exhibitionRepository, bookmarkRepository, languageRepository, themeRepository)
             }
         }
     }

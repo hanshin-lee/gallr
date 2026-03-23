@@ -1,6 +1,7 @@
 package com.gallr.app.ui.tabs.map
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,13 +11,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -29,15 +35,18 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.gallr.app.ui.theme.GallrAccent
+import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.app.viewmodel.TabsViewModel
 import com.gallr.shared.data.model.AppLanguage
+import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.ExhibitionMapPin
 import com.gallr.shared.data.model.MapDisplayMode
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
     viewModel: TabsViewModel,
-    onExhibitionTap: (com.gallr.shared.data.model.Exhibition) -> Unit,
+    onExhibitionTap: (Exhibition) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val mapMode by viewModel.mapDisplayMode.collectAsState()
@@ -46,8 +55,12 @@ fun MapScreen(
     val lang by viewModel.language.collectAsState()
 
     val activePins = if (mapMode == MapDisplayMode.MY_LIST) myListPins else allPins
+    val locations = remember(activePins) { groupPinsByLocation(activePins) }
 
+    // Single exhibition dialog
     var selectedPin by remember { mutableStateOf<ExhibitionMapPin?>(null) }
+    // Multi-exhibition bottom sheet
+    var selectedLocation by remember { mutableStateOf<MapLocation?>(null) }
 
     Column(modifier = modifier.fillMaxSize()) {
         Text(
@@ -90,12 +103,19 @@ fun MapScreen(
         }
 
         MapView(
-            pins = activePins,
-            onMarkerTap = { selectedPin = it },
+            locations = locations,
+            onLocationTap = { location ->
+                if (location.count == 1) {
+                    selectedPin = location.pins.first()
+                } else {
+                    selectedLocation = location
+                }
+            },
             modifier = Modifier.weight(1f),
         )
     }
 
+    // ── Single exhibition dialog ────────────────────────────────────────────
     selectedPin?.let { pin ->
         AlertDialog(
             onDismissRequest = { selectedPin = null },
@@ -146,6 +166,61 @@ fun MapScreen(
                 }
             },
         )
+    }
+
+    // ── Multi-exhibition bottom sheet ────────────────────────────────────────
+    selectedLocation?.let { location ->
+        ModalBottomSheet(
+            onDismissRequest = { selectedLocation = null },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = MaterialTheme.colorScheme.background,
+            shape = RectangleShape,
+        ) {
+            Column(modifier = Modifier.padding(horizontal = GallrSpacing.screenMargin)) {
+                Text(
+                    text = location.pins.first().venueName.uppercase(),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(GallrSpacing.xs))
+                Text(
+                    text = if (lang == AppLanguage.KO) "${location.count}개의 전시" else "${location.count} Exhibitions",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Spacer(Modifier.height(GallrSpacing.md))
+
+                LazyColumn {
+                    items(location.pins, key = { it.id }) { pin ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val exhibition = viewModel.findExhibitionById(pin.id)
+                                    selectedLocation = null
+                                    exhibition?.let { onExhibitionTap(it) }
+                                }
+                                .padding(vertical = GallrSpacing.sm),
+                        ) {
+                            Text(
+                                text = pin.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onBackground,
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                text = "${pin.openingDate} – ${pin.closingDate}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    }
+                }
+
+                Spacer(Modifier.height(GallrSpacing.lg))
+            }
+        }
     }
 }
 
