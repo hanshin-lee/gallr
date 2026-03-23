@@ -10,6 +10,7 @@ import com.gallr.shared.platform.initDataStore
 import com.gallr.shared.repository.BookmarkRepositoryImpl
 import com.gallr.shared.repository.ExhibitionRepositoryImpl
 import com.gallr.shared.repository.LanguageRepositoryImpl
+import com.gallr.shared.repository.ThemeRepositoryImpl
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,12 +31,14 @@ class MainActivity : ComponentActivity() {
             val locale = java.util.Locale.getDefault().language
             if (locale == "ko") AppLanguage.KO else AppLanguage.EN
         }
+        val themeRepository = ThemeRepositoryImpl(dataStore)
 
         setContent {
             App(
                 exhibitionRepository = exhibitionRepository,
                 bookmarkRepository = bookmarkRepository,
                 languageRepository = languageRepository,
+                themeRepository = themeRepository,
             )
         }
     }

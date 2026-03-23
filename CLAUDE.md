@@ -1,6 +1,6 @@
 # gallr Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-03-23
+Auto-generated from all feature plans. Last updated: 2026-03-24
 
 ## Active Technologies
 - Kotlin 2.1.x, Compose Multiplatform 1.8.0 + Compose Multiplatform, Material3, compose-resources (CMP 1.8.0 (002-monochrome-design-system)
@@ -24,6 +24,8 @@ Auto-generated from all feature plans. Last updated: 2026-03-23
 - Supabase Postgres (exhibitions table), DataStore Preferences (language preference + bookmarks) (012-bilingual-data-pipeline)
 - Kotlin 2.1.20 (KMP) + Compose Multiplatform 1.8.0, Ktor 2.9+ (for image loading via URL), coil3 or similar (async image loading) (013-city-filter-detail-page)
 - Supabase Postgres (existing), DataStore Preferences (existing) (013-city-filter-detail-page)
+- Kotlin 2.1.20 (KMP), Swift 5.9 (iOS entry point only) + Compose Multiplatform 1.8.0, DataStore Preferences 1.1+, Material3 (014-dark-theme)
+- DataStore Preferences (existing — add theme preference key) (014-dark-theme)
 
 - Kotlin 2.0+ (2.3.0 recommended), Compose Multiplatform 1.8.0+ + Ktor 2.9+ (networking), DataStore Preferences 1.1+ (bookmarks), AndroidX ViewModel 2.8.0+, kotlinx.serialization 1.7+, kotlinx-datetime (001-exhibition-tabs)
 
@@ -43,9 +45,9 @@ tests/
 Kotlin 2.0+ (2.3.0 recommended), Compose Multiplatform 1.8.0+: Follow standard conventions
 
 ## Recent Changes
+- 014-dark-theme: Added Kotlin 2.1.20 (KMP), Swift 5.9 (iOS entry point only) + Compose Multiplatform 1.8.0, DataStore Preferences 1.1+, Material3
 - 013-city-filter-detail-page: Added Kotlin 2.1.20 (KMP) + Compose Multiplatform 1.8.0, Ktor 2.9+ (for image loading via URL), coil3 or similar (async image loading)
 - 012-bilingual-data-pipeline: Added Kotlin 2.1.20 (KMP), Google Apps Script V8, SQL (Supabase Postgres) + Compose Multiplatform 1.8.0, Ktor 2.9+, DataStore Preferences 1.1+, kotlinx.serialization 1.7+, compose-resources (CMP string resources)
-- 010-mylist-filter-map: Added Kotlin 2.1.20 (KMP); Compose Multiplatform 1.8.0 + No new dependencies — existing `BookmarkRepository`, `bookmarkedIds: StateFlow<Set<String>>`, and `MutableStateFlow<MapDisplayMode>` are sufficien
 
 
 <!-- MANUAL ADDITIONS START -->

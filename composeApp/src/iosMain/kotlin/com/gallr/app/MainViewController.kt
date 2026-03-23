@@ -7,6 +7,7 @@ import com.gallr.shared.platform.createDataStore
 import com.gallr.shared.repository.BookmarkRepositoryImpl
 import com.gallr.shared.repository.ExhibitionRepositoryImpl
 import com.gallr.shared.repository.LanguageRepositoryImpl
+import com.gallr.shared.repository.ThemeRepositoryImpl
 import platform.Foundation.NSLocale
 import platform.Foundation.currentLocale
 import platform.Foundation.languageCode
@@ -22,10 +23,12 @@ fun MainViewController(supabaseUrl: String, anonKey: String) = ComposeUIViewCont
         val locale = NSLocale.currentLocale.languageCode
         if (locale == "ko") AppLanguage.KO else AppLanguage.EN
     }
+    val themeRepository = ThemeRepositoryImpl(dataStore)
 
     App(
         exhibitionRepository = exhibitionRepository,
         bookmarkRepository = bookmarkRepository,
         languageRepository = languageRepository,
+        themeRepository = themeRepository,
     )
 }
