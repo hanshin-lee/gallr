@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.ExhibitionMapPin
 import com.gallr.shared.data.model.FilterState
@@ -12,6 +13,7 @@ import com.gallr.shared.data.model.MapDisplayMode
 import com.gallr.shared.data.model.toMapPin
 import com.gallr.shared.repository.BookmarkRepository
 import com.gallr.shared.repository.ExhibitionRepository
+import com.gallr.shared.repository.LanguageRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -28,7 +30,23 @@ sealed class ExhibitionListState {
 class TabsViewModel(
     private val exhibitionRepository: ExhibitionRepository,
     private val bookmarkRepository: BookmarkRepository,
+    private val languageRepository: LanguageRepository,
 ) : ViewModel() {
+
+    // ── Language ──────────────────────────────────────────────────────────────
+
+    val language: StateFlow<AppLanguage> =
+        languageRepository.observeLanguage()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppLanguage.KO)
+
+    fun setLanguage(lang: AppLanguage) {
+        viewModelScope.launch { languageRepository.setLanguage(lang) }
+    }
+
+    fun toggleLanguage() {
+        val current = language.value
+        setLanguage(if (current == AppLanguage.KO) AppLanguage.EN else AppLanguage.KO)
+    }
 
     // ── Raw data ────────────────────────────────────────────────────────────
 
@@ -48,7 +66,7 @@ class TabsViewModel(
         _filterState.value = _filterState.value.update()
     }
 
-    // ── Filtered exhibitions (US2 + US3) ────────────────────────────────────
+    // ── Filtered exhibitions ─────────────────────────────────────────────────
 
     val filteredExhibitions: StateFlow<ExhibitionListState> =
         combine(_allExhibitions, _filterState) { state, filter ->
@@ -90,19 +108,19 @@ class TabsViewModel(
     }
 
     val myListMapPins: StateFlow<List<ExhibitionMapPin>> =
-        combine(_allExhibitions, bookmarkedIds) { state, bookmarked ->
+        combine(_allExhibitions, bookmarkedIds, language) { state, bookmarked, lang ->
             (state as? ExhibitionListState.Success)
                 ?.exhibitions
                 ?.filter { it.id in bookmarked }
-                ?.mapNotNull { it.toMapPin() }
+                ?.mapNotNull { it.toMapPin(lang) }
                 ?: emptyList()
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val allMapPins: StateFlow<List<ExhibitionMapPin>> =
-        combine(_allExhibitions) { states ->
-            (states[0] as? ExhibitionListState.Success)
+        combine(_allExhibitions, language) { state, lang ->
+            (state as? ExhibitionListState.Success)
                 ?.exhibitions
-                ?.mapNotNull { it.toMapPin() }
+                ?.mapNotNull { it.toMapPin(lang) }
                 ?: emptyList()
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -145,9 +163,10 @@ class TabsViewModel(
         fun factory(
             exhibitionRepository: ExhibitionRepository,
             bookmarkRepository: BookmarkRepository,
+            languageRepository: LanguageRepository,
         ): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                TabsViewModel(exhibitionRepository, bookmarkRepository)
+                TabsViewModel(exhibitionRepository, bookmarkRepository, languageRepository)
             }
         }
     }

@@ -106,6 +106,20 @@ android {
     namespace = "com.gallr.app"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
+    val keyProps = Properties().also { props ->
+        val f = rootProject.file("key.properties")
+        if (f.exists()) props.load(f.inputStream())
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file(keyProps.getProperty("storeFile", ""))
+            storePassword = keyProps.getProperty("storePassword", "")
+            keyAlias = keyProps.getProperty("keyAlias", "")
+            keyPassword = keyProps.getProperty("keyPassword", "")
+        }
+    }
+
     buildFeatures {
         buildConfig = true
     }
@@ -137,6 +151,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

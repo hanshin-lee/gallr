@@ -27,6 +27,7 @@ import com.gallr.app.ui.theme.GallrAccent
 import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.app.viewmodel.ExhibitionListState
 import com.gallr.app.viewmodel.TabsViewModel
+import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.FilterState
 
 @Composable
@@ -37,12 +38,12 @@ fun ListScreen(
     val filter by viewModel.filterState.collectAsState()
     val state by viewModel.filteredExhibitions.collectAsState()
     val bookmarkedIds by viewModel.bookmarkedIds.collectAsState()
+    val lang by viewModel.language.collectAsState()
 
     Column(modifier = modifier.fillMaxSize()) {
-        // ── Filter chips ──────────────────────────────────────────────────
         Column(modifier = Modifier.padding(horizontal = GallrSpacing.screenMargin, vertical = GallrSpacing.sm)) {
             Text(
-                text = "FILTERS",
+                text = if (lang == AppLanguage.KO) "필터" else "FILTERS",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -51,13 +52,13 @@ fun ListScreen(
                 GallrFilterChip(
                     selected = filter.showFeatured,
                     onClick = { viewModel.updateFilter { copy(showFeatured = !showFeatured) } },
-                    label = "FEATURED",
+                    label = if (lang == AppLanguage.KO) "추천" else "FEATURED",
                     modifier = Modifier.padding(end = GallrSpacing.sm),
                 )
                 GallrFilterChip(
                     selected = filter.showEditorsPick,
                     onClick = { viewModel.updateFilter { copy(showEditorsPick = !showEditorsPick) } },
-                    label = "EDITOR'S PICKS",
+                    label = if (lang == AppLanguage.KO) "에디터 픽" else "EDITOR'S PICKS",
                     modifier = Modifier.padding(end = GallrSpacing.sm),
                 )
             }
@@ -65,21 +66,19 @@ fun ListScreen(
                 GallrFilterChip(
                     selected = filter.openingThisWeek,
                     onClick = { viewModel.updateFilter { copy(openingThisWeek = !openingThisWeek) } },
-                    label = "OPENING THIS WEEK",
+                    label = if (lang == AppLanguage.KO) "이번 주 오픈" else "OPENING THIS WEEK",
                     modifier = Modifier.padding(end = GallrSpacing.sm),
                 )
                 GallrFilterChip(
                     selected = filter.closingThisWeek,
                     onClick = { viewModel.updateFilter { copy(closingThisWeek = !closingThisWeek) } },
-                    label = "CLOSING THIS WEEK",
+                    label = if (lang == AppLanguage.KO) "이번 주 마감" else "CLOSING THIS WEEK",
                 )
             }
         }
 
-        // Whitespace separates filter zone from results — no decorative divider
         Spacer(Modifier.height(GallrSpacing.sm))
 
-        // ── Exhibition list ───────────────────────────────────────────────
         when (val s = state) {
             is ExhibitionListState.Loading -> {
                 GallrLoadingState(modifier = Modifier.fillMaxWidth())
@@ -87,8 +86,8 @@ fun ListScreen(
 
             is ExhibitionListState.Error -> {
                 GallrEmptyState(
-                    message = "Could not load exhibitions.",
-                    actionLabel = "Retry",
+                    message = if (lang == AppLanguage.KO) "전시 정보를 불러올 수 없습니다." else "Could not load exhibitions.",
+                    actionLabel = if (lang == AppLanguage.KO) "다시 시도" else "Retry",
                     onAction = { /* retry handled by ViewModel */ },
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -97,8 +96,8 @@ fun ListScreen(
             is ExhibitionListState.Success -> {
                 if (s.exhibitions.isEmpty()) {
                     GallrEmptyState(
-                        message = "No exhibitions match the current filters.",
-                        actionLabel = "Clear Filters",
+                        message = if (lang == AppLanguage.KO) "필터에 맞는 전시가 없습니다." else "No exhibitions match the current filters.",
+                        actionLabel = if (lang == AppLanguage.KO) "필터 초기화" else "Clear Filters",
                         onAction = { viewModel.updateFilter { FilterState() } },
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -112,6 +111,7 @@ fun ListScreen(
                                 exhibition = exhibition,
                                 isBookmarked = exhibition.id in bookmarkedIds,
                                 onBookmarkToggle = { viewModel.toggleBookmark(exhibition.id) },
+                                lang = lang,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = GallrSpacing.md),

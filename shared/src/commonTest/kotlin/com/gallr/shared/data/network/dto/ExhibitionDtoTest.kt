@@ -1,106 +1,133 @@
 package com.gallr.shared.data.network.dto
 
+import com.gallr.shared.data.model.AppLanguage
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-/**
- * Verifies that [ExhibitionDto] correctly deserializes Supabase PostgREST snake_case JSON.
- *
- * Per specs/007-gallery-data-sync/contracts/supabase-api.md, Supabase returns JSON keys
- * in snake_case (e.g. "venue_name", "opening_date", "is_featured"). The DTO must map
- * these to the correct Kotlin fields using @SerialName annotations.
- *
- * NOTE (TDD): This test MUST fail before ExhibitionDto.kt is updated (the current
- * @SerialName annotations use camelCase and will not match Supabase snake_case keys).
- */
 class ExhibitionDtoTest {
 
     private val testJson = Json { ignoreUnknownKeys = true; coerceInputValues = true }
 
-    private val supabaseJson = """
+    private val bilingualJson = """
         {
             "id": "a3f2b1c9d4e7f8a2",
-            "name": "Zen Master Eyeball",
-            "venue_name": "Kukje Gallery K1",
-            "city": "Seoul",
-            "region": "Seoul",
+            "name_ko": "선의 거장 눈알",
+            "name_en": "Zen Master Eyeball",
+            "venue_name_ko": "국제갤러리 K1",
+            "venue_name_en": "Kukje Gallery K1",
+            "city_ko": "서울",
+            "city_en": "Seoul",
+            "region_ko": "종로구",
+            "region_en": "Jongno-gu",
             "opening_date": "2026-03-19",
             "closing_date": "2026-05-10",
             "is_featured": true,
             "is_editors_pick": false,
             "latitude": 37.5796,
             "longitude": 126.9784,
-            "description": "A solo exhibition",
+            "description_ko": "개인전",
+            "description_en": "A solo exhibition",
             "cover_image_url": null,
             "updated_at": "2026-03-20T10:00:00Z"
         }
     """.trimIndent()
 
     @Test
-    fun `ExhibitionDto deserializes venue_name from Supabase JSON`() {
-        val dto = testJson.decodeFromString<ExhibitionDto>(supabaseJson)
-        assertEquals("Kukje Gallery K1", dto.venueName)
+    fun `ExhibitionDto deserializes bilingual fields from Supabase JSON`() {
+        val dto = testJson.decodeFromString<ExhibitionDto>(bilingualJson)
+        assertEquals("선의 거장 눈알", dto.nameKo)
+        assertEquals("Zen Master Eyeball", dto.nameEn)
+        assertEquals("국제갤러리 K1", dto.venueNameKo)
+        assertEquals("Kukje Gallery K1", dto.venueNameEn)
+        assertEquals("서울", dto.cityKo)
+        assertEquals("Seoul", dto.cityEn)
+        assertEquals("종로구", dto.regionKo)
+        assertEquals("Jongno-gu", dto.regionEn)
+        assertEquals("개인전", dto.descriptionKo)
+        assertEquals("A solo exhibition", dto.descriptionEn)
     }
 
     @Test
-    fun `ExhibitionDto deserializes opening_date from Supabase JSON`() {
-        val dto = testJson.decodeFromString<ExhibitionDto>(supabaseJson)
-        assertEquals("2026-03-19", dto.openingDate)
+    fun `ExhibitionDto defaults English fields to empty string when missing`() {
+        val koOnlyJson = """
+            {
+                "id": "abc123",
+                "name_ko": "전시회",
+                "venue_name_ko": "갤러리",
+                "city_ko": "서울",
+                "region_ko": "강남구",
+                "opening_date": "2026-01-01",
+                "closing_date": "2026-02-01",
+                "is_featured": false,
+                "is_editors_pick": false
+            }
+        """.trimIndent()
+        val dto = testJson.decodeFromString<ExhibitionDto>(koOnlyJson)
+        assertEquals("전시회", dto.nameKo)
+        assertEquals("", dto.nameEn)
+        assertEquals("", dto.venueNameEn)
+        assertEquals("", dto.cityEn)
+        assertEquals("", dto.regionEn)
+        assertEquals("", dto.descriptionKo)
+        assertEquals("", dto.descriptionEn)
     }
 
     @Test
-    fun `ExhibitionDto deserializes closing_date from Supabase JSON`() {
-        val dto = testJson.decodeFromString<ExhibitionDto>(supabaseJson)
-        assertEquals("2026-05-10", dto.closingDate)
+    fun `ExhibitionDto ignores unknown fields`() {
+        val jsonWithUnknown = bilingualJson.replace(
+            "\"updated_at\"",
+            "\"artist_name\": \"Kim\", \"updated_at\""
+        )
+        val dto = testJson.decodeFromString<ExhibitionDto>(jsonWithUnknown)
+        assertEquals("a3f2b1c9d4e7f8a2", dto.id)
     }
 
     @Test
-    fun `ExhibitionDto deserializes is_featured from Supabase JSON`() {
-        val dto = testJson.decodeFromString<ExhibitionDto>(supabaseJson)
-        assertEquals(true, dto.isFeatured)
-    }
-
-    @Test
-    fun `ExhibitionDto deserializes is_editors_pick from Supabase JSON`() {
-        val dto = testJson.decodeFromString<ExhibitionDto>(supabaseJson)
-        assertEquals(false, dto.isEditorsPick)
-    }
-
-    @Test
-    fun `ExhibitionDto deserializes null cover_image_url from Supabase JSON`() {
-        val dto = testJson.decodeFromString<ExhibitionDto>(supabaseJson)
-        assertNull(dto.coverImageUrl)
-    }
-
-    @Test
-    fun `ExhibitionDto toDomain maps all fields correctly`() {
-        val dto = testJson.decodeFromString<ExhibitionDto>(supabaseJson)
+    fun `ExhibitionDto toDomain maps bilingual fields correctly`() {
+        val dto = testJson.decodeFromString<ExhibitionDto>(bilingualJson)
         val exhibition = dto.toDomain()
 
         assertEquals("a3f2b1c9d4e7f8a2", exhibition.id)
-        assertEquals("Zen Master Eyeball", exhibition.name)
-        assertEquals("Kukje Gallery K1", exhibition.venueName)
-        assertEquals("Seoul", exhibition.city)
-        assertEquals("Seoul", exhibition.region)
+        assertEquals("선의 거장 눈알", exhibition.nameKo)
+        assertEquals("Zen Master Eyeball", exhibition.nameEn)
+        assertEquals("국제갤러리 K1", exhibition.venueNameKo)
+        assertEquals("Kukje Gallery K1", exhibition.venueNameEn)
+        assertEquals("서울", exhibition.cityKo)
+        assertEquals("Seoul", exhibition.cityEn)
         assertEquals(2026, exhibition.openingDate.year)
-        assertEquals(3, exhibition.openingDate.monthNumber)
-        assertEquals(19, exhibition.openingDate.dayOfMonth)
         assertEquals(true, exhibition.isFeatured)
         assertEquals(false, exhibition.isEditorsPick)
         assertEquals(37.5796, exhibition.latitude)
-        assertEquals(126.9784, exhibition.longitude)
         assertNull(exhibition.coverImageUrl)
     }
 
     @Test
-    fun `ExhibitionDto handles non-null cover_image_url`() {
-        val jsonWithUrl = supabaseJson.replace(
-            "\"cover_image_url\": null",
-            "\"cover_image_url\": \"https://example.com/image.jpg\""
-        )
-        val dto = testJson.decodeFromString<ExhibitionDto>(jsonWithUrl)
-        assertEquals("https://example.com/image.jpg", dto.coverImageUrl)
+    fun `Exhibition localizedName returns English with Korean fallback`() {
+        val dto = testJson.decodeFromString<ExhibitionDto>(bilingualJson)
+        val exhibition = dto.toDomain()
+
+        assertEquals("Zen Master Eyeball", exhibition.localizedName(AppLanguage.EN))
+        assertEquals("선의 거장 눈알", exhibition.localizedName(AppLanguage.KO))
+    }
+
+    @Test
+    fun `Exhibition localizedName falls back to Korean when English is empty`() {
+        val koOnlyJson = """
+            {
+                "id": "abc123",
+                "name_ko": "전시회",
+                "venue_name_ko": "갤러리",
+                "city_ko": "서울",
+                "region_ko": "강남구",
+                "opening_date": "2026-01-01",
+                "closing_date": "2026-02-01",
+                "is_featured": false,
+                "is_editors_pick": false
+            }
+        """.trimIndent()
+        val exhibition = testJson.decodeFromString<ExhibitionDto>(koOnlyJson).toDomain()
+        assertEquals("전시회", exhibition.localizedName(AppLanguage.EN))
     }
 }

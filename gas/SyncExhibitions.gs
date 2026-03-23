@@ -2,6 +2,10 @@
  * SyncExhibitions.gs
  * Google Apps Script — Sync Google Sheet → Supabase exhibitions table
  *
+ * HEADER-DRIVEN: Reads column headers from row 1 and maps data by header name,
+ * not by column position. New columns are automatically picked up without
+ * script changes — only a matching Supabase column needs to exist.
+ *
  * SETUP REQUIRED (one-time):
  * 1. Open Apps Script → Project Settings → Script Properties
  *    Add the following properties:
@@ -15,27 +19,42 @@
  *                            Every 5 minutes
  *
  * GOOGLE SHEET COLUMN ORDER (Row 1 = header, data from Row 2):
- *   A: name (required)         B: venue_name (required)
- *   C: city (required)         D: region (required)
- *   E: opening_date (required) F: closing_date (required)
- *   G: is_featured             H: is_editors_pick
- *   I: latitude                J: longitude
- *   K: description             L: cover_image_url
+ *   Headers must be lowercase snake_case matching Supabase column names.
+ *   Bilingual text fields use _ko/_en suffix pairs (e.g., name_ko, name_en).
+ *   Column order does not matter — headers drive mapping.
  */
+
+// ---------------------------------------------------------------------------
+// Required headers — sync aborts if any are missing from row 1
+// ---------------------------------------------------------------------------
+
+var REQUIRED_HEADERS = [
+  'name_ko', 'venue_name_ko', 'city_ko', 'region_ko',
+  'opening_date', 'closing_date',
+];
+
+// ---------------------------------------------------------------------------
+// Required per-row values — row is skipped if any are empty
+// ---------------------------------------------------------------------------
+
+var REQUIRED_ROW_FIELDS = [
+  'name_ko', 'venue_name_ko', 'city_ko', 'region_ko',
+  'opening_date', 'closing_date',
+];
 
 // ---------------------------------------------------------------------------
 // Main entry point — called by both triggers
 // ---------------------------------------------------------------------------
 
 function syncToSupabase() {
-  const props = PropertiesService.getScriptProperties();
-  const supabaseUrl = props.getProperty('SUPABASE_URL');
-  const serviceKey = props.getProperty('SUPABASE_SERVICE_ROLE_KEY');
-  const timestamp = new Date().toISOString();
+  var props = PropertiesService.getScriptProperties();
+  var supabaseUrl = props.getProperty('SUPABASE_URL');
+  var serviceKey = props.getProperty('SUPABASE_SERVICE_ROLE_KEY');
+  var timestamp = new Date().toISOString();
 
   if (!supabaseUrl || !serviceKey) {
     Logger.log(JSON.stringify({
-      timestamp,
+      timestamp: timestamp,
       status: 'FAILURE',
       error: 'SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set in Script Properties',
       rows_read: 0,
@@ -45,34 +64,72 @@ function syncToSupabase() {
     return;
   }
 
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
-  const data = sheet.getDataRange().getValues();
-  const dataRows = data.slice(1); // skip header row
-  const rowsRead = dataRows.length;
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+  var data = sheet.getDataRange().getValues();
 
-  const validRows = [];
-  const skippedReasons = [];
+  if (data.length === 0) {
+    Logger.log(JSON.stringify({
+      timestamp: timestamp,
+      status: 'FAILURE',
+      error: 'Sheet is empty — no header row found',
+      rows_read: 0,
+      rows_inserted: 0,
+      rows_skipped: 0,
+    }));
+    return;
+  }
+
+  // ── Build header map ────────────────────────────────────────────────────
+  var headerRow = data[0];
+  var headerMap = buildHeaderMap(headerRow);
+  var unknownHeaders = [];
+
+  // Log headers that were found
+  Logger.log('Headers found: ' + Object.keys(headerMap).join(', '));
+
+  // ── Validate required headers ───────────────────────────────────────────
+  var missingHeaders = [];
+  REQUIRED_HEADERS.forEach(function(h) {
+    if (!(h in headerMap)) missingHeaders.push(h);
+  });
+
+  if (missingHeaders.length > 0) {
+    Logger.log(JSON.stringify({
+      timestamp: timestamp,
+      status: 'FAILURE',
+      error: 'Missing required headers: ' + missingHeaders.join(', '),
+      rows_read: 0,
+      rows_inserted: 0,
+      rows_skipped: 0,
+    }));
+    return;
+  }
+
+  // ── Process data rows ───────────────────────────────────────────────────
+  var dataRows = data.slice(1);
+  var rowsRead = dataRows.length;
+  var validRows = [];
+  var skippedReasons = [];
 
   dataRows.forEach(function(row, index) {
-    const rowNum = index + 2; // 1-based, +1 for header
-    const result = validateRow(row, rowNum);
+    var rowNum = index + 2;
+    var result = validateRow(row, rowNum, headerMap);
     if (result.valid) {
-      validRows.push(buildRecord(row));
+      validRows.push(buildRecord(row, headerMap));
     } else {
       skippedReasons.push(result.reason);
     }
   });
 
-  // Deduplicate by id — rows with the same name+venue_name+opening_date generate the same id.
-  // Inserting two rows with the same id in one batch causes a Postgres error even with ON CONFLICT.
-  const seenIds = new Set();
-  const uniqueRows = [];
+  // ── Deduplicate by id ───────────────────────────────────────────────────
+  var seenIds = {};
+  var uniqueRows = [];
   validRows.forEach(function(row) {
-    if (!seenIds.has(row.id)) {
-      seenIds.add(row.id);
+    if (!seenIds[row.id]) {
+      seenIds[row.id] = true;
       uniqueRows.push(row);
     } else {
-      skippedReasons.push('Duplicate id ' + row.id + ' (same name+venue+opening_date): ' + row.name);
+      skippedReasons.push('Duplicate id ' + row.id + ': ' + row.name_ko);
     }
   });
 
@@ -81,7 +138,7 @@ function syncToSupabase() {
     insertExhibitions(uniqueRows, supabaseUrl, serviceKey);
 
     Logger.log(JSON.stringify({
-      timestamp,
+      timestamp: timestamp,
       status: 'SUCCESS',
       rows_read: rowsRead,
       rows_inserted: uniqueRows.length,
@@ -90,7 +147,7 @@ function syncToSupabase() {
     }));
   } catch (e) {
     Logger.log(JSON.stringify({
-      timestamp,
+      timestamp: timestamp,
       status: 'FAILURE',
       error: e.message,
       rows_read: rowsRead,
@@ -101,123 +158,181 @@ function syncToSupabase() {
 }
 
 // ---------------------------------------------------------------------------
-// Row validation
+// Header map construction
 // ---------------------------------------------------------------------------
 
 /**
- * Returns { valid: true } or { valid: false, reason: String }
+ * Builds a map of normalized header name → column index.
+ * Headers are lowercased and trimmed.
  */
-function validateRow(row, rowNum) {
-  const name = String(row[0] || '').trim();
-  const venueName = String(row[1] || '').trim();
-  const city = String(row[2] || '').trim();
-  const region = String(row[3] || '').trim();
-  const openingRaw = row[4];
-  const closingRaw = row[5];
+function buildHeaderMap(headerRow) {
+  var map = {};
+  headerRow.forEach(function(cell, index) {
+    var header = String(cell || '').toLowerCase().trim();
+    if (header) {
+      map[header] = index;
+    }
+  });
+  return map;
+}
 
-  if (!name)      return { valid: false, reason: 'Row ' + rowNum + ': name (A) is empty' };
-  if (!venueName) return { valid: false, reason: 'Row ' + rowNum + ': venue_name (B) is empty' };
-  if (!city)      return { valid: false, reason: 'Row ' + rowNum + ': city (C) is empty' };
-  if (!region)    return { valid: false, reason: 'Row ' + rowNum + ': region (D) is empty' };
+/**
+ * Gets a cell value by header name from a row.
+ * Returns empty string if header not found.
+ */
+function getCell(row, headerMap, headerName) {
+  if (!(headerName in headerMap)) return '';
+  return row[headerMap[headerName]];
+}
 
-  const openingDate = parseDate(openingRaw);
-  if (!openingDate) return { valid: false, reason: 'Row ' + rowNum + ': opening_date (E) is not a valid date: ' + openingRaw };
+// ---------------------------------------------------------------------------
+// Row validation
+// ---------------------------------------------------------------------------
 
-  const closingDate = parseDate(closingRaw);
-  if (!closingDate) return { valid: false, reason: 'Row ' + rowNum + ': closing_date (F) is not a valid date: ' + closingRaw };
+function validateRow(row, rowNum, headerMap) {
+  // Check required fields are non-empty
+  for (var i = 0; i < REQUIRED_ROW_FIELDS.length; i++) {
+    var field = REQUIRED_ROW_FIELDS[i];
+    var value = String(getCell(row, headerMap, field) || '').trim();
+    if (!value) {
+      return { valid: false, reason: 'Row ' + rowNum + ': ' + field + ' is empty' };
+    }
+  }
 
-  const lat = row[8];
-  const lon = row[9];
+  // Validate dates
+  var openingDate = parseDate(getCell(row, headerMap, 'opening_date'));
+  if (!openingDate) {
+    return { valid: false, reason: 'Row ' + rowNum + ': opening_date is not a valid date: ' + getCell(row, headerMap, 'opening_date') };
+  }
+
+  var closingDate = parseDate(getCell(row, headerMap, 'closing_date'));
+  if (!closingDate) {
+    return { valid: false, reason: 'Row ' + rowNum + ': closing_date is not a valid date: ' + getCell(row, headerMap, 'closing_date') };
+  }
+
+  // Validate coordinates if present
+  var lat = getCell(row, headerMap, 'latitude');
+  var lon = getCell(row, headerMap, 'longitude');
   if (lat !== '' && lat !== null && lat !== undefined && isNaN(Number(lat))) {
-    return { valid: false, reason: 'Row ' + rowNum + ': latitude (I) is not numeric: ' + lat };
+    return { valid: false, reason: 'Row ' + rowNum + ': latitude is not numeric: ' + lat };
   }
   if (lon !== '' && lon !== null && lon !== undefined && isNaN(Number(lon))) {
-    return { valid: false, reason: 'Row ' + rowNum + ': longitude (J) is not numeric: ' + lon };
+    return { valid: false, reason: 'Row ' + rowNum + ': longitude is not numeric: ' + lon };
   }
 
   return { valid: true };
 }
 
-/**
- * Parses YYYY-MM-DD or YYYY.MM.DD into an ISO date string.
- * Returns null if the value is not parseable.
- */
-function parseDate(value) {
-  if (!value) return null;
-
-  // If Google Sheets already parsed it as a Date object
-  if (value instanceof Date) {
-    const y = value.getFullYear();
-    const m = String(value.getMonth() + 1).padStart(2, '0');
-    const d = String(value.getDate()).padStart(2, '0');
-    return y + '-' + m + '-' + d;
-  }
-
-  // String: normalize YYYY.MM.DD → YYYY-MM-DD
-  const normalized = String(value).replace(/\./g, '-').trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return normalized;
-
-  return null;
-}
-
 // ---------------------------------------------------------------------------
-// Record construction and ID generation
+// Known Supabase columns — only these headers are included in the upsert.
+// Add new columns here when you add them to the Supabase schema.
 // ---------------------------------------------------------------------------
 
-/**
- * Builds a Supabase-ready record object from a sheet row.
- */
-function buildRecord(row) {
-  const name = String(row[0] || '').trim();
-  const venueName = String(row[1] || '').trim();
-  const city = String(row[2] || '').trim();
-  const region = String(row[3] || '').trim();
-  const openingDate = parseDate(row[4]);
-  const closingDate = parseDate(row[5]);
-  const isFeatured = parseBool(row[6]);
-  const isEditorsPick = parseBool(row[7]);
-  const lat = row[8];
-  const lon = row[9];
-  const description = String(row[10] || '').trim();
-  const coverImageUrl = String(row[11] || '').trim() || null;
+var KNOWN_COLUMNS = [
+  // Bilingual text fields
+  'name_ko', 'name_en',
+  'venue_name_ko', 'venue_name_en',
+  'city_ko', 'city_en',
+  'region_ko', 'region_en',
+  'description_ko', 'description_en',
+  'address_ko', 'address_en',
+  // Non-bilingual fields
+  'opening_date', 'closing_date',
+  'is_featured', 'is_editors_pick',
+  'latitude', 'longitude',
+  'cover_image_url',
+];
 
-  return {
-    id: generateId(name, venueName, openingDate),
-    name: name,
-    venue_name: venueName,
-    city: city,
-    region: region,
-    opening_date: openingDate,
-    closing_date: closingDate,
-    is_featured: isFeatured,
-    is_editors_pick: isEditorsPick,
-    latitude: (lat !== '' && lat !== null && lat !== undefined) ? Number(lat) : null,
-    longitude: (lon !== '' && lon !== null && lon !== undefined) ? Number(lon) : null,
-    description: description,
-    cover_image_url: coverImageUrl,
+// ---------------------------------------------------------------------------
+// Record construction — header-driven, filtered to known columns
+// ---------------------------------------------------------------------------
+
+function buildRecord(row, headerMap) {
+  var nameKo = String(getCell(row, headerMap, 'name_ko') || '').trim();
+  var venueNameKo = String(getCell(row, headerMap, 'venue_name_ko') || '').trim();
+  var openingDate = parseDate(getCell(row, headerMap, 'opening_date'));
+
+  var record = {
+    id: generateId(nameKo, venueNameKo, openingDate),
     updated_at: new Date().toISOString(),
   };
+
+  // Only map headers that exist in KNOWN_COLUMNS
+  KNOWN_COLUMNS.forEach(function(header) {
+    if (!(header in headerMap)) return;
+    var raw = getCell(row, headerMap, header);
+
+    // Date fields
+    if (header === 'opening_date' || header === 'closing_date') {
+      record[header] = parseDate(raw);
+      return;
+    }
+
+    // Boolean fields
+    if (header === 'is_featured' || header === 'is_editors_pick') {
+      record[header] = parseBool(raw);
+      return;
+    }
+
+    // Numeric fields
+    if (header === 'latitude' || header === 'longitude') {
+      record[header] = (raw !== '' && raw !== null && raw !== undefined) ? Number(raw) : null;
+      return;
+    }
+
+    // URL fields (nullable)
+    if (header === 'cover_image_url') {
+      var url = String(raw || '').trim();
+      record[header] = url || null;
+      return;
+    }
+
+    // Text fields (default)
+    record[header] = String(raw || '').trim();
+  });
+
+  // Log unknown headers (informational)
+  Object.keys(headerMap).forEach(function(header) {
+    if (KNOWN_COLUMNS.indexOf(header) === -1 && header !== 'updated_at' && header !== 'id') {
+      // Skipped — not in KNOWN_COLUMNS
+    }
+  });
+
+  return record;
 }
 
-/**
- * Generates a stable 16-char hex ID from name + venue_name + opening_date.
- * Deterministic: same inputs always produce the same ID across sync runs.
- */
-function generateId(name, venueName, openingDate) {
-  const raw = (name + '|' + venueName + '|' + openingDate).toLowerCase().trim();
-  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, raw);
+// ---------------------------------------------------------------------------
+// ID generation and helpers
+// ---------------------------------------------------------------------------
+
+function generateId(nameKo, venueNameKo, openingDate) {
+  var raw = (nameKo + '|' + venueNameKo + '|' + openingDate).toLowerCase().trim();
+  var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, raw);
   return digest.slice(0, 8).map(function(b) {
     return (b & 0xff).toString(16).padStart(2, '0');
   }).join('');
 }
 
-/**
- * Interprets TRUE/FALSE, 1/0, "yes"/"no", or blank (→ false).
- */
+function parseDate(value) {
+  if (!value) return null;
+
+  if (value instanceof Date) {
+    var y = value.getFullYear();
+    var m = String(value.getMonth() + 1).padStart(2, '0');
+    var d = String(value.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + d;
+  }
+
+  var normalized = String(value).replace(/\./g, '-').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return normalized;
+
+  return null;
+}
+
 function parseBool(value) {
   if (value === true || value === 1) return true;
   if (typeof value === 'string') {
-    const v = value.trim().toLowerCase();
+    var v = value.trim().toLowerCase();
     return v === 'true' || v === '1' || v === 'yes';
   }
   return false;
@@ -227,13 +342,9 @@ function parseBool(value) {
 // Supabase API calls
 // ---------------------------------------------------------------------------
 
-/**
- * Deletes all rows from the exhibitions table.
- * Uses id=neq.IMPOSSIBLE_VALUE to satisfy PostgREST's filter requirement.
- */
 function deleteAllExhibitions(supabaseUrl, serviceKey) {
-  const url = supabaseUrl + '/rest/v1/exhibitions?id=neq.IMPOSSIBLE_VALUE';
-  const response = UrlFetchApp.fetch(url, {
+  var url = supabaseUrl + '/rest/v1/exhibitions?id=neq.IMPOSSIBLE_VALUE';
+  var response = UrlFetchApp.fetch(url, {
     method: 'delete',
     headers: {
       'apikey': serviceKey,
@@ -242,21 +353,17 @@ function deleteAllExhibitions(supabaseUrl, serviceKey) {
     muteHttpExceptions: true,
   });
 
-  const code = response.getResponseCode();
+  var code = response.getResponseCode();
   if (code < 200 || code >= 300) {
     throw new Error('DELETE failed with HTTP ' + code + ': ' + response.getContentText());
   }
 }
 
-/**
- * Inserts all valid rows into the exhibitions table.
- * Uses Prefer: resolution=merge-duplicates for upsert semantics.
- */
 function insertExhibitions(rows, supabaseUrl, serviceKey) {
   if (rows.length === 0) return;
 
-  const url = supabaseUrl + '/rest/v1/exhibitions';
-  const response = UrlFetchApp.fetch(url, {
+  var url = supabaseUrl + '/rest/v1/exhibitions';
+  var response = UrlFetchApp.fetch(url, {
     method: 'post',
     contentType: 'application/json',
     headers: {
@@ -268,7 +375,7 @@ function insertExhibitions(rows, supabaseUrl, serviceKey) {
     muteHttpExceptions: true,
   });
 
-  const code = response.getResponseCode();
+  var code = response.getResponseCode();
   if (code < 200 || code >= 300) {
     throw new Error('INSERT failed with HTTP ' + code + ': ' + response.getContentText());
   }

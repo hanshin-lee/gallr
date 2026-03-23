@@ -16,13 +16,13 @@ data class ExhibitionMapPin(
     val closingDate: LocalDate,
 )
 
-fun Exhibition.toMapPin(): ExhibitionMapPin? {
+fun Exhibition.toMapPin(lang: AppLanguage): ExhibitionMapPin? {
     val lat = latitude ?: return null
     val lng = longitude ?: return null
     return ExhibitionMapPin(
         id = id,
-        name = name,
-        venueName = venueName,
+        name = localizedName(lang),
+        venueName = localizedVenueName(lang),
         latitude = lat,
         longitude = lng,
         openingDate = openingDate,

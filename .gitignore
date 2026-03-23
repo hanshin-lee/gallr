@@ -1,3 +1,7 @@
+# Signing
+upload-keystore.jks
+key.properties
+
 # Gradle
 .gradle/
 build/

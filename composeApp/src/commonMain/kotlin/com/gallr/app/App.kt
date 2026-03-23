@@ -15,6 +15,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -29,8 +30,10 @@ import com.gallr.app.ui.tabs.list.ListScreen
 import com.gallr.app.ui.tabs.map.MapScreen
 import com.gallr.app.ui.theme.GallrTheme
 import com.gallr.app.viewmodel.TabsViewModel
+import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.repository.BookmarkRepository
 import com.gallr.shared.repository.ExhibitionRepository
+import com.gallr.shared.repository.LanguageRepository
 import gallr.composeapp.generated.resources.Res
 import gallr.composeapp.generated.resources.logo
 import org.jetbrains.compose.resources.painterResource
@@ -42,12 +45,14 @@ private const val PRIVACY_POLICY_URL = "https://gallrmap.com/privacy"
 fun App(
     exhibitionRepository: ExhibitionRepository,
     bookmarkRepository: BookmarkRepository,
+    languageRepository: LanguageRepository,
 ) {
     GallrTheme {
         val viewModel: TabsViewModel = viewModel(
-            factory = TabsViewModel.factory(exhibitionRepository, bookmarkRepository),
+            factory = TabsViewModel.factory(exhibitionRepository, bookmarkRepository, languageRepository),
         )
 
+        val lang by viewModel.language.collectAsState()
         var selectedTab by remember { mutableIntStateOf(0) }
 
         Scaffold(
@@ -69,6 +74,13 @@ fun App(
                         }
                     },
                     actions = {
+                        IconButton(onClick = { viewModel.toggleLanguage() }) {
+                            Text(
+                                text = if (lang == AppLanguage.KO) "KO" else "EN",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onBackground,
+                            )
+                        }
                         IconButton(onClick = { uriHandler.openUri(PRIVACY_POLICY_URL) }) {
                             Text(
                                 text = "ⓘ",
@@ -87,6 +99,7 @@ fun App(
                 GallrNavigationBar(
                     selectedTab = selectedTab,
                     onTabSelected = { selectedTab = it },
+                    lang = lang,
                 )
             },
         ) { innerPadding ->
