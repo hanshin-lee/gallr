@@ -133,6 +133,20 @@ function syncToSupabase() {
     }
   });
 
+  // ── Safety check: never delete if there are zero valid rows ────────────
+  if (uniqueRows.length === 0) {
+    Logger.log(JSON.stringify({
+      timestamp: timestamp,
+      status: 'SKIPPED',
+      error: 'No valid rows to insert — DELETE skipped to protect existing data',
+      rows_read: rowsRead,
+      rows_inserted: 0,
+      rows_skipped: skippedReasons.length,
+      skipped_details: skippedReasons,
+    }));
+    return;
+  }
+
   try {
     deleteAllExhibitions(supabaseUrl, serviceKey);
     insertExhibitions(uniqueRows, supabaseUrl, serviceKey);

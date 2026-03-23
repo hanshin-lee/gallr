@@ -22,6 +22,8 @@ Auto-generated from all feature plans. Last updated: 2026-03-23
 - N/A — bookmark persistence already implemented via DataStore; no schema changes (010-mylist-filter-map)
 - Kotlin 2.1.20 (KMP), Google Apps Script V8, SQL (Supabase Postgres) + Compose Multiplatform 1.8.0, Ktor 2.9+, DataStore Preferences 1.1+, kotlinx.serialization 1.7+, compose-resources (CMP string resources) (012-bilingual-data-pipeline)
 - Supabase Postgres (exhibitions table), DataStore Preferences (language preference + bookmarks) (012-bilingual-data-pipeline)
+- Kotlin 2.1.20 (KMP) + Compose Multiplatform 1.8.0, Ktor 2.9+ (for image loading via URL), coil3 or similar (async image loading) (013-city-filter-detail-page)
+- Supabase Postgres (existing), DataStore Preferences (existing) (013-city-filter-detail-page)
 
 - Kotlin 2.0+ (2.3.0 recommended), Compose Multiplatform 1.8.0+ + Ktor 2.9+ (networking), DataStore Preferences 1.1+ (bookmarks), AndroidX ViewModel 2.8.0+, kotlinx.serialization 1.7+, kotlinx-datetime (001-exhibition-tabs)
 
@@ -41,9 +43,9 @@ tests/
 Kotlin 2.0+ (2.3.0 recommended), Compose Multiplatform 1.8.0+: Follow standard conventions
 
 ## Recent Changes
+- 013-city-filter-detail-page: Added Kotlin 2.1.20 (KMP) + Compose Multiplatform 1.8.0, Ktor 2.9+ (for image loading via URL), coil3 or similar (async image loading)
 - 012-bilingual-data-pipeline: Added Kotlin 2.1.20 (KMP), Google Apps Script V8, SQL (Supabase Postgres) + Compose Multiplatform 1.8.0, Ktor 2.9+, DataStore Preferences 1.1+, kotlinx.serialization 1.7+, compose-resources (CMP string resources)
 - 010-mylist-filter-map: Added Kotlin 2.1.20 (KMP); Compose Multiplatform 1.8.0 + No new dependencies — existing `BookmarkRepository`, `bookmarkedIds: StateFlow<Set<String>>`, and `MutableStateFlow<MapDisplayMode>` are sufficien
-- 009-privacy-policy-url: Added Kotlin 2.1.20 (KMP composeApp module); HTML5/CSS3 (web/privacy.html) + Compose Multiplatform 1.8.0 (`LocalUriHandler` from `androidx.compose.ui.platform`); Eleventy 3.x (web static site, existing)
 
 
 <!-- MANUAL ADDITIONS START -->

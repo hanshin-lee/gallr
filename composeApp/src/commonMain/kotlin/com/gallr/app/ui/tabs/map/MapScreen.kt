@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.gallr.app.ui.theme.GallrAccent
 import com.gallr.app.viewmodel.TabsViewModel
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.ExhibitionMapPin
@@ -36,6 +37,7 @@ import com.gallr.shared.data.model.MapDisplayMode
 @Composable
 fun MapScreen(
     viewModel: TabsViewModel,
+    onExhibitionTap: (com.gallr.shared.data.model.Exhibition) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val mapMode by viewModel.mapDisplayMode.collectAsState()
@@ -122,11 +124,24 @@ fun MapScreen(
             containerColor = MaterialTheme.colorScheme.background,
             shape = RectangleShape,
             confirmButton = {
+                TextButton(onClick = {
+                    val exhibition = viewModel.findExhibitionById(pin.id)
+                    selectedPin = null
+                    exhibition?.let { onExhibitionTap(it) }
+                }) {
+                    Text(
+                        text = if (lang == AppLanguage.KO) "상세보기" else "VIEW DETAILS",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
+            },
+            dismissButton = {
                 TextButton(onClick = { selectedPin = null }) {
                     Text(
                         text = if (lang == AppLanguage.KO) "닫기" else "CLOSE",
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             },
@@ -146,8 +161,8 @@ private fun MapModeButton(
             .sizeIn(minHeight = 44.dp)
             .selectable(selected = selected, onClick = onClick, role = Role.RadioButton),
         shape = RectangleShape,
-        color = if (selected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.background,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        color = if (selected) GallrAccent.activeIndicator else MaterialTheme.colorScheme.background,
+        border = BorderStroke(1.dp, if (selected) GallrAccent.activeIndicator else MaterialTheme.colorScheme.outline),
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(

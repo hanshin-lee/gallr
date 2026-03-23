@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -66,21 +67,38 @@ class TabsViewModel(
         _filterState.value = _filterState.value.update()
     }
 
-    // ── Filtered exhibitions ─────────────────────────────────────────────────
+    // ── City filter ──────────────────────────────────────────────────────────
 
-    val filteredExhibitions: StateFlow<ExhibitionListState> =
-        combine(_allExhibitions, _filterState) { state, filter ->
-            when (state) {
-                is ExhibitionListState.Loading -> ExhibitionListState.Loading
-                is ExhibitionListState.Error -> state
-                is ExhibitionListState.Success ->
-                    ExhibitionListState.Success(state.exhibitions.filter { filter.matches(it) })
-            }
-        }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = ExhibitionListState.Loading,
-        )
+    private val _selectedCity = MutableStateFlow<String?>(null) // null = all cities, otherwise cityKo
+    val selectedCity: StateFlow<String?> = _selectedCity
+
+    fun setCity(cityKo: String?) {
+        _selectedCity.value = cityKo
+    }
+
+    val distinctCities: StateFlow<List<Pair<String, String>>> =
+        _allExhibitions.map { state ->
+            (state as? ExhibitionListState.Success)
+                ?.exhibitions
+                ?.map { it.cityKo to it.cityEn }
+                ?.distinct()
+                ?.sortedBy { it.first }
+                ?: emptyList()
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    // ── My List filter ────────────────────────────────────────────────────────
+
+    private val _showMyListOnly = MutableStateFlow(false)
+    val showMyListOnly: StateFlow<Boolean> = _showMyListOnly
+
+    fun setShowMyListOnly(enabled: Boolean) {
+        _showMyListOnly.value = enabled
+    }
+
+    fun clearAllFilters() {
+        _filterState.value = FilterState()
+        _selectedCity.value = null
+    }
 
     // ── Bookmarks ────────────────────────────────────────────────────────────
 
@@ -97,6 +115,40 @@ class TabsViewModel(
             }
         }
     }
+
+    fun clearAllBookmarks() {
+        viewModelScope.launch { bookmarkRepository.clearAll() }
+    }
+
+    // ── Filtered exhibitions ─────────────────────────────────────────────────
+
+    val filteredExhibitions: StateFlow<ExhibitionListState> =
+        combine(
+            _allExhibitions, _filterState, _selectedCity, _showMyListOnly, bookmarkedIds,
+        ) { values ->
+            val state = values[0] as ExhibitionListState
+            val filter = values[1] as FilterState
+            val city = values[2] as String?
+            @Suppress("UNCHECKED_CAST")
+            val myListOnly = values[3] as Boolean
+            @Suppress("UNCHECKED_CAST")
+            val bookmarked = values[4] as Set<String>
+            when (state) {
+                is ExhibitionListState.Loading -> ExhibitionListState.Loading
+                is ExhibitionListState.Error -> state
+                is ExhibitionListState.Success -> {
+                    val filtered = state.exhibitions
+                        .filter { city == null || it.cityKo == city }
+                        .filter { filter.matches(it) }
+                        .filter { !myListOnly || it.id in bookmarked }
+                    ExhibitionListState.Success(filtered)
+                }
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = ExhibitionListState.Loading,
+        )
 
     // ── Map display mode + pins ──────────────────────────────────────────────
 
@@ -124,6 +176,13 @@ class TabsViewModel(
                 ?: emptyList()
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    // ── Exhibition lookup ───────────────────────────────────────────────────
+
+    fun findExhibitionById(id: String): Exhibition? =
+        (_allExhibitions.value as? ExhibitionListState.Success)
+            ?.exhibitions
+            ?.firstOrNull { it.id == id }
+
     // ── Data loading ────────────────────────────────────────────────────────
 
     fun loadFeaturedExhibitions() {
@@ -142,7 +201,7 @@ class TabsViewModel(
     fun loadAllExhibitions() {
         viewModelScope.launch {
             _allExhibitions.value = ExhibitionListState.Loading
-            exhibitionRepository.getExhibitions(FilterState())
+            exhibitionRepository.getExhibitions()
                 .onSuccess { _allExhibitions.value = ExhibitionListState.Success(it) }
                 .onFailure {
                     val msg = it.message ?: "Unknown error"
