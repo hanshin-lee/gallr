@@ -89,6 +89,7 @@ kotlin {
             implementation(libs.lifecycle.viewmodel.compose)
             implementation(libs.lifecycle.runtime.compose)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.coil.compose)
             implementation(project(":shared"))
         }
         androidMain.dependencies {
@@ -98,6 +99,10 @@ kotlin {
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.naver.map.sdk)
             implementation(libs.naver.map.compose)
+            implementation(libs.coil.network.okhttp)
+        }
+        iosMain.dependencies {
+            implementation(libs.coil.network.ktor)
         }
     }
 }

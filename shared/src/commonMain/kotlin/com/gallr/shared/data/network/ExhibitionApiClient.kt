@@ -1,7 +1,6 @@
 package com.gallr.shared.data.network
 
 import com.gallr.shared.data.model.Exhibition
-import com.gallr.shared.data.model.FilterState
 import com.gallr.shared.data.network.dto.ExhibitionDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -43,9 +42,8 @@ class ExhibitionApiClient(
             .body<List<ExhibitionDto>>()
             .map { it.toDomain() }
 
-    suspend fun fetchExhibitions(filter: FilterState): List<Exhibition> =
+    suspend fun fetchExhibitions(): List<Exhibition> =
         client.get("$restBase/exhibitions?select=*")
             .body<List<ExhibitionDto>>()
             .map { it.toDomain() }
-            .filter { filter.matches(it) }
 }

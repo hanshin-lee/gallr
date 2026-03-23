@@ -28,8 +28,8 @@ import com.gallr.app.ui.theme.GallrSpacing
 @Composable
 fun GallrEmptyState(
     message: String,
-    actionLabel: String,
-    onAction: () -> Unit,
+    actionLabel: String? = null,
+    onAction: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -43,20 +43,22 @@ fun GallrEmptyState(
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.height(GallrSpacing.lg))
-        Button(
-            onClick = onAction,
-            shape = RectangleShape,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = GallrAccent.ctaPrimary,
-                contentColor = MaterialTheme.colorScheme.background,
-            ),
-        ) {
-            Text(
-                text = actionLabel.uppercase(),
-                style = MaterialTheme.typography.labelLarge,
-            )
+        if (actionLabel != null) {
+            Spacer(Modifier.height(GallrSpacing.lg))
+            Button(
+                onClick = onAction,
+                shape = RectangleShape,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = GallrAccent.ctaPrimary,
+                    contentColor = MaterialTheme.colorScheme.background,
+                ),
+            ) {
+                Text(
+                    text = actionLabel.uppercase(),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
         }
     }
 }

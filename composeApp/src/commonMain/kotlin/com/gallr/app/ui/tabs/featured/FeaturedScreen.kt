@@ -22,10 +22,12 @@ import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.app.viewmodel.ExhibitionListState
 import com.gallr.app.viewmodel.TabsViewModel
 import com.gallr.shared.data.model.AppLanguage
+import com.gallr.shared.data.model.Exhibition
 
 @Composable
 fun FeaturedScreen(
     viewModel: TabsViewModel,
+    onExhibitionTap: (Exhibition) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.featuredState.collectAsState()
@@ -76,6 +78,7 @@ fun FeaturedScreen(
                                 exhibition = exhibition,
                                 isBookmarked = exhibition.id in bookmarkedIds,
                                 onBookmarkToggle = { viewModel.toggleBookmark(exhibition.id) },
+                                onTap = { onExhibitionTap(exhibition) },
                                 lang = lang,
                                 modifier = Modifier
                                     .fillMaxWidth()

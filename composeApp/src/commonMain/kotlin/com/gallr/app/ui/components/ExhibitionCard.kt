@@ -35,6 +35,7 @@ fun ExhibitionCard(
     exhibition: Exhibition,
     isBookmarked: Boolean,
     onBookmarkToggle: () -> Unit,
+    onTap: () -> Unit,
     lang: AppLanguage,
     modifier: Modifier = Modifier,
 ) {
@@ -73,8 +74,9 @@ fun ExhibitionCard(
                 detectTapGestures(
                     onPress = {
                         isPressed = true
-                        tryAwaitRelease()
+                        val released = tryAwaitRelease()
                         isPressed = false
+                        if (released) onTap()
                     },
                 )
             },

@@ -33,4 +33,8 @@ class BookmarkRepositoryImpl(
 
     override suspend fun isBookmarked(exhibitionId: String): Boolean =
         (dataStore.data.first()[BOOKMARKED_IDS_KEY] ?: emptySet()).contains(exhibitionId)
+
+    override suspend fun clearAll() {
+        dataStore.edit { prefs -> prefs.remove(BOOKMARKED_IDS_KEY) }
+    }
 }

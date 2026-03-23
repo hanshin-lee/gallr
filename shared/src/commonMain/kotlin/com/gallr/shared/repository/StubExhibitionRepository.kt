@@ -1,7 +1,6 @@
 package com.gallr.shared.repository
 
 import com.gallr.shared.data.model.Exhibition
-import com.gallr.shared.data.model.FilterState
 import kotlinx.datetime.LocalDate
 
 /**
@@ -81,6 +80,6 @@ class StubExhibitionRepository : ExhibitionRepository {
     override suspend fun getFeaturedExhibitions(): Result<List<Exhibition>> =
         Result.success(exhibitions.filter { it.isFeatured })
 
-    override suspend fun getExhibitions(filter: FilterState): Result<List<Exhibition>> =
-        Result.success(exhibitions.filter { filter.matches(it) })
+    override suspend fun getExhibitions(): Result<List<Exhibition>> =
+        Result.success(exhibitions)
 }
