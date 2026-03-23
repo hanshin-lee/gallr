@@ -28,67 +28,67 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.gallr.app.ui.theme.GallrAccent
 import com.gallr.app.viewmodel.TabsViewModel
+import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.ExhibitionMapPin
 import com.gallr.shared.data.model.MapDisplayMode
 
 @Composable
 fun MapScreen(
     viewModel: TabsViewModel,
+    onExhibitionTap: (com.gallr.shared.data.model.Exhibition) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val mapMode by viewModel.mapDisplayMode.collectAsState()
     val myListPins by viewModel.myListMapPins.collectAsState()
     val allPins by viewModel.allMapPins.collectAsState()
+    val lang by viewModel.language.collectAsState()
 
     val activePins = if (mapMode == MapDisplayMode.MY_LIST) myListPins else allPins
 
     var selectedPin by remember { mutableStateOf<ExhibitionMapPin?>(null) }
 
     Column(modifier = modifier.fillMaxSize()) {
-        // ── Screen header ─────────────────────────────────────────────────
         Text(
-            text = "MAP",
+            text = if (lang == AppLanguage.KO) "지도" else "MAP",
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
         )
 
-        // ── Mode toggle — sharp-cornered monochrome button pair ───────────
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
         ) {
             MapModeButton(
-                label = "MYLIST",
+                label = if (lang == AppLanguage.KO) "내 목록" else "MYLIST",
                 selected = mapMode == MapDisplayMode.MY_LIST,
                 onClick = { viewModel.setMapDisplayMode(MapDisplayMode.MY_LIST) },
                 modifier = Modifier.weight(1f),
             )
             MapModeButton(
-                label = "ALL",
+                label = if (lang == AppLanguage.KO) "전체" else "ALL",
                 selected = mapMode == MapDisplayMode.ALL,
                 onClick = { viewModel.setMapDisplayMode(MapDisplayMode.ALL) },
                 modifier = Modifier.weight(1f),
             )
         }
 
-        // ── 4dp black section rule ─────────────────────────────────────────
         Spacer(Modifier.height(12.dp))
         HorizontalDivider(thickness = 4.dp, color = MaterialTheme.colorScheme.onBackground)
 
         if (mapMode == MapDisplayMode.MY_LIST && myListPins.isEmpty()) {
             Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Text(
-                    text = "Add exhibitions to your list to see them here",
+                    text = if (lang == AppLanguage.KO) "목록에 전시를 추가하면 여기에 표시됩니다" else "Add exhibitions to your list to see them here",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
 
-        // ── Map (renderer unchanged — only header/controls styled) ────────
         MapView(
             pins = activePins,
             onMarkerTap = { selectedPin = it },
@@ -96,7 +96,6 @@ fun MapScreen(
         )
     }
 
-    // ── Marker info dialog ────────────────────────────────────────────────
     selectedPin?.let { pin ->
         AlertDialog(
             onDismissRequest = { selectedPin = null },
@@ -125,11 +124,24 @@ fun MapScreen(
             containerColor = MaterialTheme.colorScheme.background,
             shape = RectangleShape,
             confirmButton = {
-                TextButton(onClick = { selectedPin = null }) {
+                TextButton(onClick = {
+                    val exhibition = viewModel.findExhibitionById(pin.id)
+                    selectedPin = null
+                    exhibition?.let { onExhibitionTap(it) }
+                }) {
                     Text(
-                        text = "CLOSE",
+                        text = if (lang == AppLanguage.KO) "상세보기" else "VIEW DETAILS",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { selectedPin = null }) {
+                    Text(
+                        text = if (lang == AppLanguage.KO) "닫기" else "CLOSE",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             },
@@ -149,8 +161,8 @@ private fun MapModeButton(
             .sizeIn(minHeight = 44.dp)
             .selectable(selected = selected, onClick = onClick, role = Role.RadioButton),
         shape = RectangleShape,
-        color = if (selected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.background,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        color = if (selected) GallrAccent.activeIndicator else MaterialTheme.colorScheme.background,
+        border = BorderStroke(1.dp, if (selected) GallrAccent.activeIndicator else MaterialTheme.colorScheme.outline),
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(

@@ -7,4 +7,5 @@ interface BookmarkRepository {
     suspend fun addBookmark(exhibitionId: String)
     suspend fun removeBookmark(exhibitionId: String)
     suspend fun isBookmarked(exhibitionId: String): Boolean
+    suspend fun clearAll()
 }

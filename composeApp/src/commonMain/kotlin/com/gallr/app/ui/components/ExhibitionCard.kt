@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.gallr.app.ui.theme.GallrMotion
 import com.gallr.app.ui.theme.GallrSpacing
+import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Exhibition
 
 @Composable
@@ -34,6 +35,8 @@ fun ExhibitionCard(
     exhibition: Exhibition,
     isBookmarked: Boolean,
     onBookmarkToggle: () -> Unit,
+    onTap: () -> Unit,
+    lang: AppLanguage,
     modifier: Modifier = Modifier,
 ) {
     // ── Press state — detectTapGestures, NOT collectIsPressedAsState (CMP bug #3417) ──
@@ -71,8 +74,9 @@ fun ExhibitionCard(
                 detectTapGestures(
                     onPress = {
                         isPressed = true
-                        tryAwaitRelease()
+                        val released = tryAwaitRelease()
                         isPressed = false
+                        if (released) onTap()
                     },
                 )
             },
@@ -89,7 +93,7 @@ fun ExhibitionCard(
             Column(modifier = Modifier.weight(1f)) {
                 // ── Exhibition name: Inter Bold, dominant element ──────────
                 Text(
-                    text = exhibition.name,
+                    text = exhibition.localizedName(lang),
                     style = MaterialTheme.typography.titleLarge,
                     color = contentColor,
                     maxLines = 2,
@@ -99,14 +103,14 @@ fun ExhibitionCard(
 
                 // ── Venue & city: Inter Medium, uppercase, letter-spaced ──
                 Text(
-                    text = exhibition.venueName.uppercase(),
+                    text = exhibition.localizedVenueName(lang).uppercase(),
                     style = MaterialTheme.typography.labelMedium,
                     color = secondaryColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = exhibition.city.uppercase(),
+                    text = exhibition.localizedCity(lang).uppercase(),
                     style = MaterialTheme.typography.labelSmall,
                     color = secondaryColor,
                 )

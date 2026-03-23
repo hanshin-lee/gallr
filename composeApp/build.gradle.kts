@@ -89,6 +89,7 @@ kotlin {
             implementation(libs.lifecycle.viewmodel.compose)
             implementation(libs.lifecycle.runtime.compose)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.coil.compose)
             implementation(project(":shared"))
         }
         androidMain.dependencies {
@@ -98,6 +99,10 @@ kotlin {
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.naver.map.sdk)
             implementation(libs.naver.map.compose)
+            implementation(libs.coil.network.okhttp)
+        }
+        iosMain.dependencies {
+            implementation(libs.coil.network.ktor)
         }
     }
 }
@@ -105,6 +110,20 @@ kotlin {
 android {
     namespace = "com.gallr.app"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
+
+    val keyProps = Properties().also { props ->
+        val f = rootProject.file("key.properties")
+        if (f.exists()) props.load(f.inputStream())
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file(keyProps.getProperty("storeFile", ""))
+            storePassword = keyProps.getProperty("storePassword", "")
+            keyAlias = keyProps.getProperty("keyAlias", "")
+            keyPassword = keyProps.getProperty("keyPassword", "")
+        }
+    }
 
     buildFeatures {
         buildConfig = true
@@ -137,6 +156,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

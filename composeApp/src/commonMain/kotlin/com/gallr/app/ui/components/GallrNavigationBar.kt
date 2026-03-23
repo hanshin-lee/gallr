@@ -21,6 +21,7 @@ import androidx.compose.ui.semantics.Role
 import com.gallr.app.ui.theme.GallrAccent
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.gallr.shared.data.model.AppLanguage
 
 /**
  * Reductionist navigation bar.
@@ -32,9 +33,13 @@ import androidx.compose.ui.unit.dp
 fun GallrNavigationBar(
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
+    lang: AppLanguage,
     modifier: Modifier = Modifier,
 ) {
-    val tabs = listOf("FEATURED", "LIST", "MAP")
+    val tabs = when (lang) {
+        AppLanguage.KO -> listOf("추천", "목록", "지도")
+        AppLanguage.EN -> listOf("FEATURED", "LIST", "MAP")
+    }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -70,7 +75,7 @@ private fun RowScope.GallrNavItem(
     Column(
         modifier = Modifier
             .weight(1f)
-            .sizeIn(minHeight = 44.dp)
+            .sizeIn(minHeight = 56.dp)
             .selectable(
                 selected = selected,
                 onClick = onClick,
@@ -96,7 +101,7 @@ private fun RowScope.GallrNavItem(
                 MaterialTheme.colorScheme.onSurfaceVariant
             },
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(vertical = 10.dp),
+            modifier = Modifier.padding(vertical = 14.dp),
         )
     }
 }

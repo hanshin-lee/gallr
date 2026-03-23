@@ -26,7 +26,7 @@ data class FilterState(
             .toLocalDateTime(TimeZone.currentSystemDefault()).date
         val weekEnd = today.plus(6, DateTimeUnit.DAY)
 
-        val regionsMatch = regions.isEmpty() || exhibition.region in regions
+        val regionsMatch = regions.isEmpty() || exhibition.regionKo in regions
         val featuredMatch = !showFeatured || exhibition.isFeatured
         val picksMatch = !showEditorsPick || exhibition.isEditorsPick
         val weekMatch = (!openingThisWeek && !closingThisWeek) ||
