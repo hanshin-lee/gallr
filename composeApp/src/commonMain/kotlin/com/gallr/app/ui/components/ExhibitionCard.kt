@@ -91,10 +91,10 @@ fun ExhibitionCard(
             verticalAlignment = Alignment.Top,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                // ── Exhibition name: Inter Bold, dominant element ──────────
+                // ── Exhibition name: Inter Medium, dominant element ─────────
                 Text(
                     text = exhibition.localizedName(lang),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     color = contentColor,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -124,7 +124,7 @@ fun ExhibitionCard(
 
                 // ── Date range: Inter labelMedium ─────────────────────────
                 Text(
-                    text = "${exhibition.openingDate} – ${exhibition.closingDate}",
+                    text = exhibition.localizedDateRange(lang),
                     style = MaterialTheme.typography.labelMedium,
                     color = contentColor,
                 )

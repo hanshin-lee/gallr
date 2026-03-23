@@ -65,15 +65,15 @@ fun MapScreen(
     Column(modifier = modifier.fillMaxSize()) {
         Text(
             text = if (lang == AppLanguage.KO) "지도" else "MAP",
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = GallrSpacing.screenMargin, vertical = GallrSpacing.sm),
         )
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = GallrSpacing.screenMargin),
         ) {
             MapModeButton(
                 label = if (lang == AppLanguage.KO) "내 목록" else "MYLIST",
@@ -89,13 +89,14 @@ fun MapScreen(
             )
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(GallrSpacing.sm))
         HorizontalDivider(thickness = 4.dp, color = MaterialTheme.colorScheme.onBackground)
 
         if (mapMode == MapDisplayMode.MY_LIST && myListPins.isEmpty()) {
-            Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Box(modifier = Modifier.fillMaxWidth().padding(GallrSpacing.screenMargin)) {
                 Text(
-                    text = if (lang == AppLanguage.KO) "목록에 전시를 추가하면 여기에 표시됩니다" else "Add exhibitions to your list to see them here",
+                    text = if (lang == AppLanguage.KO) "저장한 전시가 없습니다.\n전시를 북마크하면 지도에 표시됩니다."
+                           else "No saved exhibitions yet.\nBookmark exhibitions to see them on the map.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -133,9 +134,9 @@ fun MapScreen(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(GallrSpacing.xs))
                     Text(
-                        text = "${pin.openingDate} – ${pin.closingDate}",
+                        text = pin.localizedDateRange(lang),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
@@ -207,9 +208,9 @@ fun MapScreen(
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onBackground,
                             )
-                            Spacer(Modifier.height(2.dp))
+                            Spacer(Modifier.height(GallrSpacing.xs))
                             Text(
-                                text = "${pin.openingDate} – ${pin.closingDate}",
+                                text = pin.localizedDateRange(lang),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -244,7 +245,7 @@ private fun MapModeButton(
                 text = label,
                 style = MaterialTheme.typography.labelLarge,
                 color = if (selected) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(vertical = 10.dp),
+                modifier = Modifier.padding(vertical = GallrSpacing.sm),
             )
         }
     }
