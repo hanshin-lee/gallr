@@ -21,6 +21,7 @@ import com.gallr.app.ui.components.GallrLoadingState
 import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.app.viewmodel.ExhibitionListState
 import com.gallr.app.viewmodel.TabsViewModel
+import com.gallr.shared.data.model.AppLanguage
 
 @Composable
 fun FeaturedScreen(
@@ -29,11 +30,11 @@ fun FeaturedScreen(
 ) {
     val state by viewModel.featuredState.collectAsState()
     val bookmarkedIds by viewModel.bookmarkedIds.collectAsState()
+    val lang by viewModel.language.collectAsState()
 
     Column(modifier = modifier.fillMaxSize()) {
-        // ── Section header ────────────────────────────────────────────────
         Text(
-            text = "FEATURED",
+            text = if (lang == AppLanguage.KO) "추천" else "FEATURED",
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(
@@ -41,7 +42,6 @@ fun FeaturedScreen(
                 vertical = GallrSpacing.sm,
             ),
         )
-        // Whitespace separates section header from content — no decorative rule
         Spacer(Modifier.height(GallrSpacing.sm))
 
         when (val s = state) {
@@ -51,8 +51,8 @@ fun FeaturedScreen(
 
             is ExhibitionListState.Error -> {
                 GallrEmptyState(
-                    message = "Could not load exhibitions.",
-                    actionLabel = "Retry",
+                    message = if (lang == AppLanguage.KO) "전시 정보를 불러올 수 없습니다." else "Could not load exhibitions.",
+                    actionLabel = if (lang == AppLanguage.KO) "다시 시도" else "Retry",
                     onAction = { viewModel.loadFeaturedExhibitions() },
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -61,8 +61,8 @@ fun FeaturedScreen(
             is ExhibitionListState.Success -> {
                 if (s.exhibitions.isEmpty()) {
                     GallrEmptyState(
-                        message = "No featured exhibitions right now.",
-                        actionLabel = "Refresh",
+                        message = if (lang == AppLanguage.KO) "추천 전시가 없습니다." else "No featured exhibitions right now.",
+                        actionLabel = if (lang == AppLanguage.KO) "새로고침" else "Refresh",
                         onAction = { viewModel.loadFeaturedExhibitions() },
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -76,6 +76,7 @@ fun FeaturedScreen(
                                 exhibition = exhibition,
                                 isBookmarked = exhibition.id in bookmarkedIds,
                                 onBookmarkToggle = { viewModel.toggleBookmark(exhibition.id) },
+                                lang = lang,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = GallrSpacing.md),
