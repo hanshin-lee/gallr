@@ -19,6 +19,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -34,7 +35,6 @@ fun ExhibitionDetailScreen(
     lang: AppLanguage,
     isBookmarked: Boolean,
     onBookmarkToggle: () -> Unit,
-    onLanguageToggle: () -> Unit,
     onBack: () -> Unit,
 ) {
     Scaffold(
@@ -56,13 +56,6 @@ fun ExhibitionDetailScreen(
                         onToggle = onBookmarkToggle,
                         tintColor = MaterialTheme.colorScheme.onBackground,
                     )
-                    IconButton(onClick = onLanguageToggle) {
-                        Text(
-                            text = if (lang == AppLanguage.KO) "KO" else "EN",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onBackground,
-                        )
-                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
@@ -77,13 +70,14 @@ fun ExhibitionDetailScreen(
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState()),
         ) {
-            // ── Cover image ────────────────────────────────────────────────
+            // ── Cover image with placeholder ─────────────────────────────
             exhibition.coverImageUrl?.let { url ->
                 if (url.isNotBlank()) {
                     AsyncImage(
                         model = url,
                         contentDescription = exhibition.localizedName(lang),
                         contentScale = ContentScale.Crop,
+                        placeholder = ColorPainter(MaterialTheme.colorScheme.surfaceVariant),
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(16f / 9f),
@@ -133,9 +127,9 @@ fun ExhibitionDetailScreen(
                 HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(Modifier.height(GallrSpacing.md))
 
-                // ── Date range ─────────────────────────────────────────────
+                // ── Date range (localized) ────────────────────────────────
                 Text(
-                    text = "${exhibition.openingDate} – ${exhibition.closingDate}",
+                    text = exhibition.localizedDateRange(lang),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onBackground,
                 )

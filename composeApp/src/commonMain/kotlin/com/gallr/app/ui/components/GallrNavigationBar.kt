@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import com.gallr.app.ui.theme.GallrAccent
+import com.gallr.app.ui.theme.GallrSpacing
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.gallr.shared.data.model.AppLanguage
@@ -101,7 +102,7 @@ private fun RowScope.GallrNavItem(
                 MaterialTheme.colorScheme.onSurfaceVariant
             },
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(vertical = 14.dp),
+            modifier = Modifier.padding(vertical = GallrSpacing.md),
         )
     }
 }

@@ -71,6 +71,18 @@ class TabsViewModel(
     private val _allExhibitions =
         MutableStateFlow<ExhibitionListState>(ExhibitionListState.Loading)
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing
+
+    // ── Search ────────────────────────────────────────────────────────────────
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
     // ── Filter state ────────────────────────────────────────────────────────
 
     private val _filterState = MutableStateFlow(FilterState())
@@ -137,7 +149,7 @@ class TabsViewModel(
 
     val filteredExhibitions: StateFlow<ExhibitionListState> =
         combine(
-            _allExhibitions, _filterState, _selectedCity, _showMyListOnly, bookmarkedIds,
+            _allExhibitions, _filterState, _selectedCity, _showMyListOnly, bookmarkedIds, _searchQuery,
         ) { values ->
             val state = values[0] as ExhibitionListState
             val filter = values[1] as FilterState
@@ -146,6 +158,7 @@ class TabsViewModel(
             val myListOnly = values[3] as Boolean
             @Suppress("UNCHECKED_CAST")
             val bookmarked = values[4] as Set<String>
+            val query = (values[5] as String).trim().lowercase()
             when (state) {
                 is ExhibitionListState.Loading -> ExhibitionListState.Loading
                 is ExhibitionListState.Error -> state
@@ -154,6 +167,13 @@ class TabsViewModel(
                         .filter { city == null || it.cityKo == city }
                         .filter { filter.matches(it) }
                         .filter { !myListOnly || it.id in bookmarked }
+                        .filter {
+                            query.isEmpty() ||
+                                it.nameKo.lowercase().contains(query) ||
+                                it.nameEn.lowercase().contains(query) ||
+                                it.venueNameKo.lowercase().contains(query) ||
+                                it.venueNameEn.lowercase().contains(query)
+                        }
                     ExhibitionListState.Success(filtered)
                 }
             }
@@ -200,27 +220,45 @@ class TabsViewModel(
 
     fun loadFeaturedExhibitions() {
         viewModelScope.launch {
+            _isRefreshing.value = true
             _featuredState.value = ExhibitionListState.Loading
             exhibitionRepository.getFeaturedExhibitions()
                 .onSuccess { _featuredState.value = ExhibitionListState.Success(it) }
                 .onFailure {
-                    val msg = it.message ?: "Unknown error"
-                    println("ERROR [TabsViewModel] loadFeaturedExhibitions: $msg")
+                    val msg = classifyError(it)
+                    println("ERROR [TabsViewModel] loadFeaturedExhibitions: ${it.message}")
                     _featuredState.value = ExhibitionListState.Error(msg)
                 }
+            _isRefreshing.value = false
         }
     }
 
     fun loadAllExhibitions() {
         viewModelScope.launch {
+            _isRefreshing.value = true
             _allExhibitions.value = ExhibitionListState.Loading
             exhibitionRepository.getExhibitions()
                 .onSuccess { _allExhibitions.value = ExhibitionListState.Success(it) }
                 .onFailure {
-                    val msg = it.message ?: "Unknown error"
-                    println("ERROR [TabsViewModel] loadAllExhibitions: $msg")
+                    val msg = classifyError(it)
+                    println("ERROR [TabsViewModel] loadAllExhibitions: ${it.message}")
                     _allExhibitions.value = ExhibitionListState.Error(msg)
                 }
+            _isRefreshing.value = false
+        }
+    }
+
+    fun refresh() {
+        loadFeaturedExhibitions()
+        loadAllExhibitions()
+    }
+
+    private fun classifyError(e: Throwable): String {
+        val name = e::class.simpleName ?: ""
+        return if (name.contains("UnknownHost") || name.contains("Connect") || name.contains("Timeout") || name.contains("NoRoute")) {
+            "network"
+        } else {
+            "server"
         }
     }
 
