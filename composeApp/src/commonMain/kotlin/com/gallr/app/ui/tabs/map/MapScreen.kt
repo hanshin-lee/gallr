@@ -38,10 +38,10 @@ fun MapScreen(
     modifier: Modifier = Modifier,
 ) {
     val mapMode by viewModel.mapDisplayMode.collectAsState()
-    val filteredPins by viewModel.filteredMapPins.collectAsState()
+    val myListPins by viewModel.myListMapPins.collectAsState()
     val allPins by viewModel.allMapPins.collectAsState()
 
-    val activePins = if (mapMode == MapDisplayMode.FILTERED) filteredPins else allPins
+    val activePins = if (mapMode == MapDisplayMode.MY_LIST) myListPins else allPins
 
     var selectedPin by remember { mutableStateOf<ExhibitionMapPin?>(null) }
 
@@ -61,9 +61,9 @@ fun MapScreen(
                 .padding(horizontal = 16.dp),
         ) {
             MapModeButton(
-                label = "FILTERED",
-                selected = mapMode == MapDisplayMode.FILTERED,
-                onClick = { viewModel.setMapDisplayMode(MapDisplayMode.FILTERED) },
+                label = "MYLIST",
+                selected = mapMode == MapDisplayMode.MY_LIST,
+                onClick = { viewModel.setMapDisplayMode(MapDisplayMode.MY_LIST) },
                 modifier = Modifier.weight(1f),
             )
             MapModeButton(
@@ -78,10 +78,10 @@ fun MapScreen(
         Spacer(Modifier.height(12.dp))
         HorizontalDivider(thickness = 4.dp, color = MaterialTheme.colorScheme.onBackground)
 
-        if (mapMode == MapDisplayMode.FILTERED && filteredPins.isEmpty()) {
+        if (mapMode == MapDisplayMode.MY_LIST && myListPins.isEmpty()) {
             Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Text(
-                    text = "No exhibitions match the current filters.",
+                    text = "Add exhibitions to your list to see them here",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

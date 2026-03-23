@@ -18,6 +18,8 @@ Auto-generated from all feature plans. Last updated: 2026-03-20
 - Kotlin 2.1.20 (Kotlin/Native, iosSimulatorArm64 / iosArm64 targets) + Compose Multiplatform 1.8.0 (`UIKitView` interop), NMapsMap iOS SDK 3.23.0 (via SPM + cinterop) (008-fix-ios-map-render)
 - Kotlin 2.1.20 (KMP composeApp module); HTML5/CSS3 (web/privacy.html) + Compose Multiplatform 1.8.0 (`LocalUriHandler` from `androidx.compose.ui.platform`); Eleventy 3.x (web static site, existing) (009-privacy-policy-url)
 - N/A — static URL constant; no persistence (009-privacy-policy-url)
+- Kotlin 2.1.20 (KMP); Compose Multiplatform 1.8.0 + No new dependencies — existing `BookmarkRepository`, `bookmarkedIds: StateFlow<Set<String>>`, and `MutableStateFlow<MapDisplayMode>` are sufficien (010-mylist-filter-map)
+- N/A — bookmark persistence already implemented via DataStore; no schema changes (010-mylist-filter-map)
 
 - Kotlin 2.0+ (2.3.0 recommended), Compose Multiplatform 1.8.0+ + Ktor 2.9+ (networking), DataStore Preferences 1.1+ (bookmarks), AndroidX ViewModel 2.8.0+, kotlinx.serialization 1.7+, kotlinx-datetime (001-exhibition-tabs)
 
@@ -37,9 +39,9 @@ tests/
 Kotlin 2.0+ (2.3.0 recommended), Compose Multiplatform 1.8.0+: Follow standard conventions
 
 ## Recent Changes
+- 010-mylist-filter-map: Added Kotlin 2.1.20 (KMP); Compose Multiplatform 1.8.0 + No new dependencies — existing `BookmarkRepository`, `bookmarkedIds: StateFlow<Set<String>>`, and `MutableStateFlow<MapDisplayMode>` are sufficien
 - 009-privacy-policy-url: Added Kotlin 2.1.20 (KMP composeApp module); HTML5/CSS3 (web/privacy.html) + Compose Multiplatform 1.8.0 (`LocalUriHandler` from `androidx.compose.ui.platform`); Eleventy 3.x (web static site, existing)
 - 008-fix-ios-map-render: Added Kotlin 2.1.20 (Kotlin/Native, iosSimulatorArm64 / iosArm64 targets) + Compose Multiplatform 1.8.0 (`UIKitView` interop), NMapsMap iOS SDK 3.23.0 (via SPM + cinterop)
-- 007-gallery-data-sync: Added Kotlin 2.1.20 (KMP shared + platform modules); Google Apps Script V8 runtime (sync pipeline)
 
 
 <!-- MANUAL ADDITIONS START -->
