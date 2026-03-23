@@ -75,7 +75,7 @@ private fun RowScope.GallrNavItem(
     Column(
         modifier = Modifier
             .weight(1f)
-            .sizeIn(minHeight = 44.dp)
+            .sizeIn(minHeight = 56.dp)
             .selectable(
                 selected = selected,
                 onClick = onClick,
@@ -101,7 +101,7 @@ private fun RowScope.GallrNavItem(
                 MaterialTheme.colorScheme.onSurfaceVariant
             },
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(vertical = 10.dp),
+            modifier = Modifier.padding(vertical = 14.dp),
         )
     }
 }
