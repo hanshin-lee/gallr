@@ -1,6 +1,6 @@
 # gallr Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-03-24
+Auto-generated from all feature plans. Last updated: 2026-03-26
 
 ## Active Technologies
 - Kotlin 2.1.x, Compose Multiplatform 1.8.0 + Compose Multiplatform, Material3, compose-resources (CMP 1.8.0 (002-monochrome-design-system)
@@ -30,6 +30,7 @@ Auto-generated from all feature plans. Last updated: 2026-03-24
 - N/A — UI-only changes (015-ui-polish-uniformity)
 - Kotlin 2.1.20 (KMP) + Compose Multiplatform 1.8.0, Material3, Coil 3.1.0 (image loading), kotlinx-datetime (016-ui-improvements)
 - N/A — no new persistence (search is client-side filtering) (016-ui-improvements)
+- Swift 5.9 (iOS entry point), Kotlin 2.1.20 (KMP shared module — no changes needed) + None — this is a plist configuration change only (017-fix-ios-app-name)
 
 - Kotlin 2.0+ (2.3.0 recommended), Compose Multiplatform 1.8.0+ + Ktor 2.9+ (networking), DataStore Preferences 1.1+ (bookmarks), AndroidX ViewModel 2.8.0+, kotlinx.serialization 1.7+, kotlinx-datetime (001-exhibition-tabs)
 
@@ -49,9 +50,9 @@ tests/
 Kotlin 2.0+ (2.3.0 recommended), Compose Multiplatform 1.8.0+: Follow standard conventions
 
 ## Recent Changes
+- 017-fix-ios-app-name: Added Swift 5.9 (iOS entry point), Kotlin 2.1.20 (KMP shared module — no changes needed) + None — this is a plist configuration change only
 - 016-ui-improvements: Added Kotlin 2.1.20 (KMP) + Compose Multiplatform 1.8.0, Material3, Coil 3.1.0 (image loading), kotlinx-datetime
 - 015-ui-polish-uniformity: Added Kotlin 2.1.20 (KMP) + Compose Multiplatform 1.8.0, Material3
-- 014-dark-theme: Added Kotlin 2.1.20 (KMP), Swift 5.9 (iOS entry point only) + Compose Multiplatform 1.8.0, DataStore Preferences 1.1+, Material3
 
 
 <!-- MANUAL ADDITIONS START -->
