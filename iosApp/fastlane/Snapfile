@@ -2,8 +2,7 @@
 
 # iPhone devices (required sizes for App Store)
 devices([
-  "iPhone 16 Pro Max",       # 6.9" — 1320×2868
-  "iPhone 16 Plus",          # 6.7" — 1284×2778
+  "iPhone 13 Pro Max",       # 6.7" — 1284×2778 (required by App Store)
   "iPad Pro 13-inch (M4)",   # 13"  — 2064×2752
 ])
 
