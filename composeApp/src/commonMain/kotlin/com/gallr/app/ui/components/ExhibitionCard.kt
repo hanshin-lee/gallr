@@ -1,9 +1,13 @@
 package com.gallr.app.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,10 +24,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.gallr.app.ui.theme.GallrMotion
 import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.shared.data.model.AppLanguage
@@ -42,34 +49,79 @@ fun ExhibitionCard(
     // ── Press state — detectTapGestures, NOT collectIsPressedAsState (CMP bug #3417) ──
     var isPressed by remember { mutableStateOf(false) }
 
+    // ── Image load state ──
+    var imageLoaded by remember { mutableStateOf(false) }
+    val hasImage = exhibition.coverImageUrl != null && imageLoaded
+    val isDark = isSystemInDarkTheme()
+
+    // ── Scrim alpha animation (image cards: normal → pressed) ──
+    val scrimAlpha by animateFloatAsState(
+        targetValue = when {
+            !hasImage -> 0f
+            isPressed && isDark -> 0.68f
+            isPressed && !isDark -> 0.72f
+            isDark -> 0.45f
+            else -> 0.50f
+        },
+        animationSpec = tween(GallrMotion.pressDurationMs),
+        label = "scrimAlpha",
+    )
+    val scrimColor = if (isDark) Color.Black.copy(alpha = scrimAlpha)
+    else Color.White.copy(alpha = scrimAlpha)
+
+    // ── Colors for non-image cards (existing invert animation) ──
     val backgroundColor by animateColorAsState(
         targetValue = if (isPressed) MaterialTheme.colorScheme.onBackground
-        else MaterialTheme.colorScheme.background,
+        else MaterialTheme.colorScheme.surfaceVariant,
         animationSpec = tween(GallrMotion.pressDurationMs),
         label = "cardBackground",
     )
-    val contentColor by animateColorAsState(
+    val noImageContentColor by animateColorAsState(
         targetValue = if (isPressed) MaterialTheme.colorScheme.background
         else MaterialTheme.colorScheme.onBackground,
         animationSpec = tween(GallrMotion.pressDurationMs),
-        label = "cardContent",
+        label = "noImageContent",
     )
-    val secondaryColor by animateColorAsState(
+    val noImageSecondaryColor by animateColorAsState(
         targetValue = if (isPressed) MaterialTheme.colorScheme.background
         else MaterialTheme.colorScheme.onSurfaceVariant,
         animationSpec = tween(GallrMotion.pressDurationMs),
-        label = "cardSecondary",
+        label = "noImageSecondary",
     )
-    val dividerColor by animateColorAsState(
+    val noImageDividerColor by animateColorAsState(
         targetValue = if (isPressed) MaterialTheme.colorScheme.background
         else MaterialTheme.colorScheme.outlineVariant,
         animationSpec = tween(GallrMotion.pressDurationMs),
-        label = "cardDivider",
+        label = "noImageDivider",
     )
 
-    Surface(
+    // ── Resolve colors based on image presence ──
+    val contentColor = if (hasImage) {
+        if (isDark) Color.White else Color.Black
+    } else noImageContentColor
+
+    val secondaryColor = if (hasImage) {
+        if (isDark) Color.White.copy(alpha = 0.70f) else Color.Black.copy(alpha = 0.65f)
+    } else noImageSecondaryColor
+
+    val dividerColor = if (hasImage) {
+        if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.20f)
+    } else noImageDividerColor
+
+    val bookmarkTintColor = if (hasImage) {
+        if (isDark) Color.White.copy(alpha = 0.40f) else Color.Black.copy(alpha = 0.30f)
+    } else contentColor
+
+    // ── Card container ──
+    Box(
         modifier = modifier
             .fillMaxWidth()
+            .clip(RectangleShape)
+            .border(1.dp, MaterialTheme.colorScheme.outline, RectangleShape)
+            .then(
+                if (!hasImage) Modifier.background(backgroundColor)
+                else Modifier
+            )
             .pointerInput(Unit) {
                 detectTapGestures(
                     onPress = {
@@ -80,12 +132,29 @@ fun ExhibitionCard(
                     },
                 )
             },
-        shape = RectangleShape,
-        color = backgroundColor,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp,
     ) {
+        // ── Layer 1: Background image (image cards only) ──
+        if (exhibition.coverImageUrl != null) {
+            AsyncImage(
+                model = exhibition.coverImageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                onSuccess = { imageLoaded = true },
+                onError = { imageLoaded = false },
+                modifier = Modifier.matchParentSize(),
+            )
+        }
+
+        // ── Layer 2: Scrim overlay (image cards only) ──
+        if (hasImage) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(scrimColor),
+            )
+        }
+
+        // ── Layer 3: Content ──
         Row(
             modifier = Modifier.padding(GallrSpacing.md),
             verticalAlignment = Alignment.Top,
@@ -133,7 +202,7 @@ fun ExhibitionCard(
             BookmarkButton(
                 isBookmarked = isBookmarked,
                 onToggle = onBookmarkToggle,
-                tintColor = contentColor,
+                tintColor = bookmarkTintColor,
             )
         }
     }
