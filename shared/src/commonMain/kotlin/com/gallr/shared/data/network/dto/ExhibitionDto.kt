@@ -1,7 +1,10 @@
 package com.gallr.shared.data.network.dto
 
 import com.gallr.shared.data.model.Exhibition
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -57,8 +60,14 @@ data class ExhibitionDto(
             coverImageUrl = coverImageUrl,
             hours = hours,
             contact = contact,
-            receptionDate = receptionDate?.let {
-                try { LocalDate.parse(it.take(10)) } catch (_: Exception) { null }
+            receptionDate = receptionDate?.let { raw ->
+                try {
+                    // Parse as full ISO timestamp and convert to local date in system timezone
+                    Instant.parse(raw).toLocalDateTime(TimeZone.currentSystemDefault()).date
+                } catch (_: Exception) {
+                    // Fallback: try parsing as date-only string (YYYY-MM-DD)
+                    try { LocalDate.parse(raw.take(10)) } catch (_: Exception) { null }
+                }
             },
         )
     }
