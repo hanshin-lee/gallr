@@ -336,8 +336,8 @@ function buildRecord(row, headerMap) {
 
     // Nullable text fields — empty strings become null
     if (header === 'hours' || header === 'contact') {
-      var val = String(raw || '').trim();
-      record[header] = val || null;
+      var txt = String(raw || '').trim();
+      record[header] = txt || null;
       return;
     }
 
