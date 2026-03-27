@@ -32,10 +32,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.gallr.app.ui.theme.GallrAccent
 import com.gallr.app.ui.theme.GallrMotion
 import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Exhibition
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
 
 @Composable
 fun ExhibitionCard(
@@ -191,12 +195,23 @@ fun ExhibitionCard(
 
                 Spacer(Modifier.height(GallrSpacing.sm))
 
-                // ── Date range: Inter labelMedium ─────────────────────────
-                Text(
-                    text = exhibition.localizedDateRange(lang),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = contentColor,
-                )
+                // ── Date range + Upcoming label ──────────────────────────
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = exhibition.localizedDateRange(lang),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = contentColor,
+                    )
+                    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+                    if (exhibition.openingDate > today) {
+                        Spacer(Modifier.weight(1f))
+                        Text(
+                            text = if (lang == AppLanguage.KO) "오픈 예정" else "Upcoming",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = GallrAccent.activeIndicator,
+                        )
+                    }
+                }
             }
 
             BookmarkButton(
