@@ -53,7 +53,6 @@ Kotlin 2.0+ (2.3.0 recommended), Compose Multiplatform 1.8.0+: Follow standard c
 
 ## Recent Changes
 - 019-card-image-background: Added Kotlin 2.1.20 (KMP) + Compose Multiplatform 1.8.0, Material3, Coil 3.1.0 (`coil3.compose.AsyncImage`)
-- 019-card-image-background: Added Kotlin 2.1.20 (KMP) + Compose Multiplatform 1.8.0, Material3, Coil 3.1.0 (`coil3.compose.AsyncImage`)
 - 018-fix-android-insets: Added Kotlin 2.1.20 (KMP), composeApp Android targe + androidx.activity:activity-compose 1.9.3, Compose Multiplatform 1.8.0, Material3
 
 
