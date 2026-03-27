@@ -159,66 +159,66 @@ fun ExhibitionCard(
         }
 
         // ── Layer 3: Content ──
-        Row(
-            modifier = Modifier.padding(GallrSpacing.md),
-            verticalAlignment = Alignment.Top,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                // ── Exhibition name: Inter Medium, dominant element ─────────
-                Text(
-                    text = exhibition.localizedName(lang),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = contentColor,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.height(GallrSpacing.xs))
-
-                // ── Venue & city: Inter Medium, uppercase, letter-spaced ──
-                Text(
-                    text = exhibition.localizedVenueName(lang).uppercase(),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = secondaryColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = exhibition.localizedCity(lang).uppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = secondaryColor,
-                )
-
-                Spacer(Modifier.height(GallrSpacing.sm))
-
-                // ── Hairline divider between metadata and date ────────────
-                HorizontalDivider(thickness = 1.dp, color = dividerColor)
-
-                Spacer(Modifier.height(GallrSpacing.sm))
-
-                // ── Date range + Upcoming label ──────────────────────────
-                Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.padding(GallrSpacing.md)) {
+            // ── Top row: text + heart (top-aligned) ──────────────────
+            Row(verticalAlignment = Alignment.Top) {
+                Column(modifier = Modifier.weight(1f)) {
+                    // ── Exhibition name ──────────────────────────────
                     Text(
-                        text = exhibition.localizedDateRange(lang),
-                        style = MaterialTheme.typography.labelMedium,
+                        text = exhibition.localizedName(lang),
+                        style = MaterialTheme.typography.titleMedium,
                         color = contentColor,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-                    if (exhibition.openingDate > today) {
-                        Spacer(Modifier.weight(1f))
-                        Text(
-                            text = if (lang == AppLanguage.KO) "오픈 예정" else "Upcoming",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = GallrAccent.activeIndicator,
-                        )
-                    }
+                    Spacer(Modifier.height(GallrSpacing.xs))
+
+                    // ── Venue & city ─────────────────────────────────
+                    Text(
+                        text = exhibition.localizedVenueName(lang).uppercase(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = secondaryColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = exhibition.localizedCity(lang).uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = secondaryColor,
+                    )
                 }
+
+                BookmarkButton(
+                    isBookmarked = isBookmarked,
+                    onToggle = onBookmarkToggle,
+                    tintColor = bookmarkTintColor,
+                )
             }
 
-            BookmarkButton(
-                isBookmarked = isBookmarked,
-                onToggle = onBookmarkToggle,
-                tintColor = bookmarkTintColor,
-            )
+            Spacer(Modifier.height(GallrSpacing.sm))
+
+            // ── Full-width divider ───────────────────────────────────
+            HorizontalDivider(thickness = 1.dp, color = dividerColor)
+
+            Spacer(Modifier.height(GallrSpacing.sm))
+
+            // ── Date range + Upcoming label (full width) ─────────────
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = exhibition.localizedDateRange(lang),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = contentColor,
+                )
+                val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+                if (exhibition.openingDate > today) {
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        text = if (lang == AppLanguage.KO) "오픈 예정" else "Upcoming",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = GallrAccent.activeIndicator,
+                    )
+                }
+            }
         }
     }
 }
