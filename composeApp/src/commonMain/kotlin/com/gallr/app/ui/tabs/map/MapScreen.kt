@@ -1,40 +1,37 @@
 package com.gallr.app.ui.tabs.map
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import com.gallr.app.ui.theme.GallrAccent
 import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.app.viewmodel.TabsViewModel
 import com.gallr.shared.data.model.AppLanguage
@@ -57,40 +54,56 @@ fun MapScreen(
     val activePins = if (mapMode == MapDisplayMode.MY_LIST) myListPins else allPins
     val locations = remember(activePins) { groupPinsByLocation(activePins) }
 
+    // Location permission
+    val locationPermission = rememberLocationPermissionState()
+    LaunchedEffect(Unit) {
+        if (!locationPermission.isGranted) locationPermission.request()
+    }
+
     // Single exhibition dialog
     var selectedPin by remember { mutableStateOf<ExhibitionMapPin?>(null) }
     // Multi-exhibition bottom sheet
     var selectedLocation by remember { mutableStateOf<MapLocation?>(null) }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        Text(
-            text = if (lang == AppLanguage.KO) "지도" else "MAP",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(horizontal = GallrSpacing.screenMargin, vertical = GallrSpacing.sm),
-        )
+    val selectedTabIndex = if (mapMode == MapDisplayMode.MY_LIST) 0 else 1
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = GallrSpacing.screenMargin),
+    Column(modifier = modifier.fillMaxSize()) {
+        TabRow(
+            selectedTabIndex = selectedTabIndex,
+            containerColor = MaterialTheme.colorScheme.background,
+            contentColor = MaterialTheme.colorScheme.onBackground,
+            indicator = { tabPositions ->
+                if (selectedTabIndex < tabPositions.size) {
+                    TabRowDefaults.SecondaryIndicator(
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
+            },
+            divider = {},
         ) {
-            MapModeButton(
-                label = if (lang == AppLanguage.KO) "내 전시" else "MYLIST",
+            Tab(
                 selected = mapMode == MapDisplayMode.MY_LIST,
                 onClick = { viewModel.setMapDisplayMode(MapDisplayMode.MY_LIST) },
-                modifier = Modifier.weight(1f),
+                text = {
+                    Text(
+                        text = if (lang == AppLanguage.KO) "내 전시" else "MY LIST",
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                },
             )
-            MapModeButton(
-                label = if (lang == AppLanguage.KO) "전체" else "ALL",
+            Tab(
                 selected = mapMode == MapDisplayMode.ALL,
                 onClick = { viewModel.setMapDisplayMode(MapDisplayMode.ALL) },
-                modifier = Modifier.weight(1f),
+                text = {
+                    Text(
+                        text = if (lang == AppLanguage.KO) "전체" else "ALL",
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                },
             )
         }
-
-        Spacer(Modifier.height(GallrSpacing.sm))
-        HorizontalDivider(thickness = 4.dp, color = MaterialTheme.colorScheme.onBackground)
+        HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
 
         if (mapMode == MapDisplayMode.MY_LIST && myListPins.isEmpty()) {
             Box(modifier = Modifier.fillMaxWidth().padding(GallrSpacing.screenMargin)) {
@@ -113,6 +126,7 @@ fun MapScreen(
                 }
             },
             modifier = Modifier.weight(1f),
+            enableUserLocation = locationPermission.isGranted,
         )
     }
 
@@ -225,28 +239,3 @@ fun MapScreen(
     }
 }
 
-@Composable
-private fun MapModeButton(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier = modifier
-            .sizeIn(minHeight = 44.dp)
-            .selectable(selected = selected, onClick = onClick, role = Role.RadioButton),
-        shape = RectangleShape,
-        color = if (selected) GallrAccent.activeIndicator else MaterialTheme.colorScheme.background,
-        border = BorderStroke(1.dp, if (selected) GallrAccent.activeIndicator else MaterialTheme.colorScheme.outline),
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                color = if (selected) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(vertical = GallrSpacing.sm),
-            )
-        }
-    }
-}

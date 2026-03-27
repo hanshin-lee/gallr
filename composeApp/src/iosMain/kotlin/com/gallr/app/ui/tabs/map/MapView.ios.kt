@@ -16,6 +16,7 @@ import NMapsMap.NMFCameraPosition
 import NMapsMap.NMFCameraUpdate
 import NMapsMap.NMFMapView
 import NMapsMap.NMFMarker
+import NMapsMap.NMFMyPositionMode
 import NMapsMap.NMFOverlayImage
 import NMapsMap.NMGLatLng
 import platform.CoreGraphics.CGRect
@@ -97,6 +98,7 @@ actual fun MapView(
     locations: List<MapLocation>,
     onLocationTap: (MapLocation) -> Unit,
     modifier: Modifier,
+    enableUserLocation: Boolean,
 ) {
     val activeMarkers = remember { mutableListOf<NMFMarker>() }
     val mapRef = remember { arrayOfNulls<NMFMapView>(1) }
@@ -110,6 +112,10 @@ actual fun MapView(
                 val target = NMGLatLng.latLngWithLat(SEOUL_LAT, lng = SEOUL_LNG)
                 val cameraPosition = NMFCameraPosition.cameraPosition(target, zoom = INITIAL_ZOOM)
                 mapView.moveCamera(NMFCameraUpdate.cameraUpdateWithPosition(cameraPosition))
+                if (enableUserLocation) {
+                    // NMFMyPositionMode: 0=Disabled, 1=Normal, 2=Direction, 3=Compass
+                    mapView.positionMode = 1u  // Normal — shows location dot, doesn't track
+                }
                 mapRef[0] = mapView
 
                 val container = NMFMapContainerView(frame = screenBounds)

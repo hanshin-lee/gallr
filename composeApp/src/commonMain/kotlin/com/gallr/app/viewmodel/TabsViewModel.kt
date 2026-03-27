@@ -23,6 +23,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
 
 sealed class ExhibitionListState {
     data object Loading : ExhibitionListState()
@@ -163,7 +166,9 @@ class TabsViewModel(
                 is ExhibitionListState.Loading -> ExhibitionListState.Loading
                 is ExhibitionListState.Error -> state
                 is ExhibitionListState.Success -> {
+                    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
                     val filtered = state.exhibitions
+                        .filter { it.closingDate >= today }  // hide ended exhibitions
                         .filter { city == null || it.cityKo == city }
                         .filter { filter.matches(it) }
                         .filter { !myListOnly || it.id in bookmarked }
@@ -223,7 +228,12 @@ class TabsViewModel(
             _isRefreshing.value = true
             _featuredState.value = ExhibitionListState.Loading
             exhibitionRepository.getFeaturedExhibitions()
-                .onSuccess { _featuredState.value = ExhibitionListState.Success(it) }
+                .onSuccess { exhibitions ->
+                    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+                    _featuredState.value = ExhibitionListState.Success(
+                        exhibitions.filter { it.closingDate >= today }
+                    )
+                }
                 .onFailure {
                     val msg = classifyError(it)
                     println("ERROR [TabsViewModel] loadFeaturedExhibitions: ${it.message}")

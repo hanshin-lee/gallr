@@ -23,6 +23,9 @@ data class Exhibition(
     val addressKo: String,
     val addressEn: String,
     val coverImageUrl: String?,
+    val hours: String? = null,
+    val contact: String? = null,
+    val receptionDate: LocalDate? = null,
 ) {
     fun localizedName(lang: AppLanguage): String = when (lang) {
         AppLanguage.EN -> nameEn.ifEmpty { nameKo }
