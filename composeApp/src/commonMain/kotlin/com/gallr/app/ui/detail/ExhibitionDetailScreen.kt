@@ -1,5 +1,6 @@
 package com.gallr.app.ui.detail
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -19,14 +20,24 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.gallr.app.ui.components.BookmarkButton
+import com.gallr.app.ui.theme.GallrAccent
 import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Exhibition
+import kotlinx.datetime.Clock
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
+import kotlinx.datetime.todayIn
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -134,6 +145,43 @@ fun ExhibitionDetailScreen(
                     color = MaterialTheme.colorScheme.onBackground,
                 )
 
+                // ── Reception date (orange label) ────────────────────────
+                val receptionLabel = exhibition.receptionDate?.let {
+                    receptionDateLabel(it, exhibition.closingDate, lang)
+                }
+                if (receptionLabel != null) {
+                    Spacer(Modifier.height(GallrSpacing.sm))
+                    Text(
+                        text = receptionLabel,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = GallrAccent.activeIndicator,
+                    )
+                }
+
+                // ── Hours ────────────────────────────────────────────────
+                if (!exhibition.hours.isNullOrBlank()) {
+                    Spacer(Modifier.height(GallrSpacing.sm))
+                    Text(
+                        text = exhibition.hours,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                // ── Contact (tappable mailto: or tel:) ──────────────────
+                if (!exhibition.contact.isNullOrBlank()) {
+                    val uriHandler = LocalUriHandler.current
+                    val isEmail = exhibition.contact.contains("@")
+                    val uri = if (isEmail) "mailto:${exhibition.contact}" else "tel:${exhibition.contact}"
+                    Spacer(Modifier.height(GallrSpacing.sm))
+                    Text(
+                        text = exhibition.contact,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = GallrAccent.activeIndicator,
+                        modifier = Modifier.clickable { uriHandler.openUri(uri) },
+                    )
+                }
+
                 // ── Description ────────────────────────────────────────────
                 val description = exhibition.localizedDescription(lang)
                 if (description.isNotBlank()) {
@@ -148,5 +196,55 @@ fun ExhibitionDetailScreen(
                 Spacer(Modifier.height(GallrSpacing.lg))
             }
         }
+    }
+}
+
+// ── Reception date label logic ──────────────────────────────────────────────
+// Returns null when the label should be hidden.
+private fun receptionDateLabel(
+    receptionDate: LocalDate,
+    closingDate: LocalDate,
+    lang: AppLanguage,
+): String? {
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+
+    // Exhibition ended → hide
+    if (closingDate < today) return null
+
+    // Find Monday of the current week
+    val daysSinceMonday = (today.dayOfWeek.ordinal - DayOfWeek.MONDAY.ordinal + 7) % 7
+    val thisMonday = today.plus(-daysSinceMonday, DateTimeUnit.DAY)
+    val nextMonday = thisMonday.plus(7, DateTimeUnit.DAY)
+
+    return when {
+        // More than 1 week away → hide
+        receptionDate >= nextMonday -> null
+        // Today
+        receptionDate == today -> if (lang == AppLanguage.KO) "오프닝 오늘" else "Opening today"
+        // Tomorrow
+        receptionDate == today.plus(1, DateTimeUnit.DAY) -> if (lang == AppLanguage.KO) "오프닝 내일" else "Opening tomorrow"
+        // Within this week (future)
+        receptionDate in thisMonday..< nextMonday && receptionDate > today -> {
+            val dayName = when (receptionDate.dayOfWeek) {
+                DayOfWeek.MONDAY -> if (lang == AppLanguage.KO) "월요일" else "Monday"
+                DayOfWeek.TUESDAY -> if (lang == AppLanguage.KO) "화요일" else "Tuesday"
+                DayOfWeek.WEDNESDAY -> if (lang == AppLanguage.KO) "수요일" else "Wednesday"
+                DayOfWeek.THURSDAY -> if (lang == AppLanguage.KO) "목요일" else "Thursday"
+                DayOfWeek.FRIDAY -> if (lang == AppLanguage.KO) "금요일" else "Friday"
+                DayOfWeek.SATURDAY -> if (lang == AppLanguage.KO) "토요일" else "Saturday"
+                DayOfWeek.SUNDAY -> if (lang == AppLanguage.KO) "일요일" else "Sunday"
+            }
+            if (lang == AppLanguage.KO) "오프닝 $dayName" else "Opening $dayName"
+        }
+        // Past but exhibition still running → show full date
+        receptionDate < today -> {
+            val months = arrayOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+            if (lang == AppLanguage.KO) {
+                "오프닝 ${receptionDate.monthNumber}월 ${receptionDate.dayOfMonth}일"
+            } else {
+                "Opening ${months[receptionDate.monthNumber - 1]} ${receptionDate.dayOfMonth}"
+            }
+        }
+        else -> null
     }
 }
