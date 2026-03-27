@@ -76,7 +76,7 @@ fun MapScreen(
                 .padding(horizontal = GallrSpacing.screenMargin),
         ) {
             MapModeButton(
-                label = if (lang == AppLanguage.KO) "내 목록" else "MYLIST",
+                label = if (lang == AppLanguage.KO) "내 전시" else "MYLIST",
                 selected = mapMode == MapDisplayMode.MY_LIST,
                 onClick = { viewModel.setMapDisplayMode(MapDisplayMode.MY_LIST) },
                 modifier = Modifier.weight(1f),

@@ -12,6 +12,13 @@
  *      SUPABASE_URL        = https://<project-ref>.supabase.co
  *      SUPABASE_SERVICE_ROLE_KEY = <your-service-role-key>  ← NEVER share this
  *
+ * COVER IMAGE CONVENTION:
+ *   The `cover_image_url` column accepts either:
+ *     a) A full HTTPS URL (e.g., https://example.com/image.jpg) — used as-is
+ *     b) A filename only (e.g., my-exhibition.jpg) — resolved to:
+ *        {SUPABASE_URL}/storage/v1/object/public/exhibition-images/{filename}
+ *   Upload images to the "exhibition-images" bucket in Supabase Storage dashboard.
+ *
  * 2. Install triggers (Triggers menu in Apps Script editor):
  *    a) onEdit trigger:  Function = syncToSupabase, Event source = From spreadsheet,
  *                        Event type = On edit
@@ -294,10 +301,19 @@ function buildRecord(row, headerMap) {
       return;
     }
 
-    // URL fields (nullable)
+    // URL fields (nullable) — accepts full URL or filename-only
     if (header === 'cover_image_url') {
       var url = String(raw || '').trim();
-      record[header] = url || null;
+      if (!url) {
+        record[header] = null;
+      } else if (/^https?:\/\//i.test(url)) {
+        record[header] = url;
+      } else {
+        // Filename only → resolve to Supabase Storage public URL
+        var props = PropertiesService.getScriptProperties();
+        var baseUrl = props.getProperty('SUPABASE_URL');
+        record[header] = baseUrl + '/storage/v1/object/public/exhibition-images/' + encodeURIComponent(url);
+      }
       return;
     }
 

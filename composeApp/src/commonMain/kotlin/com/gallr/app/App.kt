@@ -83,6 +83,7 @@ fun App(
             label = "detailTransition",
         ) { exhibition ->
             if (exhibition != null) {
+                PlatformBackHandler { selectedExhibition = null }
                 ExhibitionDetailScreen(
                     exhibition = exhibition,
                     lang = lang,
