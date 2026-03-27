@@ -194,7 +194,7 @@ fun ListScreen(
             if (showMyListOnly && bookmarkedIds.isNotEmpty()) {
                 TextButton(onClick = { viewModel.clearAllBookmarks() }) {
                     Text(
-                        text = if (lang == AppLanguage.KO) "내 리스트 비우기" else "Clear My List",
+                        text = if (lang == AppLanguage.KO) "내 전시 비우기" else "Clear My List",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -308,7 +308,7 @@ private fun SegmentedControl(
             modifier = Modifier.weight(1f),
         )
         SegmentTab(
-            label = if (lang == AppLanguage.KO) "내 리스트" else "My List",
+            label = if (lang == AppLanguage.KO) "내 전시" else "My List",
             selected = showMyListOnly,
             onClick = onSelectMyList,
             modifier = Modifier.weight(1f),

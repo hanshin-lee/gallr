@@ -53,7 +53,7 @@ class ScreenshotTests: XCTestCase {
         bookmarkFirstExhibition()
         app.buttons["LIST"].tap()
         sleep(2)
-        tapText("My List", fallback: "내 리스트")
+        tapText("My List", fallback: "내 전시")
         sleep(1)
         snapshot("03_List_MyList")
     }
@@ -72,7 +72,7 @@ class ScreenshotTests: XCTestCase {
         bookmarkFirstExhibition()
         app.buttons["MAP"].tap()
         sleep(3)
-        tapText("MYLIST", fallback: "내 목록")
+        tapText("MYLIST", fallback: "내 전시")
         sleep(2)
         snapshot("05_Map_MyList")
     }
