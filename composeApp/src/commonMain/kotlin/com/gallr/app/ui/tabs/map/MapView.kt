@@ -37,12 +37,10 @@ private fun Double.roundTo4(): Long = round(this * 10000).toLong()
  *
  * @param locations Grouped exhibition locations to render as markers.
  * @param onLocationTap Called when a marker is tapped; receives all pins at that location.
- * @param enableUserLocation Whether to show and track user's current location.
  */
 @Composable
 expect fun MapView(
     locations: List<MapLocation>,
     onLocationTap: (MapLocation) -> Unit,
     modifier: Modifier = Modifier,
-    enableUserLocation: Boolean = false,
 )

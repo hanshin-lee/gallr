@@ -27,39 +27,27 @@ data class ExhibitionDto(
     @SerialName("address_ko") val addressKo: String = "",
     @SerialName("address_en") val addressEn: String = "",
     @SerialName("cover_image_url") val coverImageUrl: String? = null,
-    val hours: String? = null,
-    val contact: String? = null,
-    @SerialName("reception_date") val receptionDate: String? = null,
 ) {
-    fun toDomain(): Exhibition? {
-        val opening = try { LocalDate.parse(openingDate) } catch (_: Exception) { return null }
-        val closing = try { LocalDate.parse(closingDate) } catch (_: Exception) { return null }
-        return Exhibition(
-            id = id,
-            nameKo = nameKo,
-            nameEn = nameEn,
-            venueNameKo = venueNameKo,
-            venueNameEn = venueNameEn,
-            cityKo = cityKo,
-            cityEn = cityEn,
-            regionKo = regionKo,
-            regionEn = regionEn,
-            openingDate = opening,
-            closingDate = closing,
-            isFeatured = isFeatured,
-            isEditorsPick = isEditorsPick,
-            latitude = latitude,
-            longitude = longitude,
-            descriptionKo = descriptionKo,
-            descriptionEn = descriptionEn,
-            addressKo = addressKo,
-            addressEn = addressEn,
-            coverImageUrl = coverImageUrl,
-            hours = hours,
-            contact = contact,
-            receptionDate = receptionDate?.let {
-                try { LocalDate.parse(it.take(10)) } catch (_: Exception) { null }
-            },
-        )
-    }
+    fun toDomain(): Exhibition = Exhibition(
+        id = id,
+        nameKo = nameKo,
+        nameEn = nameEn,
+        venueNameKo = venueNameKo,
+        venueNameEn = venueNameEn,
+        cityKo = cityKo,
+        cityEn = cityEn,
+        regionKo = regionKo,
+        regionEn = regionEn,
+        openingDate = LocalDate.parse(openingDate),
+        closingDate = LocalDate.parse(closingDate),
+        isFeatured = isFeatured,
+        isEditorsPick = isEditorsPick,
+        latitude = latitude,
+        longitude = longitude,
+        descriptionKo = descriptionKo,
+        descriptionEn = descriptionEn,
+        addressKo = addressKo,
+        addressEn = addressEn,
+        coverImageUrl = coverImageUrl,
+    )
 }

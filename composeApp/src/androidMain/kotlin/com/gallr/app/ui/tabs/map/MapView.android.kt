@@ -10,8 +10,6 @@ import androidx.compose.ui.Modifier
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
-import com.naver.maps.map.compose.LocationTrackingMode
-import com.naver.maps.map.compose.MapProperties
 import com.naver.maps.map.compose.Marker
 import com.naver.maps.map.compose.NaverMap
 import com.naver.maps.map.compose.MarkerState
@@ -59,7 +57,6 @@ actual fun MapView(
     locations: List<MapLocation>,
     onLocationTap: (MapLocation) -> Unit,
     modifier: Modifier,
-    enableUserLocation: Boolean,
 ) {
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition(SEOUL, INITIAL_ZOOM)
@@ -67,17 +64,9 @@ actual fun MapView(
 
     val markerIcon = remember { OverlayImage.fromBitmap(createAccentMarkerBitmap()) }
 
-    val properties = remember(enableUserLocation) {
-        MapProperties(
-            locationTrackingMode = if (enableUserLocation) LocationTrackingMode.Follow
-                else LocationTrackingMode.None,
-        )
-    }
-
     NaverMap(
         modifier = modifier,
         cameraPositionState = cameraPositionState,
-        properties = properties,
     ) {
         locations.forEach { location ->
             Marker(

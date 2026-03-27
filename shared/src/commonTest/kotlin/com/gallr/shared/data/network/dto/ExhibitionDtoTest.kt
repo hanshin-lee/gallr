@@ -4,7 +4,6 @@ import com.gallr.shared.data.model.AppLanguage
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 class ExhibitionDtoTest {
@@ -86,16 +85,11 @@ class ExhibitionDtoTest {
     }
 
     @Test
-    fun `ExhibitionDto toDomain returns null for malformed dates`() {
-        val badDateJson = bilingualJson.replace("2026-03-19", "not-a-date")
-        val dto = testJson.decodeFromString<ExhibitionDto>(badDateJson)
-        assertNull(dto.toDomain())
-    }
-
-    @Test
     fun `ExhibitionDto toDomain maps bilingual fields correctly`() {
         val dto = testJson.decodeFromString<ExhibitionDto>(bilingualJson)
-        val exhibition = assertNotNull(dto.toDomain())
+        val exhibition = dto.toDomain()
+
+        assertEquals("a3f2b1c9d4e7f8a2", exhibition.id)
         assertEquals("선의 거장 눈알", exhibition.nameKo)
         assertEquals("Zen Master Eyeball", exhibition.nameEn)
         assertEquals("국제갤러리 K1", exhibition.venueNameKo)
@@ -112,7 +106,7 @@ class ExhibitionDtoTest {
     @Test
     fun `Exhibition localizedName returns English with Korean fallback`() {
         val dto = testJson.decodeFromString<ExhibitionDto>(bilingualJson)
-        val exhibition = assertNotNull(dto.toDomain())
+        val exhibition = dto.toDomain()
 
         assertEquals("Zen Master Eyeball", exhibition.localizedName(AppLanguage.EN))
         assertEquals("선의 거장 눈알", exhibition.localizedName(AppLanguage.KO))
@@ -133,7 +127,7 @@ class ExhibitionDtoTest {
                 "is_editors_pick": false
             }
         """.trimIndent()
-        val exhibition = assertNotNull(testJson.decodeFromString<ExhibitionDto>(koOnlyJson).toDomain())
+        val exhibition = testJson.decodeFromString<ExhibitionDto>(koOnlyJson).toDomain()
         assertEquals("전시회", exhibition.localizedName(AppLanguage.EN))
     }
 }

@@ -262,9 +262,6 @@ var KNOWN_COLUMNS = [
   'is_featured', 'is_editors_pick',
   'latitude', 'longitude',
   'cover_image_url',
-  'hours',
-  'contact',
-  'reception_date',
 ];
 
 // ---------------------------------------------------------------------------
@@ -289,20 +286,6 @@ function buildRecord(row, headerMap) {
     // Date fields
     if (header === 'opening_date' || header === 'closing_date') {
       record[header] = parseDate(raw);
-      return;
-    }
-
-    // DateTime fields (nullable) — stored as ISO 8601 timestamptz
-    if (header === 'reception_date') {
-      if (!raw || String(raw).trim() === '') {
-        record[header] = null;
-      } else if (raw instanceof Date) {
-        record[header] = raw.toISOString();
-      } else {
-        // Try parsing text like "2026-04-05 18:00" as a Date
-        var parsed = new Date(String(raw).trim());
-        record[header] = isNaN(parsed.getTime()) ? null : parsed.toISOString();
-      }
       return;
     }
 
@@ -331,13 +314,6 @@ function buildRecord(row, headerMap) {
         var baseUrl = props.getProperty('SUPABASE_URL');
         record[header] = baseUrl + '/storage/v1/object/public/exhibition-images/' + encodeURIComponent(url);
       }
-      return;
-    }
-
-    // Nullable text fields — empty strings become null
-    if (header === 'hours' || header === 'contact') {
-      var val = String(raw || '').trim();
-      record[header] = val || null;
       return;
     }
 
