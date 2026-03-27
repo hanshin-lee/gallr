@@ -173,14 +173,22 @@ fun ExhibitionDetailScreen(
                 val contact = exhibition.contact
                 if (!contact.isNullOrBlank()) {
                     val uriHandler = LocalUriHandler.current
-                    val isEmail = contact.contains("@")
-                    val uri = if (isEmail) "mailto:$contact" else "tel:$contact"
+                    val isEmail = contact.trim().matches(Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"))
+                    val isPhone = !isEmail && contact.trim().matches(Regex("^[+\\d\\s()-]+$"))
+                    val uri = when {
+                        isEmail -> "mailto:${contact.trim()}"
+                        isPhone -> "tel:${contact.trim().replace(Regex("[\\s()-]"), "")}"
+                        else -> null
+                    }
                     Spacer(Modifier.height(GallrSpacing.sm))
                     Text(
                         text = contact,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = GallrAccent.activeIndicator,
-                        modifier = Modifier.clickable { uriHandler.openUri(uri) },
+                        color = if (uri != null) GallrAccent.activeIndicator
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = if (uri != null) Modifier.clickable {
+                            try { uriHandler.openUri(uri) } catch (_: Exception) { /* no-op */ }
+                        } else Modifier,
                     )
                 }
 
