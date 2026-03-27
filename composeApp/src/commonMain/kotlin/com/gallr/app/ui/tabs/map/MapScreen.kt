@@ -24,11 +24,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.app.viewmodel.TabsViewModel
@@ -51,6 +53,12 @@ fun MapScreen(
 
     val activePins = if (mapMode == MapDisplayMode.MY_LIST) myListPins else allPins
     val locations = remember(activePins) { groupPinsByLocation(activePins) }
+
+    // Location permission
+    val locationPermission = rememberLocationPermissionState()
+    LaunchedEffect(Unit) {
+        if (!locationPermission.isGranted) locationPermission.request()
+    }
 
     // Single exhibition dialog
     var selectedPin by remember { mutableStateOf<ExhibitionMapPin?>(null) }
@@ -118,6 +126,7 @@ fun MapScreen(
                 }
             },
             modifier = Modifier.weight(1f),
+            enableUserLocation = locationPermission.isGranted,
         )
     }
 

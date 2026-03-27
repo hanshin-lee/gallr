@@ -159,23 +159,25 @@ fun ExhibitionDetailScreen(
                 }
 
                 // ── Hours ────────────────────────────────────────────────
-                if (!exhibition.hours.isNullOrBlank()) {
+                val hours = exhibition.hours
+                if (!hours.isNullOrBlank()) {
                     Spacer(Modifier.height(GallrSpacing.sm))
                     Text(
-                        text = exhibition.hours,
+                        text = hours,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
                 // ── Contact (tappable mailto: or tel:) ──────────────────
-                if (!exhibition.contact.isNullOrBlank()) {
+                val contact = exhibition.contact
+                if (!contact.isNullOrBlank()) {
                     val uriHandler = LocalUriHandler.current
-                    val isEmail = exhibition.contact.contains("@")
-                    val uri = if (isEmail) "mailto:${exhibition.contact}" else "tel:${exhibition.contact}"
+                    val isEmail = contact.contains("@")
+                    val uri = if (isEmail) "mailto:$contact" else "tel:$contact"
                     Spacer(Modifier.height(GallrSpacing.sm))
                     Text(
-                        text = exhibition.contact,
+                        text = contact,
                         style = MaterialTheme.typography.bodyMedium,
                         color = GallrAccent.activeIndicator,
                         modifier = Modifier.clickable { uriHandler.openUri(uri) },
