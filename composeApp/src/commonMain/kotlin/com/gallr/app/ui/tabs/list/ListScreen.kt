@@ -6,6 +6,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,6 +25,10 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -70,16 +75,47 @@ fun ListScreen(
 
     val hasActiveFilters = filter != FilterState() || selectedCity != null
 
-    Column(modifier = modifier.fillMaxSize()) {
-        // ── Segmented control: All Exhibitions / My List ──────────────────
-        SegmentedControl(
-            showMyListOnly = showMyListOnly,
-            onSelectAll = { viewModel.setShowMyListOnly(false) },
-            onSelectMyList = { viewModel.setShowMyListOnly(true) },
-            lang = lang,
-        )
+    val selectedTabIndex = if (showMyListOnly) 1 else 0
 
-        // ── Search bar ─────────────────────────────────────────────────────
+    Column(modifier = modifier.fillMaxSize()) {
+        // ── Tab toggle: All Exhibitions / My List ─────────────────────────
+        TabRow(
+            selectedTabIndex = selectedTabIndex,
+            containerColor = MaterialTheme.colorScheme.background,
+            contentColor = MaterialTheme.colorScheme.onBackground,
+            indicator = { tabPositions ->
+                if (selectedTabIndex < tabPositions.size) {
+                    TabRowDefaults.SecondaryIndicator(
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
+            },
+            divider = {},
+        ) {
+            Tab(
+                selected = !showMyListOnly,
+                onClick = { viewModel.setShowMyListOnly(false) },
+                text = {
+                    Text(
+                        text = if (lang == AppLanguage.KO) "전체 전시" else "All Exhibitions",
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                },
+            )
+            Tab(
+                selected = showMyListOnly,
+                onClick = { viewModel.setShowMyListOnly(true) },
+                text = {
+                    Text(
+                        text = if (lang == AppLanguage.KO) "내 전시" else "My List",
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                },
+            )
+        }
+
+        // ── Compact search bar with magnifier icon ──────────────────────
         TextField(
             value = searchQuery,
             onValueChange = { viewModel.setSearchQuery(it) },
@@ -101,6 +137,13 @@ fun ListScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                } else {
+                    Text(
+                        text = "⌕",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(end = GallrSpacing.sm),
+                    )
                 }
             },
             singleLine = true,
@@ -117,7 +160,8 @@ fun ListScreen(
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = GallrSpacing.screenMargin, vertical = GallrSpacing.xs),
+                .heightIn(max = 48.dp)
+                .padding(horizontal = GallrSpacing.screenMargin),
         )
 
         // ── Country + city chips (single scrollable row) ─────────────────
@@ -287,67 +331,6 @@ fun ListScreen(
     }
 }
 
-// ── Segmented control ────────────────────────────────────────────────────────
-
-@Composable
-private fun SegmentedControl(
-    showMyListOnly: Boolean,
-    onSelectAll: () -> Unit,
-    onSelectMyList: () -> Unit,
-    lang: AppLanguage,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(IntrinsicSize.Min),
-    ) {
-        SegmentTab(
-            label = if (lang == AppLanguage.KO) "전체 전시" else "All Exhibitions",
-            selected = !showMyListOnly,
-            onClick = onSelectAll,
-            modifier = Modifier.weight(1f),
-        )
-        SegmentTab(
-            label = if (lang == AppLanguage.KO) "내 전시" else "My List",
-            selected = showMyListOnly,
-            onClick = onSelectMyList,
-            modifier = Modifier.weight(1f),
-        )
-    }
-}
-
-@Composable
-private fun SegmentTab(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier
-            .clickable(onClick = onClick)
-            .padding(vertical = GallrSpacing.sm),
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-            color = if (selected) MaterialTheme.colorScheme.onBackground
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(GallrSpacing.xs))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(2.dp)
-                .background(
-                    if (selected) MaterialTheme.colorScheme.onBackground
-                    else MaterialTheme.colorScheme.surfaceVariant,
-                ),
-        )
-    }
-}
 
 // ── Country dropdown ─────────────────────────────────────────────────────────
 
