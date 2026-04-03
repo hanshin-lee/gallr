@@ -31,6 +31,7 @@ import com.gallr.app.ui.theme.GallrAccent
 import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Exhibition
+import com.gallr.shared.data.model.exhibitionStatus
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
@@ -144,6 +145,20 @@ fun ExhibitionDetailScreen(
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
+
+                // ── Status label (Upcoming / Closing Soon) ──────────────
+                val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+                val statusLabel = exhibitionStatus(
+                    exhibition.openingDate, exhibition.closingDate, today,
+                ).label(lang)
+                if (statusLabel != null) {
+                    Spacer(Modifier.height(GallrSpacing.sm))
+                    Text(
+                        text = statusLabel,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = GallrAccent.activeIndicator,
+                    )
+                }
 
                 // ── Reception date (orange label) ────────────────────────
                 val receptionLabel = exhibition.receptionDate?.let {

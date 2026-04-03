@@ -32,12 +32,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
+import com.gallr.app.ui.theme.GallrAccent
 import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.app.viewmodel.TabsViewModel
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.ExhibitionMapPin
 import com.gallr.shared.data.model.MapDisplayMode
+import com.gallr.shared.data.model.exhibitionStatus
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -154,6 +160,14 @@ fun MapScreen(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
+                    pinStatusText(pin.openingDate, pin.closingDate, lang)?.let { statusLabel ->
+                        Spacer(Modifier.height(GallrSpacing.xs))
+                        Text(
+                            text = statusLabel,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = GallrAccent.activeIndicator,
+                        )
+                    }
                 }
             },
             containerColor = MaterialTheme.colorScheme.background,
@@ -228,6 +242,14 @@ fun MapScreen(
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            pinStatusText(pin.openingDate, pin.closingDate, lang)?.let { statusLabel ->
+                                Spacer(Modifier.height(GallrSpacing.xs))
+                                Text(
+                                    text = statusLabel,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = GallrAccent.activeIndicator,
+                                )
+                            }
                         }
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     }
@@ -237,5 +259,14 @@ fun MapScreen(
             }
         }
     }
+}
+
+private fun pinStatusText(
+    openingDate: LocalDate,
+    closingDate: LocalDate,
+    lang: AppLanguage,
+): String? {
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    return exhibitionStatus(openingDate, closingDate, today).label(lang)
 }
 
