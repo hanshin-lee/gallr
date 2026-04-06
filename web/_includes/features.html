@@ -1,21 +1,20 @@
-<section id="features" class="features" aria-labelledby="features-heading">
-  <div class="features__inner">
-    <h2 id="features-heading" class="features__heading">Features</h2>
-
-    <div class="features__grid">
-      {% for feature in features %}
-      <article id="{{ feature.id }}" class="feature-entry" aria-labelledby="feature-{{ feature.id }}-title">
-        <h3 id="feature-{{ feature.id }}-title" class="feature-entry__headline">
-          {{ feature.headline }}
-        </h3>
-        <p class="feature-entry__description">{{ feature.description }}</p>
-
-        {% if feature.mockup %}
-          {% set mockup = feature.mockup %}
-          {% include "card-mockup.html" %}
-        {% endif %}
-      </article>
-      {% endfor %}
+<section id="philosophy" class="philosophy" aria-labelledby="philosophy-01">
+  <div class="philosophy__inner">
+    <div class="philosophy-block">
+      <p class="philosophy-block__number">Core Philosophy 01</p>
+      <h2 id="philosophy-01" class="philosophy-block__headline">Curation Over Collection</h2>
+      <p class="philosophy-block__body">
+        We don't aggregate every show. We select the definitive ones.
+        Our editors traverse the city to bring you the signal, not the noise.
+      </p>
+    </div>
+    <div class="philosophy-block">
+      <p class="philosophy-block__number">Core Philosophy 02</p>
+      <h2 class="philosophy-block__headline">The Long Tail of Art</h2>
+      <p class="philosophy-block__body">
+        Discover independent artist-run spaces and obscure shows
+        that the algorithms miss. Experience art as it happens.
+      </p>
     </div>
   </div>
 </section>

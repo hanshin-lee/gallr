@@ -1,0 +1,23 @@
+<section id="now-showing" class="now-showing" aria-labelledby="now-showing-label">
+  <div class="now-showing__inner">
+    <div class="now-showing__header">
+      <h2 id="now-showing-label" class="now-showing__label">Now Showing: The Seoul Edit</h2>
+      <hr class="now-showing__rule" />
+      <span class="now-showing__live" aria-label="Live">&#9679;</span>
+    </div>
+
+    <div class="exhibition-grid">
+      {% for ex in exhibitions %}
+      <a class="exhibition-card" aria-labelledby="ex-title-{{ loop.index }}">
+        <p class="exhibition-card__meta">{{ ex.city }} / {{ ex.gallery }}</p>
+        <h3 id="ex-title-{{ loop.index }}" class="exhibition-card__title">{{ ex.title }}</h3>
+        <p class="exhibition-card__dates">{{ ex.dates }}</p>
+        <div class="exhibition-card__footer">
+          <span class="exhibition-card__cta">View Details</span>
+          <span class="exhibition-card__arrow" aria-hidden="true">&#8594;</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>

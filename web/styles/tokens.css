@@ -1,6 +1,7 @@
 /* ============================================================
    gallr Web — Design Tokens
-   Mirrors the Reductionist design system (spec 006).
+   "The Curator's Canvas" design system.
+   Reductionist foundation + tonal layering from Stitch.
    All visual constants live here. No hardcoded values elsewhere.
    ============================================================ */
 
@@ -46,6 +47,14 @@
   --color-ink-secondary: #525252;
   --color-accent:        #FF5400;
 
+  /* Tonal layering — depth without shadows (Stitch "Curator's Canvas") */
+  --color-surface:             #f9f9f9;
+  --color-surface-container-low:  #f3f3f3;
+  --color-surface-container:      #eeeeee;
+  --color-surface-container-high: #e8e8e8;
+  --color-outline:             #777777;
+  --color-outline-variant:     #c6c6c6;
+
   /* Typography — neo-grotesque sans-serif throughout */
   --font-display: "Inter", system-ui, -apple-system, Arial, sans-serif;
   --font-meta:    "Inter", system-ui, -apple-system, Arial, sans-serif;
@@ -53,10 +62,11 @@
   /* Shape — 0px everywhere, no exceptions */
   --radius: 0px;
 
-  /* Borders */
+  /* Borders — ghost borders only (outline-variant at low opacity) */
   --border-ink:      1px solid var(--color-ink);
   --border-section:  4px solid var(--color-ink);
   --border-hairline: 1px solid var(--color-ink-secondary);
+  --border-ghost:    1px solid rgba(198, 198, 198, 0.1);
 
   /* Spacing scale */
   --space-xs:  4px;
@@ -67,7 +77,7 @@
   --space-2xl: 96px;
 
   /* Layout */
-  --max-width:          960px;
+  --max-width:          1440px;
   --page-padding-x:     var(--space-md);
 }
 

@@ -39,6 +39,9 @@ iosApp/DerivedData/
 .env.*
 *.log
 
+# MCP config (contains API keys)
+.mcp.json
+
 # macOS
 .DS_Store
 Thumbs.db
@@ -50,3 +53,4 @@ web/.cache/
 
 # iOS credential config (if using separate Config.swift pattern)
 # iosApp/iosApp/Config.swift
+.gstack/
