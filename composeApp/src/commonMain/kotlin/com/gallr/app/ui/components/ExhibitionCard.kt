@@ -37,6 +37,7 @@ import com.gallr.app.ui.theme.GallrMotion
 import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Exhibition
+import com.gallr.shared.data.model.exhibitionStatus
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
@@ -202,7 +203,7 @@ fun ExhibitionCard(
 
             Spacer(Modifier.height(GallrSpacing.sm))
 
-            // ── Date range + Upcoming label (full width) ─────────────
+            // ── Date range + status label (full width) ──────────────
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = exhibition.localizedDateRange(lang),
@@ -210,10 +211,13 @@ fun ExhibitionCard(
                     color = contentColor,
                 )
                 val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-                if (exhibition.openingDate > today) {
+                val statusLabel = exhibitionStatus(
+                    exhibition.openingDate, exhibition.closingDate, today,
+                ).label(lang)
+                if (statusLabel != null) {
                     Spacer(Modifier.weight(1f))
                     Text(
-                        text = if (lang == AppLanguage.KO) "오픈 예정" else "Upcoming",
+                        text = statusLabel,
                         style = MaterialTheme.typography.labelMedium,
                         color = GallrAccent.activeIndicator,
                     )

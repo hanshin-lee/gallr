@@ -199,17 +199,21 @@ class TabsViewModel(
 
     val myListMapPins: StateFlow<List<ExhibitionMapPin>> =
         combine(_allExhibitions, bookmarkedIds, language) { state, bookmarked, lang ->
+            val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
             (state as? ExhibitionListState.Success)
                 ?.exhibitions
                 ?.filter { it.id in bookmarked }
+                ?.filter { it.closingDate >= today }
                 ?.mapNotNull { it.toMapPin(lang) }
                 ?: emptyList()
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val allMapPins: StateFlow<List<ExhibitionMapPin>> =
         combine(_allExhibitions, language) { state, lang ->
+            val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
             (state as? ExhibitionListState.Success)
                 ?.exhibitions
+                ?.filter { it.closingDate >= today }
                 ?.mapNotNull { it.toMapPin(lang) }
                 ?: emptyList()
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
