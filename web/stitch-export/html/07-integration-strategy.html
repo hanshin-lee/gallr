@@ -1,0 +1,90 @@
+# Technical Integration Plan: gallr Website (Eleventy + Supabase)
+
+This document outlines the steps to translate the Google Stitch designs into the production Eleventy environment, specifically for **Approach C: Stitch + Live Content Preview**.
+
+## 1. Data Architecture (Supabase to Eleventy)
+
+To enable the "This Week" live preview, we need to bridge the Supabase `exhibitions` table with Eleventy's static build process.
+
+### Supabase Table Schema (Required Fields)
+- `id`: UUID
+- `title`: String (Exhibition name)
+- `gallery_name`: String (Linked from `galleries` table)
+- `start_date`: Date
+- `end_date`: Date
+- `city`: String (e.g., "Seoul")
+- `district`: String (e.g., "Hannam-dong")
+- `editorial_summary`: Text (The "one-liner" for the website)
+- `is_featured`: Boolean (To flag items for the homepage hero/edit)
+- `image_url`: URL (Optional: if we decide to show exhibition images)
+
+### Eleventy Data Fetch (`web/_data/exhibitions.js`)
+```javascript
+const { createClient } = require('@supabase/supabase-js');
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
+module.exports = async function() {
+  const { data, error } = await supabase
+    .from('exhibitions')
+    .select('*, galleries(name, district)')
+    .eq('city', 'Seoul')
+    .gte('end_date', new Date().toISOString())
+    .order('start_date', { ascending: false })
+    .limit(4);
+
+  if (error) {
+    console.error('Supabase fetch error:', error);
+    return []; // Fallback to empty or cached data
+  }
+  return data;
+};
+```
+
+## 2. CSS Integration (Tailwind to Vanilla)
+
+The Stitch designs use Tailwind CSS. Since you are using **Vanilla CSS with Design Tokens**, we will map the core Tailwind utility classes to your `tokens.css`.
+
+| Design System Property | Tailwind Class (Stitch) | Vanilla CSS Variable |
+| :--- | :--- | :--- |
+| Primary Color | `text-[#FF5400]` | `var(--color-accent)` |
+| Background (Main) | `bg-[#f9f9f9]` | `var(--color-bg-base)` |
+| Background (Alt) | `bg-[#f3f3f3]` | `var(--color-bg-alt)` |
+| Text Color | `text-black` | `var(--color-text-primary)` |
+| Font Family | `font-['Inter']` | `var(--font-main)` |
+| Border Radius | `rounded-none` | `0px` |
+
+## 3. Component Mapping
+
+### `_includes/hero.html`
+- **Source:** {{DATA:SCREEN:SCREEN_16}}
+- **Logic:** Static editorial copy + Primary CTA.
+
+### `_includes/this-week.html`
+- **Source:** {{DATA:SCREEN:SCREEN_16}} (Section 2)
+- **Logic:** Loop through `exhibitions.js` data.
+- **Template (Liquid/Nunjucks):**
+```html
+{% for exhibition in exhibitions %}
+<div class="exhibition-card">
+  <span class="status">{% if exhibition.is_new %}NEW OPENING{% else %}ENDING SOON{% endif %}</span>
+  <h3>{{ exhibition.title }}</h3>
+  <p>{{ exhibition.galleries.name }} — {{ exhibition.galleries.district }}</p>
+</div>
+{% endfor %}
+```
+
+### `_includes/contact-form.html`
+- **Source:** {{DATA:SCREEN:SCREEN_6}}
+- **Logic:** Standard HTML form. Recommended: use Netlify Forms or Formspree for easy static handling.
+
+## 4. Automation (Vercel)
+
+1. **Deploy Hook:** Create a Vercel Deploy Hook in project settings.
+2. **Cron Job:** Set up a GitHub Action or Vercel Cron to `curl` the hook daily at 00:00 UTC.
+   - This ensures the "This Week" section always shows current exhibitions from Supabase.
+
+## 5. Next Steps for Implementation
+1. [ ] Export HTML/CSS from Stitch for each screen.
+2. [ ] Extract layout patterns (Grids, Spacing) into your existing CSS.
+3. [ ] Set up the Supabase data fetcher.
+4. [ ] Build the dynamic "This Week" component.

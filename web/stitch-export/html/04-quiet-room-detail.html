@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface": "#1a1c1c",
+                    "tertiary": "#6f2000",
+                    "on-error-container": "#410002",
+                    "surface-container-high": "#e8e8e8",
+                    "surface-bright": "#f9f9f9",
+                    "on-tertiary-fixed-variant": "#ffdbcf",
+                    "background": "#f9f9f9",
+                    "on-tertiary-container": "#ffffff",
+                    "primary-fixed": "#5e5e5e",
+                    "on-tertiary": "#ffdbcf",
+                    "outline": "#777777",
+                    "error-container": "#ffdad6",
+                    "tertiary-container": "#d14300",
+                    "secondary-fixed-dim": "#ff8b63",
+                    "on-secondary-container": "#390c00",
+                    "on-primary-fixed": "#ffffff",
+                    "tertiary-fixed-dim": "#832700",
+                    "primary": "#000000",
+                    "surface-container-highest": "#e2e2e2",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed": "#390c00",
+                    "secondary-fixed": "#ffb59c",
+                    "secondary-container": "#ffc8b6",
+                    "primary-container": "#3b3b3b",
+                    "on-tertiary-fixed": "#ffffff",
+                    "on-primary": "#e2e2e2",
+                    "inverse-surface": "#2f3131",
+                    "outline-variant": "#c6c6c6",
+                    "surface-variant": "#e2e2e2",
+                    "surface": "#f9f9f9",
+                    "surface-dim": "#dadada",
+                    "on-primary-container": "#ffffff",
+                    "surface-container-low": "#f3f3f3",
+                    "error": "#ba1a1a",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container": "#eeeeee",
+                    "primary-fixed-dim": "#474747",
+                    "surface-tint": "#5e5e5e",
+                    "on-secondary-fixed-variant": "#6f2000",
+                    "tertiary-fixed": "#ab3600",
+                    "on-surface-variant": "#474747",
+                    "on-background": "#1a1c1c",
+                    "on-primary-fixed-variant": "#e2e2e2",
+                    "on-secondary": "#ffffff",
+                    "inverse-primary": "#c6c6c6",
+                    "secondary": "#ab3600",
+                    "inverse-on-surface": "#f1f1f1"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0px",
+                    "lg": "0px",
+                    "xl": "0px",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Inter"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 rounded-none bg-[#f9f9f9] dark:bg-black">
+<div class="flex justify-between items-center px-8 h-20 w-full">
+<div class="text-2xl font-bold tracking-tighter text-black dark:text-white">gallr</div>
+<nav class="hidden md:flex gap-8 items-center">
+<a class="font-['Inter'] text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-[#ff5400] dark:text-[#ff5400] border-b-2 border-[#ff5400] transition-opacity duration-200 active:scale-95" href="#">Exhibitions</a>
+<a class="font-['Inter'] text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-black dark:text-white opacity-60 hover:opacity-100 transition-opacity duration-200 active:scale-95" href="#">Galleries</a>
+<a class="font-['Inter'] text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-black dark:text-white opacity-60 hover:opacity-100 transition-opacity duration-200 active:scale-95" href="#">Editorial</a>
+<a class="font-['Inter'] text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-black dark:text-white opacity-60 hover:opacity-100 transition-opacity duration-200 active:scale-95" href="#">About</a>
+</nav>
+<button class="bg-primary text-on-primary px-8 py-3 font-['Inter'] text-[0.6875rem] font-bold tracking-[0.08em] uppercase rounded-none hover:opacity-90 active:scale-95 transition-all">
+                Get App
+            </button>
+</div>
+<div class="bg-[#f3f3f3] dark:bg-[#1a1a1a] h-[1px] w-full block"></div>
+</header>
+<main class="pt-20">
+<!-- Hero Section -->
+<section class="relative h-[819px] w-full bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Ultra-minimalist white gallery space with soft architectural shadows, high ceilings, and a single abstract sculpture in the center under natural top lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmxZqf1zU_4Oj6Aj44zm-iBi0UX-p7PXEqbmgHDsZTvm1XsNdx4jYHp7yffvW-j2w0Ne3CZUJ_1ZN4sia-Jq_NAngci14fLZ0B_kFcUmx8Bp6I3qzNZItuj5vE7n3sQY_NYGX3BlY46aiyz4bJ9v4yYKi-GR-kWrtYd63MJEYFo0zucjHvSLMe2DMv18ukPOGRdJNZaAeHF-4yKMvGZWjd6LdBdKZItY6pDxx8uYQgNAOEMYYbcxDZyqgrZPDmO4zcDQkxfqpiDU1V"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-8 md:p-16">
+<div class="max-w-4xl">
+<div class="flex gap-4 mb-4">
+<span class="text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-white/80">SEOUL / SPACE 77</span>
+<span class="text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-white/80 opacity-60">|</span>
+<span class="text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-white/80">April 10 — May 15</span>
+</div>
+<h1 class="text-4xl md:text-7xl font-bold tracking-[-0.04em] text-white leading-tight">The Quiet Room</h1>
+</div>
+</div>
+</section>
+<!-- Editorial Content -->
+<section class="px-8 md:px-16 py-24 bg-surface grid grid-cols-1 md:grid-cols-12 gap-12">
+<div class="md:col-span-8">
+<h2 class="text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-secondary mb-8">Curatorial Note</h2>
+<p class="text-xl md:text-2xl font-normal leading-relaxed text-on-surface">
+                    A meditative exploration of negative space and the architecture of silence. Space 77 presents a curated selection of minimalist sculptures that challenge our perception of stillness.
+                </p>
+<div class="mt-12 space-y-6 text-on-surface/70 leading-relaxed max-w-2xl">
+<p>The exhibition invites visitors to experience the "void" as a physical presence. Each piece serves as an anchor in the vast openness of the gallery, demanding a slower pace and heightened sensory awareness.</p>
+</div>
+</div>
+<!-- Metadata Sidebar (Tonal Layering) -->
+<div class="md:col-span-4 bg-surface-container-low p-8 space-y-12">
+<div>
+<h3 class="text-[0.6875rem] font-bold tracking-[0.08em] uppercase mb-4">Gallery</h3>
+<p class="text-title-sm font-semibold">Space 77</p>
+<p class="text-body-md opacity-60">77 Sejong-daero, Jongno-gu, Seoul</p>
+</div>
+<div>
+<h3 class="text-[0.6875rem] font-bold tracking-[0.08em] uppercase mb-4">Admissions</h3>
+<p class="text-title-sm font-semibold">Free Entry</p>
+<p class="text-body-md opacity-60">Pre-booking recommended for weekends</p>
+</div>
+<button class="w-full bg-secondary text-white py-4 font-bold text-[0.6875rem] tracking-[0.08em] uppercase transition-all hover:opacity-90 active:scale-95">
+                    Live Status: Quiet
+                </button>
+</div>
+</section>
+<!-- CTA App Section -->
+<section class="px-8 md:px-16 py-24 bg-primary text-on-primary">
+<div class="max-w-xl">
+<h2 class="text-3xl font-bold tracking-tight mb-6">Plan Your Visit</h2>
+<p class="text-lg opacity-80 mb-10">View directions and gallery hours in the gallr app.</p>
+<div class="flex flex-wrap gap-4">
+<button class="flex items-center gap-3 px-8 py-4 border border-outline-variant/20 hover:bg-white/10 transition-all bg-primary-container">
+<span class="material-symbols-outlined" data-icon="apple" style="font-variation-settings: 'FILL' 1;">ios</span>
+<div class="text-left">
+<p class="text-[10px] uppercase opacity-60">Download on</p>
+<p class="text-sm font-bold">App Store</p>
+</div>
+</button>
+<button class="flex items-center gap-3 px-8 py-4 border border-outline-variant/20 hover:bg-white/10 transition-all bg-primary-container">
+<span class="material-symbols-outlined" data-icon="play_arrow" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+<div class="text-left">
+<p class="text-[10px] uppercase opacity-60">Get it on</p>
+<p class="text-sm font-bold">Google Play</p>
+</div>
+</button>
+</div>
+</div>
+</section>
+<!-- Related Exhibitions (Asymmetric Grid) -->
+<section class="px-8 md:px-16 py-24 bg-surface-bright">
+<h2 class="text-[0.6875rem] font-bold tracking-[0.08em] uppercase mb-12">Related Exhibitions</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Card 1 -->
+<div class="group cursor-pointer">
+<div class="aspect-[4/5] bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Abstract textured painting with heavy brushstrokes in deep blues and charcoal grays hanging in a white room" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDD_tFczSob3qyvkNM_RPzEMKMsslgKpOAy-BOnslt0r_08r5lu9ltBPqBI0IyxjF17-9qDk18gJ6uFBW89U_1w61NdUOUZ4kRHkm6BaqSbcsjoxNX7jdfZfFhcO3eWFmN02WMCydmpbbMNZ25xQygMofJAdqkd9swVBtAzbillNPhTOPd5yMgX0rwriz_WjGNQeWI-ZkgYU_fliiJ7aGsBmILyQ5R1aYUBqOyC7z-rfVhWRCHjK0EgXjl04f3G4B1rAHVUkE3uPeKw"/>
+</div>
+<div class="mt-6">
+<span class="text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-secondary">Ends in 2 days</span>
+<h3 class="text-lg font-bold mt-2">Abstract Echoes</h3>
+<p class="text-sm opacity-60">Modern Art Institute</p>
+</div>
+</div>
+<!-- Card 2 (Elevated by layout shift) -->
+<div class="group cursor-pointer md:-mt-12">
+<div class="aspect-[4/5] bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Digital art installation with neon orange laser beams slicing through a dark smoky room in a geometric pattern" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxEZVEox7NSi__v9mQby1EOq-oXrAdjmLo3NghUq4khD_XvddvsgTFWHebouGXGTr1iGR70Hl8OnrE4g89atBF6NQPpC-83IeLrcIqti8xN3BA_HBLNqzJATaHJ1NzG5jm3NvRMkmri1nhC1s4xGwJRAOVNd0h0cuq_pOyScEq5nEoGV6DmHo5ooKJCDAWEFTXsY_AfLGjs0cdTzebGbPeyPhIAgAPuKrijjOUqkJ24u8gGurx3gSeKvk3yg82Sj1rmdCTmr8QwMS9"/>
+</div>
+<div class="mt-6">
+<span class="text-[0.6875rem] font-bold tracking-[0.08em] uppercase opacity-40">Opening Tomorrow</span>
+<h3 class="text-lg font-bold mt-2">Digital Horizons</h3>
+<p class="text-sm opacity-60">The Tech Lab</p>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="group cursor-pointer">
+<div class="aspect-[4/5] bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Large scale photography of a desolate desert landscape under a harsh white midday sun in a minimalist frame" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDh1QPNK8z9ZKNFkT1BfxI40et9R5PoeyLLW9yG5hjerbZMD6zr0gDZwE4TsNuueJydf0jAVs1O1xHSeqOkgBmg9_CydntjoAufM4uKfvsoDNjn0xYULKAPR4z968IEm5jP4BH2tmrkoTF3HZHKwfIRt-9Sxv_gM6riI1CwPTMXbvzOXTU90Aay7Dm1_DHpb3DI3PnZu2GOnn6UQUHRIvDfzAaqyJeW4YBu7va7Qcw52SDgasqni39xvTMj5xrMJgKHfeQjteJ-YDvu"/>
+</div>
+<div class="mt-6">
+<span class="text-[0.6875rem] font-bold tracking-[0.08em] uppercase opacity-40">Featured</span>
+<h3 class="text-lg font-bold mt-2">Echoes of Now</h3>
+<p class="text-sm opacity-60">Curator’s Choice</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full rounded-none bg-[#f9f9f9] dark:bg-black">
+<div class="bg-[#f3f3f3] dark:bg-[#1a1a1a] h-[1px] w-full block"></div>
+<div class="flex flex-col md:flex-row justify-between items-center px-8 py-12 w-full">
+<div class="text-xl font-bold text-black dark:text-white mb-6 md:mb-0">gallr</div>
+<div class="flex gap-8 mb-8 md:mb-0">
+<a class="font-['Inter'] text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-black dark:text-white opacity-40 hover:opacity-100 hover:text-[#ff5400] transition-all cursor-pointer" href="#">Terms</a>
+<a class="font-['Inter'] text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-black dark:text-white opacity-40 hover:opacity-100 hover:text-[#ff5400] transition-all cursor-pointer" href="#">Privacy</a>
+<a class="font-['Inter'] text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-black dark:text-white opacity-40 hover:opacity-100 hover:text-[#ff5400] transition-all cursor-pointer" href="#">Cookies</a>
+<a class="font-['Inter'] text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-black dark:text-white opacity-40 hover:opacity-100 hover:text-[#ff5400] transition-all cursor-pointer" href="#">Instagram</a>
+</div>
+<div class="font-['Inter'] text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-black dark:text-white opacity-40">
+                © 2024 GALLR. ALL RIGHTS RESERVED.
+            </div>
+</div>
+</footer>
+</body></html>

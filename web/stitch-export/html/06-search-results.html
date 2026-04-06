@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#6f2000",
+                        "background": "#f9f9f9",
+                        "tertiary-fixed": "#ab3600",
+                        "outline-variant": "#c6c6c6",
+                        "surface-dim": "#dadada",
+                        "surface-container-high": "#e8e8e8",
+                        "on-primary-container": "#ffffff",
+                        "tertiary-fixed-dim": "#832700",
+                        "surface-variant": "#e2e2e2",
+                        "outline": "#777777",
+                        "inverse-on-surface": "#f1f1f1",
+                        "tertiary-container": "#d14300",
+                        "secondary-fixed-dim": "#ff8b63",
+                        "on-surface-variant": "#474747",
+                        "on-secondary-fixed": "#390c00",
+                        "surface-bright": "#f9f9f9",
+                        "surface": "#f9f9f9",
+                        "secondary-fixed": "#ffb59c",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffdbcf",
+                        "on-primary-fixed-variant": "#e2e2e2",
+                        "inverse-surface": "#2f3131",
+                        "on-primary-fixed": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#ffc8b6",
+                        "on-tertiary-fixed": "#ffffff",
+                        "on-background": "#1a1c1c",
+                        "surface-container": "#eeeeee",
+                        "on-primary": "#e2e2e2",
+                        "primary-fixed-dim": "#474747",
+                        "on-tertiary-container": "#ffffff",
+                        "inverse-primary": "#c6c6c6",
+                        "primary": "#000000",
+                        "surface-container-low": "#f3f3f3",
+                        "surface-tint": "#5e5e5e",
+                        "on-tertiary-fixed-variant": "#ffdbcf",
+                        "on-surface": "#1a1c1c",
+                        "error": "#ba1a1a",
+                        "on-secondary-fixed-variant": "#6f2000",
+                        "secondary": "#ab3600",
+                        "on-error-container": "#410002",
+                        "on-secondary-container": "#390c00",
+                        "primary-fixed": "#5e5e5e",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#3b3b3b",
+                        "error-container": "#ffdad6",
+                        "surface-container-highest": "#e2e2e2"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0px",
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased">
+<!-- TopNavBar -->
+<nav class="bg-[#f9f9f9] dark:bg-black flex justify-between items-center w-full px-8 py-6 max-w-[1440px] mx-auto sticky top-0 z-50">
+<div class="text-2xl font-bold tracking-tighter text-black dark:text-white">gallr</div>
+<div class="hidden md:flex gap-8 items-center">
+<a class="font-['Inter'] uppercase tracking-[0.08em] text-[0.6875rem] font-bold text-gray-400 dark:text-gray-600 hover:text-[#ab3600] transition-colors duration-200" href="#">Exhibitions</a>
+<a class="font-['Inter'] uppercase tracking-[0.08em] text-[0.6875rem] font-bold text-gray-400 dark:text-gray-600 hover:text-[#ab3600] transition-colors duration-200" href="#">Galleries</a>
+<a class="font-['Inter'] uppercase tracking-[0.08em] text-[0.6875rem] font-bold text-gray-400 dark:text-gray-600 hover:text-[#ab3600] transition-colors duration-200" href="#">Editorial</a>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-black dark:text-white cursor-pointer" data-icon="account_circle">account_circle</span>
+</div>
+</nav>
+<!-- Search Bar Header -->
+<header class="w-full px-8 pt-12 pb-8 max-w-[1440px] mx-auto">
+<div class="relative flex items-center border-b border-primary/20 focus-within:border-primary transition-colors duration-300">
+<input class="w-full bg-transparent border-none focus:ring-0 text-3xl md:text-5xl font-bold tracking-tighter py-4 px-0 placeholder-gray-300" placeholder="Search exhibitions, galleries..." type="text" value="Seoul Minimalist"/>
+<button class="ml-4 hover:text-secondary transition-colors">
+<span class="material-symbols-outlined text-3xl" data-icon="close">close</span>
+</button>
+</div>
+<div class="mt-4">
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-gray-500">Search Results for 'Seoul Minimalist'</span>
+</div>
+</header>
+<!-- Results Tabs -->
+<div class="w-full px-8 max-w-[1440px] mx-auto flex gap-8 border-b border-surface-container overflow-x-auto no-scrollbar">
+<button class="pb-4 font-['Inter'] uppercase tracking-[0.08em] text-[0.6875rem] font-bold border-b-2 border-primary text-primary whitespace-nowrap">All</button>
+<button class="pb-4 font-['Inter'] uppercase tracking-[0.08em] text-[0.6875rem] font-bold border-b-2 border-transparent text-gray-400 hover:text-primary transition-colors whitespace-nowrap">Exhibitions (12)</button>
+<button class="pb-4 font-['Inter'] uppercase tracking-[0.08em] text-[0.6875rem] font-bold border-b-2 border-transparent text-gray-400 hover:text-primary transition-colors whitespace-nowrap">Galleries (4)</button>
+<button class="pb-4 font-['Inter'] uppercase tracking-[0.08em] text-[0.6875rem] font-bold border-b-2 border-transparent text-gray-400 hover:text-primary transition-colors whitespace-nowrap">Editorial (3)</button>
+</div>
+<main class="max-w-[1440px] mx-auto px-8 mt-12 space-y-24">
+<!-- Exhibitions Section -->
+<section>
+<div class="flex justify-between items-end mb-8">
+<h2 class="text-xl font-semibold tracking-tight">Exhibitions</h2>
+<a class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-secondary" href="#">View all</a>
+</div>
+<!-- Asymmetric Grid -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+<!-- Large Feature Card -->
+<div class="md:col-span-8 group cursor-pointer">
+<div class="aspect-[16/9] overflow-hidden bg-surface-container-low">
+<img alt="The Quiet Room Exhibition" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Interior of a minimalist art gallery with polished concrete floors and a single large abstract white canvas on a stark white wall" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdGy2g0UNghF5ocTY0ReRVPAly4pHbiFa9lJmNVzXmNNp4q4gA9hYlCD4PqwRultF0rKxeGp_fxglig1qvJPLRbi2cv0sX3dPM2sKvBd47_nv-Hi_mMtD_IRTRRL1rbVNZ_2B0WCp66Z0tR--pQwOQYjBavme_lrZ3WmdaXPN7gu-TJR_WXfOtLCo64ZRu9efh53b005RNxnjytNjHNwvYlW3Rjp-fmwZqCawowdIDDojBhjwFWRXjd6Y19BCjHN2s6f9Kl0MgtG1l"/>
+</div>
+<div class="mt-6 flex flex-col md:flex-row justify-between items-start gap-4">
+<div>
+<h3 class="text-2xl font-bold tracking-tight">The Quiet Room</h3>
+<p class="text-on-surface-variant mt-1">Space 77</p>
+</div>
+<div class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-gray-500 bg-surface-container px-3 py-1">
+                            Oct 12 — Nov 20, 2024
+                        </div>
+</div>
+</div>
+<!-- Vertical Card -->
+<div class="md:col-span-4 group cursor-pointer">
+<div class="aspect-[3/4] overflow-hidden bg-surface-container-low">
+<img alt="Monochrome Studies" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Close up of a black textured sculpture in a bright sunlit room with sharp architectural shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDe1QsVH2sMSk3-koksMFms8lMddBZWH8DrETqrT1FmEFm7Gh7tEJ2t2CwTaNw19bWJrWS8w_xtg0NqOfUPIJyzeGnEB0U4dLWQUy1dcvzZjLR5RvzqxIdId1pN93kCGrTyBVrABNuEkFNoYsx7diNWkpDwB3a1H1rWMmgwiBW55DM0bUWBidlJYTuaGkMn8E7E45Qc4zV_pIuD_jQWJbhRvoKodcHvdx1od7cz_Dy2tTmTm0PwJiU6WUoic9ciGydhiwzihs7eamM2"/>
+</div>
+<div class="mt-6">
+<h3 class="text-xl font-bold tracking-tight">Monochrome Studies</h3>
+<p class="text-on-surface-variant mt-1">Leeum Museum</p>
+<div class="mt-2 font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-gray-500">
+                            Permanent Collection
+                        </div>
+</div>
+</div>
+</div>
+<!-- Smaller Grid Items -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+<div class="group cursor-pointer">
+<div class="aspect-square overflow-hidden bg-surface-container-low">
+<img alt="White on White" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A minimal white art installation with geometric shapes hanging from a high ceiling in an empty warehouse space" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtRYP31_bJ1WShM1FIMFHgBifsZhvnpMk_lJZA4d8oLCGyz95v38mRfg7WnukWPLrOPjKoRe7cmgqHq0C_EfgzKeHlQ_0jstyw4T_vckD7oFiePBBBI7bGgULWosHz0Ko7c0bBV3T5kz4tAVmW2rIAkQZ6hJaJG01XX1NUPTbvke97e2Y3G6JrqsR_iKtY1EQhP5rY5uT9lPAOie1rT_HoENbujQPCBgsX9PrLyWl1-49GmWSy-Wx5rg68Hgnie2PbUOH6HIUb6jOf"/>
+</div>
+<div class="mt-4">
+<h3 class="title-sm font-bold">White on White</h3>
+<p class="text-on-surface-variant text-sm">Gallery Hyundai</p>
+</div>
+</div>
+<div class="group cursor-pointer">
+<div class="aspect-square overflow-hidden bg-surface-container-low">
+<img alt="The Void" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Abstract painting with subtle gray strokes on a large canvas displayed in a minimalist studio setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAESEaRhtKgyVb-6BttoNXk5KwsRD9UA9SJRym_Gs1hF0uaTZqxJCCenRzC5docAq-uE8UIQa17i4ENllHd-yYnhfGGWbAIdDkIvkQJwmF1jLIGdEwdiqXu7GgfSTZP2cZm7C50SctOHoe_LBoVLN-3akeub153o9pL2R6-d9wIW8y2PtJ4HfmxzrQdRpM4_MB14NYBz6yR2oVSQeRa97pD1VC2G265Ft8IyG-RwB_tGebzfzJlTCpx085JQaz_27jCtgw5zmSkLrgT"/>
+</div>
+<div class="mt-4">
+<h3 class="title-sm font-bold">The Void</h3>
+<p class="text-on-surface-variant text-sm">Kukje Gallery</p>
+</div>
+</div>
+<div class="group cursor-pointer">
+<div class="aspect-square overflow-hidden bg-surface-container-low">
+<img alt="Seoul Form" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Architectural detail of a modern building in Seoul featuring clean lines and a glass facade during twilight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAoY8A61nJSQFq40ieN6saYgD_-by63iYtWeEZEH8P1O-cNn7Xg8LxZO5EuxnAPCDLOu36KUH9tliI7EnrpF82-oaT0ERItl0pzCi7LbkWc8IXked3fihafeNVg3LpKSlSKsJ_pGov8opKV2lGswHmsYpF04ABZhZHKNTTdYTnLZ1S0UDBJxLBysR66FFGkkIpGByWXtyrerXvQ5-nsNZYdupK9sTH-3jdTs2Ol2R0EvZZh4y00rsW1qik5bg3DNgjDc0Gqf_DlhTlF"/>
+</div>
+<div class="mt-4">
+<h3 class="title-sm font-bold">Seoul Form</h3>
+<p class="text-on-surface-variant text-sm">PKM Gallery</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Galleries Section -->
+<section class="bg-surface-container-low -mx-8 px-8 py-24">
+<div class="max-w-[1440px] mx-auto">
+<div class="flex justify-between items-end mb-12">
+<h2 class="text-xl font-semibold tracking-tight">Galleries</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="bg-surface-container-lowest p-8 flex flex-col justify-between aspect-square group hover:bg-black transition-colors duration-300">
+<div>
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-secondary">Featured</span>
+<h3 class="text-2xl font-bold mt-4 group-hover:text-white transition-colors">Space 77</h3>
+<p class="text-on-surface-variant mt-2 group-hover:text-gray-400">Jongno-gu, Seoul</p>
+</div>
+<div class="flex items-center gap-2 group-hover:text-white transition-colors">
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold">Explore</span>
+<span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-8 flex flex-col justify-between aspect-square group hover:bg-black transition-colors duration-300">
+<div>
+<h3 class="text-2xl font-bold mt-4 group-hover:text-white transition-colors">Arario Museum</h3>
+<p class="text-on-surface-variant mt-2 group-hover:text-gray-400">Bukchon-ro, Seoul</p>
+</div>
+<div class="flex items-center gap-2 group-hover:text-white transition-colors">
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold">Explore</span>
+<span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-8 flex flex-col justify-between aspect-square group hover:bg-black transition-colors duration-300">
+<div>
+<h3 class="text-2xl font-bold mt-4 group-hover:text-white transition-colors">Perrotin Seoul</h3>
+<p class="text-on-surface-variant mt-2 group-hover:text-gray-400">Gangnam-gu, Seoul</p>
+</div>
+<div class="flex items-center gap-2 group-hover:text-white transition-colors">
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold">Explore</span>
+<span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-8 flex flex-col justify-between aspect-square group hover:bg-black transition-colors duration-300">
+<div>
+<h3 class="text-2xl font-bold mt-4 group-hover:text-white transition-colors">Gana Art</h3>
+<p class="text-on-surface-variant mt-2 group-hover:text-gray-400">Pyeongchang-dong, Seoul</p>
+</div>
+<div class="flex items-center gap-2 group-hover:text-white transition-colors">
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold">Explore</span>
+<span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Editorial Section -->
+<section class="pb-24">
+<div class="flex justify-between items-end mb-12">
+<h2 class="text-xl font-semibold tracking-tight">Editorial</h2>
+</div>
+<div class="space-y-1">
+<a class="group flex items-center gap-8 py-8 border-b border-surface-container-high hover:bg-surface-container-low transition-colors px-4" href="#">
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-gray-400">01</span>
+<div class="w-32 h-20 overflow-hidden bg-surface-container shrink-0">
+<img alt="Editorial Article" class="w-full h-full object-cover" data-alt="Monochromatic photograph of a sleek modern chair in an empty room with natural light coming through a large window" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-yvl_PCFYPei1NTmlVje12fVGV2wQD7uPfSecHthdaF-YqLjHAJWfIuJyUi3hjruPR6bl_ufPrS63zzl5GrtvErXpmHEHvcWXF-K2Tj9g3g09AUphYg9MXgzcx5MQjOUU8SjdO9kLS7Ev9JpJv1Jjw1i1cukbPxyVxkuHwXyLiPTomGqdPuUthTx2GeJ5Ei73BxBAFDlKsNWGRbVi-ltZh-KFzOw_xm1X_fTdzMdFFMn-grMiJrfwh11p0ImXVbxG5BEJ4oiZQWX3"/>
+</div>
+<div class="flex-grow">
+<h3 class="text-lg font-bold group-hover:text-secondary transition-colors">The Minimalist Movement in Seoul</h3>
+<p class="text-sm text-on-surface-variant mt-1">Understanding the shift towards reductionist aesthetics in the capital.</p>
+</div>
+<span class="material-symbols-outlined text-gray-300 group-hover:text-primary transition-colors" data-icon="north_east">north_east</span>
+</a>
+<a class="group flex items-center gap-8 py-8 border-b border-surface-container-high hover:bg-surface-container-low transition-colors px-4" href="#">
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-gray-400">02</span>
+<div class="w-32 h-20 overflow-hidden bg-surface-container shrink-0">
+<img alt="Editorial Article" class="w-full h-full object-cover" data-alt="A clean white coffee cup on a light wooden table next to a single open art book in a brightly lit cafe" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8xJSlDdhb4sPMIC-JyeASdVZ8m9DfNqRkJlxO7B8Ur8V-ZZfN3LVHnoFe-cRxFqxDpVfZKTzAmsCFitcaJLiRt8SnZxc7zrzlV6P_1jgzLTagtYmURo5CaOOu1_nWKJScZeMe4jimPvOIc-hmqZzzyw_xC3wCDkiqjw2SEURhQFeRdgmJXj5dMvltv5PLtmMIrgRsYcLxnWQf59w1FKw6Lp7Nb_o2AE1z9bK561hX8qFJ92kcadQ-1alzi0G4UOeuj2vb4UDNIUtE"/>
+</div>
+<div class="flex-grow">
+<h3 class="text-lg font-bold group-hover:text-secondary transition-colors">Curating Space 77: An Interview</h3>
+<p class="text-sm text-on-surface-variant mt-1">Founder Min-jun Kim on why less is more for the new generation of collectors.</p>
+</div>
+<span class="material-symbols-outlined text-gray-300 group-hover:text-primary transition-colors" data-icon="north_east">north_east</span>
+</a>
+<a class="group flex items-center gap-8 py-8 border-b border-surface-container-high hover:bg-surface-container-low transition-colors px-4" href="#">
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-gray-400">03</span>
+<div class="w-32 h-20 overflow-hidden bg-surface-container shrink-0">
+<img alt="Editorial Article" class="w-full h-full object-cover" data-alt="Close up of black and white photography hanging on a gallery wall with elegant spot lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3121ZYlhY0C2bQhhBy4SUidC91SSmRYG079Xs6usgXIBBmeIp8569_ZFvS2_2URILFOkiXXJpICH5hcgnNZzZZdfD6905dZjVou_CCYHgBZz9wl8l3BdVQIRpOz0VTl_X3FRxC0tC3S2IXMUvLiOCRQX-CdEPUiQE5UFY8Sbdsu_oKsbULA52u1fE_Y4iReG2p_kz_b1d4ZKxx6teVC6_W3jOi5d7bE81JXpaI1f8aoNu9-yIJFvrueztYJvP3Q9DCwdTG5xpSa_K"/>
+</div>
+<div class="flex-grow">
+<h3 class="text-lg font-bold group-hover:text-secondary transition-colors">Dansaekhwa: The Legacy of Korean Abstraction</h3>
+<p class="text-sm text-on-surface-variant mt-1">Tracing the origins of Seoul’s minimalist obsession back to the 1970s.</p>
+</div>
+<span class="material-symbols-outlined text-gray-300 group-hover:text-primary transition-colors" data-icon="north_east">north_east</span>
+</a>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full px-8 py-12 flex flex-col md:flex-row justify-between items-center mt-24 bg-[#f3f3f3] dark:bg-[#0a0a0a]">
+<div class="text-xl font-bold tracking-tighter text-black dark:text-white mb-8 md:mb-0">gallr</div>
+<div class="flex flex-col md:flex-row gap-8 items-center">
+<div class="flex gap-6">
+<a class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-gray-500 hover:text-[#ab3600]" href="#">Terms</a>
+<a class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-gray-500 hover:text-[#ab3600]" href="#">Privacy</a>
+<a class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-gray-500 hover:text-[#ab3600]" href="#">Archive</a>
+<a class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-gray-500 hover:text-[#ab3600]" href="#">Contact</a>
+</div>
+<p class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-black dark:text-white">© 2024 gallr. THE CURATOR’S CANVAS.</p>
+</div>
+</footer>
+<!-- BottomNavBar (Mobile only) -->
+<div class="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-surface-container flex justify-around items-center py-4 px-6 z-50">
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="font-['Inter'] text-[0.6rem] uppercase font-bold">Search</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="font-['Inter'] text-[0.6rem] uppercase font-bold">Events</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400">
+<span class="material-symbols-outlined" data-icon="gallery_thumbnail">gallery_thumbnail</span>
+<span class="font-['Inter'] text-[0.6rem] uppercase font-bold">Galleries</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400">
+<span class="material-symbols-outlined" data-icon="bookmark">bookmark</span>
+<span class="font-['Inter'] text-[0.6rem] uppercase font-bold">Saved</span>
+</button>
+</div>
+</body></html>

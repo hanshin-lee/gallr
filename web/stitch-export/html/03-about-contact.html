@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>About — gallr</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#e2e2e2",
+                        "error": "#ba1a1a",
+                        "background": "#f9f9f9",
+                        "on-surface-variant": "#474747",
+                        "secondary-container": "#ffc8b6",
+                        "on-secondary-container": "#390c00",
+                        "on-secondary-fixed": "#390c00",
+                        "on-primary-fixed": "#ffffff",
+                        "secondary-fixed": "#ffb59c",
+                        "on-tertiary-fixed-variant": "#ffdbcf",
+                        "surface-container-highest": "#e2e2e2",
+                        "outline-variant": "#c6c6c6",
+                        "inverse-surface": "#2f3131",
+                        "surface-dim": "#dadada",
+                        "surface-container": "#eeeeee",
+                        "secondary-fixed-dim": "#ff8b63",
+                        "on-tertiary-fixed": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-container": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-primary": "#c6c6c6",
+                        "on-error": "#ffffff",
+                        "surface-container-high": "#e8e8e8",
+                        "on-surface": "#1a1c1c",
+                        "primary-fixed-dim": "#474747",
+                        "on-primary-container": "#ffffff",
+                        "tertiary-fixed-dim": "#832700",
+                        "tertiary-fixed": "#ab3600",
+                        "surface-variant": "#e2e2e2",
+                        "on-tertiary": "#ffdbcf",
+                        "inverse-on-surface": "#f1f1f1",
+                        "surface-tint": "#5e5e5e",
+                        "on-primary-fixed-variant": "#e2e2e2",
+                        "tertiary": "#6f2000",
+                        "on-error-container": "#410002",
+                        "primary": "#000000",
+                        "on-secondary-fixed-variant": "#6f2000",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#f9f9f9",
+                        "outline": "#777777",
+                        "surface-container-low": "#f3f3f3",
+                        "secondary": "#ab3600",
+                        "primary-fixed": "#5e5e5e",
+                        "surface": "#f9f9f9",
+                        "primary-container": "#3b3b3b",
+                        "on-background": "#1a1c1c",
+                        "tertiary-container": "#d14300",
+                        "brand-orange": "#FF5400"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0px",
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        /* Custom reset for minimalist inputs */
+        input, textarea {
+            border-radius: 0px !important;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-stone-50/80 dark:bg-stone-950/80 backdrop-blur-xl flex justify-between items-center px-8 py-6">
+<div class="text-2xl font-bold tracking-tighter text-stone-900 dark:text-stone-50">gallr</div>
+<div class="hidden md:flex items-center space-x-12">
+<a class="font-['Inter'] uppercase tracking-[0.08em] text-[0.6875rem] font-bold text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors" href="#">Exhibitions</a>
+<a class="font-['Inter'] uppercase tracking-[0.08em] text-[0.6875rem] font-bold text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors" href="#">Artists</a>
+<a class="font-['Inter'] uppercase tracking-[0.08em] text-[0.6875rem] font-bold text-orange-700 dark:text-orange-500 border-b-2 border-orange-700 dark:border-orange-500 pb-1" href="#">About</a>
+<a class="font-['Inter'] uppercase tracking-[0.08em] text-[0.6875rem] font-bold text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors" href="#">Journal</a>
+</div>
+<button class="font-['Inter'] uppercase tracking-[0.08em] text-[0.6875rem] font-bold text-stone-900 dark:text-stone-50 hover:bg-stone-200/50 dark:hover:bg-stone-800/50 px-4 py-2">Sign In</button>
+</nav>
+<main class="flex-grow pt-32">
+<!-- Hero Section -->
+<section class="px-8 mb-32">
+<div class="max-w-6xl mx-auto">
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-secondary mb-6 block">01 / Introduction</span>
+<h1 class="text-[3.5rem] md:text-[5rem] font-bold tracking-[-0.04em] leading-[0.9] text-primary mb-12">The Cultural<br/>Front Door.</h1>
+<div class="grid md:grid-cols-2 gap-16 items-start">
+<p class="text-xl md:text-2xl font-normal leading-relaxed text-on-surface">
+                        gallr is more than a tool—it’s a scene. We curate the pulse of the contemporary art world, transforming the act of discovery into an editorial experience. This is where the gallery wall meets the digital canvas.
+                    </p>
+<div class="w-full aspect-[4/3] bg-surface-container-low overflow-hidden">
+<img alt="minimalist white gallery space with soft morning light hitting a single abstract sculpture" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVj41ZSTxy_yejHtxn49hKm4laU8Qmk3vzxBluD7WqCIk8-4ZpGxUXSVz53jjfJelZbXKBeGPGoaK_mCuJ93Y6R2ygfE0pXCNKmLJkUuEZ4cM6sXp3i5ei06xUM6e2c6vqId498ECJA3Rs0DzHYXmg-A0LjqSXBpSLTKnH3jk_JzwaVDzVdH78Cq-3zGS2LFW1nOtrJqApzKAYwqZKh7mBE9YmgZaMBTsgtXFDgSKeBhEhXLfvZsZud07lsWYzhYw9AyCB4D6a1K_5"/>
+</div>
+</div>
+</div>
+</section>
+<!-- The Philosophy -->
+<section class="bg-surface-container-low py-32 px-8">
+<div class="max-w-6xl mx-auto">
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-secondary mb-6 block">02 / Philosophy</span>
+<h2 class="text-[2.5rem] md:text-[4rem] font-bold tracking-[-0.04em] leading-[1.1] text-primary mb-16 max-w-4xl">Curation over Collection. Taste as a Service.</h2>
+<div class="grid md:grid-cols-3 gap-12">
+<div class="flex flex-col space-y-6">
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-primary">Reductionism</span>
+<p class="text-sm leading-relaxed text-on-surface-variant">We strip away the noise. No ads, no algorithmic clutter. Just high-fidelity art discovery tailored for the discerning eye.</p>
+</div>
+<div class="flex flex-col space-y-6">
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-primary">Intentionality</span>
+<p class="text-sm leading-relaxed text-on-surface-variant">Every exhibition featured on gallr is vetted. We don't list everything; we list what matters to the cultural conversation.</p>
+</div>
+<div class="flex flex-col space-y-6">
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-primary">Authenticity</span>
+<p class="text-sm leading-relaxed text-on-surface-variant">Connecting the global collector with the independent local gallery. Bridging the gap between the screen and the physical space.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- The Curator's Note -->
+<section class="py-32 px-8">
+<div class="max-w-6xl mx-auto grid md:grid-cols-12 gap-16">
+<div class="md:col-span-4">
+<div class="w-full aspect-[3/4] bg-surface-container-high overflow-hidden">
+<img alt="close-up portrait of an art curator in a black turtleneck against a stark grey background" class="w-full h-full object-cover grayscale" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCE4vFDUyL6wmePNROell4I2RP3sRRCm9yLpj3x800PFX5IaywDbVH8sUlmTlQw7OBW1LnTPpn8ZUFDGovuEfcSZCae2of2WSJpbsGlRt4KOu0H95sAu9X2ClQKX5w--Y7KVA9JeyK_35rQ8DtsPDJrNIgHu4gka9-rGmhxtKODKND7oSf47-WwayKBTPr7T0-CNchRMA1LTS5bCBnAtMFE0V6CCBUyhuA5ZhbPHaaFBT5hP-TV2KyWgCipMH6bil_ApxR3G-zZsKFC"/>
+</div>
+<p class="mt-6 font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold">Ji-won Kim, Founder &amp; Curator</p>
+</div>
+<div class="md:col-span-8 flex flex-col justify-center">
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-secondary mb-6 block">03 / The Note</span>
+<h3 class="text-3xl font-semibold mb-8 tracking-tight">Bridging the Seoul Scene</h3>
+<div class="space-y-6 text-lg leading-relaxed text-on-surface-variant max-w-2xl">
+<p>Seoul’s art scene is vibrant, frantic, and often hidden behind heavy doors in Samcheong-dong and Hannam-dong. gallr was born from a frustration with the friction of finding these spaces.</p>
+<p>We wanted to build something that felt like the galleries themselves—quiet, authoritative, and deeply focused on the work. Our mission is to democratize the 'insider' knowledge of the art world without diluting the prestige of the experience.</p>
+<p>We believe that when art is discovered through a lens of respect and high-design, the connection between the viewer and the artist is amplified. This is our commitment to the craft.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- The App & Community -->
+<section class="bg-primary text-on-primary py-32 px-8">
+<div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-24 items-center">
+<div>
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-secondary mb-6 block">04 / Platform</span>
+<h2 class="text-[2.5rem] md:text-[3.5rem] font-bold tracking-[-0.04em] leading-[1.0] mb-8">The Gallery in your pocket.</h2>
+<p class="text-lg text-on-primary/80 mb-12 max-w-md">Join a community of 50,000+ art enthusiasts and collectors. Get exclusive invites to private viewings and first-access to limited drops.</p>
+<div class="flex flex-col sm:flex-row gap-4">
+<button class="bg-on-primary text-primary px-8 py-4 font-bold flex items-center justify-center gap-3 transition-transform hover:scale-[1.02]">
+<span class="material-symbols-outlined">ios</span>
+<div class="text-left">
+<div class="text-[0.6rem] uppercase tracking-widest leading-none">Download on the</div>
+<div class="text-lg leading-none">App Store</div>
+</div>
+</button>
+<button class="border border-on-primary/20 text-on-primary px-8 py-4 font-bold flex items-center justify-center gap-3 transition-colors hover:bg-on-primary/10">
+<span class="material-symbols-outlined">play_arrow</span>
+<div class="text-left">
+<div class="text-[0.6rem] uppercase tracking-widest leading-none">Get it on</div>
+<div class="text-lg leading-none">Google Play</div>
+</div>
+</button>
+</div>
+</div>
+<div class="relative">
+<div class="aspect-[9/16] bg-stone-900 overflow-hidden shadow-2xl relative z-10">
+<img alt="smartphone screen showing a high-end minimalist art exhibition app interface with monochrome aesthetics" class="w-full h-full object-cover opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHBwV-srJbEUz8TI8cG-AbBpK7uxV5CEtAPIGe4vkIm0MMkHx69j0A6Y3yvQcL7hxp4yFdMc1IXXGhWFdmxXlupxIqYWvWrtptvGqhQx9LJWKkknaXomla0alMJ6hEstvmGMVocXqTNaJFkk3aSFpLI7YxMyn6BSMgywONQl55kSlgeUBGemDIYmSpxOEpHSFctyCkWf11S5ufsPDdtR6JSKkvN5DGuikJVv0E4jwEpDK7szjTa0FB4FgRozBto7my8ki3hpXWIRn0"/>
+</div>
+<div class="absolute -top-12 -right-12 w-64 h-64 bg-secondary/10 backdrop-blur-3xl -z-0"></div>
+</div>
+</div>
+</section>
+<!-- Team/Contact & Form -->
+<section class="py-32 px-8">
+<div class="max-w-6xl mx-auto">
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold text-secondary mb-12 block">05 / The Core</span>
+<div class="grid md:grid-cols-2 gap-24">
+<div class="space-y-12">
+<div class="group cursor-default border-b border-outline-variant/20 pb-8">
+<div class="flex justify-between items-end">
+<h4 class="text-2xl font-bold tracking-tight">Ji-won Kim</h4>
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase text-on-surface-variant mb-1">Founder / Curator</span>
+</div>
+</div>
+<div class="group cursor-default border-b border-outline-variant/20 pb-8">
+<div class="flex justify-between items-end">
+<h4 class="text-2xl font-bold tracking-tight">Soren Nielsen</h4>
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase text-on-surface-variant mb-1">Design Director</span>
+</div>
+</div>
+<div class="group cursor-default border-b border-outline-variant/20 pb-8">
+<div class="flex justify-between items-end">
+<h4 class="text-2xl font-bold tracking-tight">Elias Thorne</h4>
+<span class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase text-on-surface-variant mb-1">Head of Engineering</span>
+</div>
+</div>
+<!-- Contact Form Integration -->
+<div class="mt-20 pt-12 border-t border-primary/10">
+<h4 class="font-['Inter'] text-[0.6875rem] tracking-widest uppercase font-bold text-primary mb-8">Send a Message</h4>
+<form action="#" class="space-y-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="block text-[0.6rem] uppercase tracking-widest font-bold text-stone-400" for="name">Name</label>
+<input class="w-full border-0 border-b border-outline-variant bg-transparent px-0 py-3 text-sm focus:border-brand-orange focus:ring-0 transition-colors" id="name" placeholder="Your name" type="text"/>
+</div>
+<div class="space-y-2">
+<label class="block text-[0.6rem] uppercase tracking-widest font-bold text-stone-400" for="email">Email</label>
+<input class="w-full border-0 border-b border-outline-variant bg-transparent px-0 py-3 text-sm focus:border-brand-orange focus:ring-0 transition-colors" id="email" placeholder="Your email" type="email"/>
+</div>
+</div>
+<div class="space-y-2">
+<label class="block text-[0.6rem] uppercase tracking-widest font-bold text-stone-400" for="message">Message</label>
+<textarea class="w-full border-0 border-b border-outline-variant bg-transparent px-0 py-3 text-sm focus:border-brand-orange focus:ring-0 transition-colors min-h-[100px] resize-none" id="message" placeholder="How can we help?"></textarea>
+</div>
+<button class="w-full bg-primary hover:bg-brand-orange text-white py-4 font-['Inter'] text-[0.6875rem] tracking-widest uppercase font-bold transition-all duration-300" type="submit">
+                                    Submit Inquiry
+                                </button>
+</form>
+</div>
+</div>
+<div class="flex flex-col justify-between">
+<div>
+<h4 class="text-sm font-bold uppercase tracking-widest mb-4">Inquiries</h4>
+<p class="text-4xl font-bold tracking-tighter mb-4 hover:text-brand-orange transition-colors cursor-pointer">hello@gallr.art</p>
+<p class="text-sm text-on-surface-variant">Press, Partnerships, and Artist Submissions.</p>
+</div>
+<div class="mt-16 pt-16 border-t border-outline-variant/20 flex gap-8">
+<a class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold hover:text-brand-orange transition-colors" href="#">Instagram</a>
+<a class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold hover:text-brand-orange transition-colors" href="#">Twitter</a>
+<a class="font-['Inter'] text-[0.6875rem] tracking-[0.08em] uppercase font-bold hover:text-brand-orange transition-colors" href="#">LinkedIn</a>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-stone-100 dark:bg-stone-900 w-full flex flex-col md:flex-row justify-between items-center px-8 py-12 mt-auto">
+<div class="mb-8 md:mb-0">
+<div class="text-xl font-bold tracking-tighter text-stone-900 dark:text-stone-50 mb-2">gallr</div>
+<p class="font-['Inter'] text-[0.6875rem] tracking-widest uppercase font-bold text-stone-500 dark:text-stone-400">© 2024 gallr. THE CURATOR'S CANVAS.</p>
+</div>
+<div class="flex space-x-8">
+<a class="font-['Inter'] text-[0.6875rem] tracking-widest uppercase font-bold text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors" href="#">Terms</a>
+<a class="font-['Inter'] text-[0.6875rem] tracking-widest uppercase font-bold text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors" href="#">Privacy</a>
+<a class="font-['Inter'] text-[0.6875rem] tracking-widest uppercase font-bold text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors" href="#">Press</a>
+<a class="font-['Inter'] text-[0.6875rem] tracking-widest uppercase font-bold text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors" href="#">Contact</a>
+</div>
+</footer>
+</body></html>

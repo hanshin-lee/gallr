@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Editorial — gallr</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#ab3600",
+                        "outline-variant": "#c6c6c6",
+                        "surface-dim": "#dadada",
+                        "tertiary": "#6f2000",
+                        "background": "#f9f9f9",
+                        "surface-bright": "#f9f9f9",
+                        "surface": "#f9f9f9",
+                        "secondary-fixed": "#ffb59c",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffdbcf",
+                        "on-primary-fixed-variant": "#e2e2e2",
+                        "inverse-surface": "#2f3131",
+                        "on-primary-fixed": "#ffffff",
+                        "surface-container-high": "#e8e8e8",
+                        "on-primary-container": "#ffffff",
+                        "tertiary-fixed-dim": "#832700",
+                        "surface-variant": "#e2e2e2",
+                        "outline": "#777777",
+                        "inverse-on-surface": "#f1f1f1",
+                        "tertiary-container": "#d14300",
+                        "secondary-fixed-dim": "#ff8b63",
+                        "on-surface-variant": "#474747",
+                        "on-secondary-fixed": "#390c00",
+                        "primary": "#000000",
+                        "surface-container-low": "#f3f3f3",
+                        "surface-tint": "#5e5e5e",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#ffc8b6",
+                        "on-tertiary-fixed": "#ffffff",
+                        "on-background": "#1a1c1c",
+                        "surface-container": "#eeeeee",
+                        "on-primary": "#e2e2e2",
+                        "primary-fixed-dim": "#474747",
+                        "on-tertiary-container": "#ffffff",
+                        "inverse-primary": "#c6c6c6",
+                        "secondary": "#ab3600",
+                        "on-error-container": "#410002",
+                        "on-secondary-container": "#390c00",
+                        "primary-fixed": "#5e5e5e",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#3b3b3b",
+                        "error-container": "#ffdad6",
+                        "surface-container-highest": "#e2e2e2",
+                        "on-tertiary-fixed-variant": "#ffdbcf",
+                        "on-surface": "#1a1c1c",
+                        "error": "#ba1a1a",
+                        "on-secondary-fixed-variant": "#6f2000"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0px",
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f9f9f9; }
+        ::-webkit-scrollbar-thumb { background: #000; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-secondary selection:text-white">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 rounded-none bg-stone-50/80 dark:bg-black/80 backdrop-blur-xl">
+<div class="flex justify-between items-center w-full px-8 h-20 max-w-screen-2xl mx-auto">
+<div class="text-2xl font-bold tracking-tighter text-black dark:text-white">gallr</div>
+<div class="hidden md:flex items-center space-x-12">
+<a class="font-['Inter'] font-medium text-[0.875rem] tracking-[0.01em] uppercase text-stone-500 dark:text-stone-400 hover:text-orange-600 dark:hover:text-orange-500 transition-colors duration-300" href="#">Exhibitions</a>
+<a class="font-['Inter'] font-medium text-[0.875rem] tracking-[0.01em] uppercase text-stone-500 dark:text-stone-400 hover:text-orange-600 dark:hover:text-orange-500 transition-colors duration-300" href="#">Galleries</a>
+<a class="font-['Inter'] font-medium text-[0.875rem] tracking-[0.01em] uppercase text-orange-600 dark:text-orange-500 font-bold border-b-2 border-orange-600" href="#">Editorial</a>
+<a class="font-['Inter'] font-medium text-[0.875rem] tracking-[0.01em] uppercase text-stone-500 dark:text-stone-400 hover:text-orange-600 dark:hover:text-orange-500 transition-colors duration-300" href="#">About</a>
+</div>
+<div class="flex items-center space-x-6">
+<button class="material-symbols-outlined text-black scale-100 active:scale-95 transition-transform" data-icon="search">search</button>
+<button class="bg-primary text-on-primary px-8 py-3 font-['Inter'] font-medium text-[0.875rem] tracking-[0.01em] uppercase scale-100 active:scale-95 transition-transform">Get App</button>
+</div>
+</div>
+</nav>
+<main class="pt-20">
+<!-- Hero: Featured Article -->
+<section class="relative w-full h-[870px] overflow-hidden bg-primary">
+<img alt="Contemporary art installation in Seoul" class="w-full h-full object-cover opacity-80 mix-blend-luminosity hover:opacity-100 transition-opacity duration-700" data-alt="monolithic white sculpture in a minimalist concrete gallery space with dramatic overhead lighting and long shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBMbdG1fumcmoOcxeWvPAwZIaZTx9R-SK5c34jpWNNQzPgxrpsj2bXQnVFoXnywOTfQSQ6nG-FE4xjSZMvOMRohEPUUz9rsDyKwjPd5rnjHip1blWwgiBaon6m73AsBVMKIwYhnwmPYvGSDJtAvLF1YL22NPs68O21CKWoc-L3-bn8EQjxiBDi3eLM-_jEj4t7aG8MLuoTf_lMR8frGtPre7Oa_RyRtQq9fvhWAs-ZGBnUhv8GMJxYLQpFYEsfZwI6gMNqJoUfoa9KE"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary via-transparent to-transparent opacity-60"></div>
+<div class="absolute bottom-0 left-0 w-full p-8 md:p-16">
+<div class="max-w-4xl">
+<span class="inline-block bg-secondary text-white px-3 py-1 text-[0.6875rem] font-bold tracking-[0.08em] uppercase mb-6">Featured Story</span>
+<h1 class="text-[3.5rem] md:text-[5rem] font-bold tracking-[-0.04em] text-white leading-tight mb-8">
+                        The New Vanguard <br/>of Seoul
+                    </h1>
+<div class="flex items-end justify-between">
+<div class="flex flex-col space-y-2">
+<p class="text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-stone-300">Words by Ji-won Park</p>
+<p class="text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-stone-400">Published 12 Oct 2024</p>
+</div>
+<button class="flex items-center space-x-3 text-white border-b-2 border-white pb-2 hover:text-secondary hover:border-secondary transition-all">
+<span class="text-[1.0rem] font-semibold">Read the Essay</span>
+<span class="material-symbols-outlined">arrow_right_alt</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Editorial Grid -->
+<section class="px-8 py-24 bg-surface max-w-screen-2xl mx-auto">
+<div class="flex justify-between items-baseline mb-16">
+<h2 class="text-[1.75rem] font-semibold tracking-[-0.02em] uppercase">Deep Dives</h2>
+<div class="w-1/2 h-[1px] bg-outline-variant/20 ml-8"></div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-16">
+<!-- Large Item 1 -->
+<div class="md:col-span-8 group cursor-pointer">
+<div class="aspect-[16/9] overflow-hidden bg-surface-container-low mb-8">
+<img alt="Park Seo-bo Studio" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" data-alt="Elderly Korean artist in a sun-drenched studio surrounded by large textured monochromatic canvases and traditional tools" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3PrsGjwidW142Ts-XQ2SL8fA-pNlCYIwERqqdkfH87fFsJuJFEUnMZVcIkm9y4qH3ADUyNPhUEGAgTGRl_svnl6hahZSbBvR_lAYMuFyciaU0y2Tim28x6wT4NOUPZimru_J2Kzy9q3wE_IfTbnmCg9dtjAoGufO4rJ90cUfjOWBwyAl-RVu1uAGqpPsbufYfae6aSZlfgI5ljjJ9OIb3_PyVFq9Nc-TXzYwrsVxvxK1t4ye3SsjeQFVZR_B5hf3nfHvxuEUh2J5_"/>
+</div>
+<div class="max-w-2xl">
+<span class="text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-secondary mb-4 block">Interview</span>
+<h3 class="text-[1.75rem] font-semibold tracking-[-0.02em] leading-snug mb-4 group-hover:text-secondary transition-colors">
+                            Studio Visit: Park Seo-bo and the Art of Infinite Repetition
+                        </h3>
+<p class="text-[0.875rem] leading-relaxed text-on-surface-variant mb-6">
+                            An intimate look into the meditative practice of Korea’s master of Dansaekhwa, exploring the rhythm of the stroke and the silence of the canvas.
+                        </p>
+</div>
+</div>
+<!-- Vertical Small Item -->
+<div class="md:col-span-4 flex flex-col justify-between">
+<div class="group cursor-pointer">
+<div class="aspect-[3/4] overflow-hidden bg-surface-container-low mb-6">
+<img alt="Space 77" class="w-full h-full object-cover mix-blend-multiply opacity-90 group-hover:opacity-100 transition-opacity" data-alt="ultra-minimalist art gallery interior with smooth concrete floors and a single black sculpture against a stark white wall" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDy8rNqQ6fA0FzU86evi9mC7azClTfdaP8kPjIbI6IHihSH9sbTavRp3jfURZbmrZVEcvIzHOQQifswpsvQndHfbtBYfxUwyjT0EptlgaJSUcqcaDpgEYbPDEQMWNQovJV6m2nsBW_636fKIJSQ6m85lhDHEmaEGB7gU8ioihz6XhHMsh72Gsi6USRasksiDneSIJBPzcr_KFP9xeuEYtFpVl4LoYY9V5GGR7w4ely0fLkx7ymzqulabTygvU3SjvJTbgiuqV5A0z92"/>
+</div>
+<span class="text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-stone-500 mb-3 block">Architectural Review</span>
+<h3 class="text-[1.25rem] font-semibold leading-tight mb-4">The Minimalism of Space 77</h3>
+</div>
+</div>
+<!-- Asymmetric Row -->
+<div class="md:col-span-4 group cursor-pointer pt-12">
+<div class="border-t-2 border-primary pt-8">
+<span class="text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-stone-500 mb-3 block">Perspective</span>
+<h3 class="text-[1.25rem] font-semibold leading-tight mb-4">Why Collectors are Pivoting to Generative Sculpture</h3>
+<p class="text-[0.875rem] text-on-surface-variant">The intersection of algorithmic logic and physical weight.</p>
+</div>
+</div>
+<div class="md:col-span-8 group cursor-pointer pt-12">
+<div class="aspect-[21/9] overflow-hidden bg-surface-container-low mb-6">
+<img alt="Light Installation" class="w-full h-full object-cover brightness-50 grayscale group-hover:grayscale-0 transition-all duration-1000" data-alt="abstract light installation with neon blue and orange streaks reflecting on dark water in a cavernous space" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVDFr8F5Kya6jmYGZlGPZL2yTfHvUj6HfNgUpMBCM6xRv9sQtljMNukfTR8-Dp4yRKUQA26Crxge3QIq2gLi4Fn3hgDPt6mtrgh0tPTyjcsGC-bFOYSeWa6J1iaokHxY-cSUOj-EMZHWKyVRmV4qk0MBMGEpJqA_gzheyetgSVNVoCVrmz6iMPoBS44HKRzSWeNZDrSDMpqwni4qNfntWIdgnUn-FbkgtNOU11Ev9Hhvmq151txiJ2w7uDWTsP4ADjFU8YWo8HsJHM"/>
+</div>
+<div class="flex justify-between items-start">
+<div>
+<span class="text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-stone-500 mb-3 block">Curation</span>
+<h3 class="text-[1.75rem] font-semibold leading-tight">Light as a Structural Element</h3>
+</div>
+<span class="material-symbols-outlined text-4xl text-secondary">trending_flat</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Taste as a Service Section -->
+<section class="bg-surface-container-low py-32">
+<div class="max-w-screen-2xl mx-auto px-8 grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+<div class="space-y-12">
+<h2 class="text-[3.5rem] font-bold tracking-[-0.04em] leading-none">
+                        Taste as a <br/><span class="text-secondary">Service.</span>
+</h2>
+<div class="space-y-6 max-w-md">
+<p class="text-[1.0rem] leading-relaxed font-medium">
+                            Gallr is not a marketplace; it is an editorial filter. We believe the future of art discovery belongs to the curated, not the infinite.
+                        </p>
+<p class="text-[0.875rem] text-on-surface-variant leading-relaxed">
+                            Our proprietary engine analyzes the architectural DNA of the world's leading galleries to bring you a personal feed of exhibitions that challenge your perspective.
+                        </p>
+</div>
+<div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+<button class="bg-primary text-on-primary px-10 py-5 font-bold text-[0.6875rem] tracking-[0.08em] uppercase hover:bg-primary/90 transition-colors">
+                            Download for iOS
+                        </button>
+<button class="border border-primary text-primary px-10 py-5 font-bold text-[0.6875rem] tracking-[0.08em] uppercase hover:bg-primary hover:text-white transition-colors">
+                            Explore Archive
+                        </button>
+</div>
+</div>
+<div class="relative">
+<div class="bg-primary aspect-square w-full flex items-center justify-center p-12 overflow-hidden">
+<div class="text-white text-[12rem] font-black tracking-tighter opacity-10 absolute -right-20 -top-20 select-none">GLR</div>
+<div class="bg-white p-8 w-full max-w-[320px] shadow-2xl relative z-10">
+<div class="flex justify-between mb-8">
+<div class="text-[0.6875rem] font-bold tracking-[0.08em] uppercase">Now Live</div>
+<div class="w-3 h-3 bg-secondary rounded-full"></div>
+</div>
+<div class="space-y-4 mb-12">
+<div class="h-40 bg-stone-100 mb-4">
+<img alt="Art" class="w-full h-full object-cover grayscale" data-alt="close-up of abstract oil painting texture with heavy impasto and neutral tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPm12yfLaydiJvUfKgzj0hGAp39rUnQbk1E-rs25-CSGeba4woC4B9D-QTsbv3EpjzirTt0rP7JVj-D1iCZuXzfyM15fzEJTEd7aPAYgs9ah6tOpoSqLsyEZ_pu_KdhbfJU6tIVCF1Zh5hYzyDogIszfJD9dScBrj9oxnhTvqS2dUtR4LRqFWVWIRAYROs-UvhwQFi-9SqNxDC_BTuENjhYBV3vbib9wKEgobyGV8s5tb-glcmKq9F0GZtcOLHgZbWMu-9xyYTUKzF"/>
+</div>
+<div class="h-4 bg-primary w-3/4"></div>
+<div class="h-3 bg-stone-200 w-1/2"></div>
+</div>
+<button class="w-full bg-secondary text-white py-4 font-bold text-[0.6875rem] tracking-[0.08em] uppercase">Join the Preview</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Newsletter / Archive -->
+<section class="px-8 py-24 text-center max-w-3xl mx-auto">
+<h4 class="text-[1.75rem] font-semibold mb-8">The Weekly Dispatch</h4>
+<p class="text-on-surface-variant mb-12">Sign up for our curated editorial on the global art movement. No noise, just the vanguard.</p>
+<div class="flex border-b-2 border-primary">
+<input class="w-full py-4 bg-transparent border-none focus:ring-0 font-bold text-[0.6875rem] tracking-[0.08em] uppercase placeholder:text-stone-300" placeholder="YOUR EMAIL ADDRESS" type="email"/>
+<button class="px-8 py-4 font-bold text-[0.6875rem] tracking-[0.08em] uppercase hover:text-secondary transition-colors">Submit</button>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-stone-100 dark:bg-stone-950">
+<div class="flex flex-col md:flex-row justify-between items-center w-full px-8 py-12 border-t border-stone-200 dark:border-stone-800 max-w-screen-2xl mx-auto">
+<div class="text-xl font-bold text-black dark:text-white mb-8 md:mb-0">gallr</div>
+<div class="flex flex-wrap justify-center gap-8 mb-8 md:mb-0">
+<a class="font-['Inter'] text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-stone-500 dark:text-stone-400 hover:text-orange-600 dark:hover:text-orange-500 transition-colors" href="#">Privacy Policy</a>
+<a class="font-['Inter'] text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-stone-500 dark:text-stone-400 hover:text-orange-600 dark:hover:text-orange-500 transition-colors" href="#">Terms of Service</a>
+<a class="font-['Inter'] text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-stone-500 dark:text-stone-400 hover:text-orange-600 dark:hover:text-orange-500 transition-colors" href="#">Instagram</a>
+<a class="font-['Inter'] text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-stone-500 dark:text-stone-400 hover:text-orange-600 dark:hover:text-orange-500 transition-colors" href="#">Twitter</a>
+<a class="font-['Inter'] text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-stone-500 dark:text-stone-400 hover:text-orange-600 dark:hover:text-orange-500 transition-colors" href="#">Contact</a>
+</div>
+<div class="font-['Inter'] text-[0.6875rem] font-bold tracking-[0.08em] uppercase text-stone-500 dark:text-stone-400">
+                © 2024 gallr platform. All rights reserved.
+            </div>
+</div>
+</footer>
+</body></html>
