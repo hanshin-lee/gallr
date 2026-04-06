@@ -546,39 +546,365 @@ body {
   color: var(--color-paper);
 }
 
-/* ── About ───────────────────────────────────────────────── */
+/* ── About Page ──────────────────────────────────────────── */
 
-.about {
-  padding: var(--space-xl) 0;
-}
-
-.about__heading {
+/* Section label (01 / Introduction, etc.) */
+.about-hero__label,
+.about-philosophy__label,
+.about-app__label,
+.about-contact__label {
   font-family: var(--font-meta);
-  font-size: 0.75rem;
-  letter-spacing: 0.15em;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-ink-secondary);
-  margin-bottom: var(--space-xl);
+  color: var(--color-accent);
+  margin-bottom: var(--space-md);
+  display: block;
 }
 
-.about__inner {
-  max-width: var(--max-width);
+/* About Hero */
+.about-hero {
+  padding: 160px 0 var(--space-2xl);
+  background-color: var(--color-surface);
+}
+
+.about-hero__inner {
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 var(--page-padding-x);
 }
 
-.about__body {
-  max-width: 70ch;
+.about-hero__headline {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+  color: var(--color-ink);
+  margin-bottom: var(--space-xl);
+}
+
+.about-hero__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-xl);
+}
+
+@media (min-width: 768px) {
+  .about-hero__grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+.about-hero__description {
+  font-family: var(--font-display);
+  font-size: clamp(1.125rem, 2vw, 1.5rem);
+  line-height: 1.6;
+  color: var(--color-ink);
+}
+
+.about-hero__image {
+  background-color: var(--color-surface-container-low);
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+}
+
+.about-hero__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* About Philosophy */
+.about-philosophy {
+  padding: 128px 0;
+  background-color: var(--color-surface-container-low);
+}
+
+.about-philosophy__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--page-padding-x);
+}
+
+.about-philosophy__headline {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.75rem, 4vw, 4rem);
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  color: var(--color-ink);
+  margin-bottom: var(--space-xl);
+  max-width: 20ch;
+}
+
+.about-philosophy__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-xl);
+}
+
+@media (min-width: 768px) {
+  .about-philosophy__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.about-philosophy__item {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
 }
 
-.about__body p {
-  font-family: var(--font-display);
-  font-size: 1.0625rem;
-  line-height: 1.7;
+.about-philosophy__item-title {
+  font-family: var(--font-meta);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--color-ink);
+}
+
+.about-philosophy__item-body {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: var(--color-ink-secondary);
+}
+
+/* About App Section */
+.about-app {
+  background-color: var(--color-ink);
+  color: var(--color-paper);
+  padding: 128px 0;
+}
+
+.about-app__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--page-padding-x);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2xl);
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .about-app__inner {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.about-app__headline {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--color-paper);
+  margin-bottom: var(--space-lg);
+}
+
+.about-app__body {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: var(--space-xl);
+  max-width: 28ch;
+}
+
+.about-app__ctas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+@media (min-width: 480px) {
+  .about-app__ctas {
+    flex-direction: row;
+  }
+}
+
+.about-app__mockup {
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  background-color: #1a1a1a;
+}
+
+.about-app__mockup img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.8;
+}
+
+/* About Contact */
+.about-contact {
+  padding: 128px 0;
+  background-color: var(--color-surface);
+}
+
+.about-contact__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--page-padding-x);
+}
+
+.about-contact__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2xl);
+}
+
+@media (min-width: 768px) {
+  .about-contact__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.about-contact__email-label {
+  font-family: var(--font-meta);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-md);
+}
+
+.about-contact__email {
+  display: block;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--color-ink);
+  text-decoration: none;
+  margin-bottom: var(--space-sm);
+  transition: color 150ms ease;
+}
+
+.about-contact__email:hover {
+  color: var(--color-accent);
+}
+
+.about-contact__email-note {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  color: var(--color-ink-secondary);
+  margin-bottom: var(--space-xl);
+}
+
+.about-contact__social {
+  display: flex;
+  gap: var(--space-lg);
+  padding-top: var(--space-xl);
+  border-top: 1px solid rgba(198, 198, 198, 0.2);
+}
+
+.about-contact__social-link {
+  font-family: var(--font-meta);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.about-contact__social-link:hover {
+  color: var(--color-accent);
+}
+
+/* Contact form */
+.about-contact__form-title {
+  font-family: var(--font-meta);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  margin-bottom: var(--space-lg);
+}
+
+.about-contact__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.about-contact__form-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+}
+
+@media (min-width: 480px) {
+  .about-contact__form-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.about-contact__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.about-contact__form-label {
+  font-family: var(--font-meta);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-outline);
+}
+
+.about-contact__input,
+.about-contact__textarea {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  color: var(--color-ink);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-outline-variant);
+  border-radius: 0;
+  padding: 12px 0;
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+.about-contact__input:focus,
+.about-contact__textarea:focus {
+  border-bottom-color: var(--color-accent);
+}
+
+.about-contact__textarea {
+  min-height: 100px;
+  resize: none;
+}
+
+.about-contact__submit {
+  font-family: var(--font-meta);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background-color: var(--color-ink);
+  color: var(--color-paper);
+  border: none;
+  border-radius: var(--radius);
+  padding: var(--space-md) var(--space-lg);
+  cursor: pointer;
+  transition: background-color 150ms ease;
+  width: 100%;
+}
+
+.about-contact__submit:hover {
+  background-color: var(--color-accent);
 }
 
 /* ── Footer ──────────────────────────────────────────────── */
