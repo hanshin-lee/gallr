@@ -274,10 +274,11 @@ var KNOWN_COLUMNS = [
 function buildRecord(row, headerMap) {
   var nameKo = String(getCell(row, headerMap, 'name_ko') || '').trim();
   var venueNameKo = String(getCell(row, headerMap, 'venue_name_ko') || '').trim();
+  var cityKo = String(getCell(row, headerMap, 'city_ko') || '').trim();
   var openingDate = parseDate(getCell(row, headerMap, 'opening_date'));
 
   var record = {
-    id: generateId(nameKo, venueNameKo, openingDate),
+    id: generateId(nameKo, venueNameKo, cityKo, openingDate),
     updated_at: new Date().toISOString(),
   };
 
@@ -359,8 +360,8 @@ function buildRecord(row, headerMap) {
 // ID generation and helpers
 // ---------------------------------------------------------------------------
 
-function generateId(nameKo, venueNameKo, openingDate) {
-  var raw = (nameKo + '|' + venueNameKo + '|' + openingDate).toLowerCase().trim();
+function generateId(nameKo, venueNameKo, cityKo, openingDate) {
+  var raw = (nameKo + '|' + venueNameKo + '|' + cityKo + '|' + openingDate).toLowerCase().trim();
   var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, raw);
   return digest.slice(0, 8).map(function(b) {
     return (b & 0xff).toString(16).padStart(2, '0');
