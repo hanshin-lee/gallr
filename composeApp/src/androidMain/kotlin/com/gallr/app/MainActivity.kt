@@ -26,6 +26,7 @@ class MainActivity : ComponentActivity() {
 
         // Initialize DataStore with application context before any repository uses it.
         initDataStore(applicationContext)
+        initShareHandler(applicationContext)
 
         val dataStore = createDataStore()
         val exhibitionRepository = ExhibitionRepositoryImpl(
