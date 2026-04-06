@@ -39,8 +39,11 @@ fun exhibitionStatus(
     closingDate: LocalDate,
     today: LocalDate,
 ): ExhibitionStatus = when {
+    openingDate > closingDate -> ExhibitionStatus.ENDED
     openingDate > today -> ExhibitionStatus.UPCOMING
     closingDate < today -> ExhibitionStatus.ENDED
-    closingDate <= today.plus(3, DateTimeUnit.DAY) -> ExhibitionStatus.CLOSING_SOON
+    closingDate <= today.plus(CLOSING_SOON_THRESHOLD_DAYS, DateTimeUnit.DAY) -> ExhibitionStatus.CLOSING_SOON
     else -> ExhibitionStatus.ACTIVE
 }
+
+private const val CLOSING_SOON_THRESHOLD_DAYS = 3

@@ -57,6 +57,7 @@ fun MapScreen(
     val allPins by viewModel.allMapPins.collectAsState()
     val lang by viewModel.language.collectAsState()
 
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
     val activePins = if (mapMode == MapDisplayMode.MY_LIST) myListPins else allPins
     val locations = remember(activePins) { groupPinsByLocation(activePins) }
 
@@ -160,7 +161,7 @@ fun MapScreen(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
-                    pinStatusText(pin.openingDate, pin.closingDate, lang)?.let { statusLabel ->
+                    pinStatusText(pin.openingDate, pin.closingDate, today, lang)?.let { statusLabel ->
                         Spacer(Modifier.height(GallrSpacing.xs))
                         Text(
                             text = statusLabel,
@@ -242,7 +243,7 @@ fun MapScreen(
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            pinStatusText(pin.openingDate, pin.closingDate, lang)?.let { statusLabel ->
+                            pinStatusText(pin.openingDate, pin.closingDate, today, lang)?.let { statusLabel ->
                                 Spacer(Modifier.height(GallrSpacing.xs))
                                 Text(
                                     text = statusLabel,
@@ -264,9 +265,9 @@ fun MapScreen(
 private fun pinStatusText(
     openingDate: LocalDate,
     closingDate: LocalDate,
+    today: LocalDate,
     lang: AppLanguage,
 ): String? {
-    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
     return exhibitionStatus(openingDate, closingDate, today).label(lang)
 }
 

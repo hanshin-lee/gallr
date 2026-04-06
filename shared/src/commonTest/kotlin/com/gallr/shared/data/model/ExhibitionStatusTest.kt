@@ -160,6 +160,29 @@ class ExhibitionStatusTest {
         assertEquals(ExhibitionStatus.ENDED, status)
     }
 
+    // ── Invalid date range (openingDate > closingDate) ────────────────────
+
+    @Test
+    fun endedWhenOpeningDateAfterClosingDate() {
+        // Bad data: opening is after closing — treat as ENDED
+        val status = exhibitionStatus(
+            openingDate = inTenDays,
+            closingDate = tomorrow,
+            today = today,
+        )
+        assertEquals(ExhibitionStatus.ENDED, status)
+    }
+
+    @Test
+    fun endedWhenOpeningDateAfterClosingDateBothInPast() {
+        val status = exhibitionStatus(
+            openingDate = yesterday,
+            closingDate = threeDaysAgo,
+            today = today,
+        )
+        assertEquals(ExhibitionStatus.ENDED, status)
+    }
+
     // ── label() bilingual ─────────────────────────────────────────────────
 
     @Test
