@@ -38,6 +38,7 @@ import com.gallr.shared.data.model.GallrUser
 import com.gallr.shared.data.model.Profile
 import com.gallr.shared.repository.AuthRepository
 import com.gallr.shared.repository.ProfileRepository
+import com.gallr.shared.repository.ThoughtRepository
 import kotlinx.coroutines.launch
 
 @Composable
@@ -45,13 +46,26 @@ fun ProfileScreen(
     user: GallrUser,
     authRepository: AuthRepository,
     profileRepository: ProfileRepository,
+    thoughtRepository: ThoughtRepository,
     supabaseClient: io.github.jan.supabase.SupabaseClient,
     lang: AppLanguage,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showMyThoughts by remember { mutableStateOf(false) }
     var profile by remember { mutableStateOf<Profile?>(null) }
+
+    // Show My Thoughts screen
+    if (showMyThoughts) {
+        MyThoughtsScreen(
+            thoughtRepository = thoughtRepository,
+            supabaseClient = supabaseClient,
+            lang = lang,
+            onBack = { showMyThoughts = false },
+        )
+        return
+    }
 
     // Fetch profile from DB (more reliable than JWT metadata on iOS)
     androidx.compose.runtime.LaunchedEffect(user.id) {
@@ -112,7 +126,24 @@ fun ProfileScreen(
             textAlign = TextAlign.Center,
         )
 
-        Spacer(Modifier.height(48.dp))
+        Spacer(Modifier.height(32.dp))
+
+        // My Thoughts button
+        OutlinedButton(
+            onClick = { showMyThoughts = true },
+            modifier = Modifier.fillMaxWidth().height(44.dp),
+            shape = RectangleShape,
+        ) {
+            Text(
+                text = when (lang) {
+                    AppLanguage.KO -> "내 감상평"
+                    AppLanguage.EN -> "My Thoughts"
+                },
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+
+        Spacer(Modifier.height(32.dp))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         Spacer(Modifier.height(16.dp))
 
@@ -154,7 +185,7 @@ fun ProfileScreen(
             ) {
                 Text(
                     text = when (lang) {
-                        AppLanguage.KO -> "계정을 삭제하시겠습니까? 모든 북마크와 감상이 영구적으로 삭제됩니다."
+                        AppLanguage.KO -> "계정을 삭제하시겠습니까? 모든 북마크와 감상평이 영구적으로 삭제됩니다."
                         AppLanguage.EN -> "Delete your account? All bookmarks and thoughts will be permanently deleted."
                     },
                     style = MaterialTheme.typography.bodySmall,

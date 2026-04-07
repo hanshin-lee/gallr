@@ -11,6 +11,7 @@ import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.AuthState
 import com.gallr.shared.repository.AuthRepository
 import com.gallr.shared.repository.ProfileRepository
+import com.gallr.shared.repository.ThoughtRepository
 import io.github.jan.supabase.SupabaseClient
 
 @Composable
@@ -18,6 +19,7 @@ fun ProfileTab(
     authState: AuthState,
     authRepository: AuthRepository,
     profileRepository: ProfileRepository,
+    thoughtRepository: ThoughtRepository,
     supabaseClient: SupabaseClient,
     lang: AppLanguage,
     modifier: Modifier = Modifier,
@@ -40,6 +42,7 @@ fun ProfileTab(
                 user = authState.user,
                 authRepository = authRepository,
                 profileRepository = profileRepository,
+                thoughtRepository = thoughtRepository,
                 supabaseClient = supabaseClient,
                 lang = lang,
                 modifier = modifier,

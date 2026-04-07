@@ -136,6 +136,9 @@ fun App(
                     isBookmarked = exhibition.id in bookmarkedIds,
                     onBookmarkToggle = { viewModel.toggleBookmark(exhibition.id) },
                     onBack = { selectedExhibition = null },
+                    thoughtRepository = thoughtRepository,
+                    authState = authState,
+                    supabaseClient = supabaseClient,
                 )
             } else {
                 Scaffold(
@@ -227,6 +230,7 @@ fun App(
                                 authState = authState,
                                 authRepository = authRepository,
                                 profileRepository = profileRepository,
+                                thoughtRepository = thoughtRepository,
                                 supabaseClient = supabaseClient,
                                 lang = lang,
                                 modifier = Modifier.padding(innerPadding),
