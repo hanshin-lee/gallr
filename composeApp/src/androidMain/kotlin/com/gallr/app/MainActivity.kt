@@ -1,5 +1,6 @@
 package com.gallr.app
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -12,14 +13,29 @@ import androidx.compose.runtime.getValue
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.ThemeMode
 import com.gallr.shared.data.network.ExhibitionApiClient
+import com.gallr.shared.data.network.createGallrSupabaseClient
 import com.gallr.shared.platform.createDataStore
 import com.gallr.shared.platform.initDataStore
+import com.gallr.shared.repository.AuthRepositoryImpl
 import com.gallr.shared.repository.BookmarkRepositoryImpl
+import com.gallr.shared.repository.CloudBookmarkRepository
 import com.gallr.shared.repository.ExhibitionRepositoryImpl
 import com.gallr.shared.repository.LanguageRepositoryImpl
+import com.gallr.shared.repository.ProfileRepositoryImpl
 import com.gallr.shared.repository.ThemeRepositoryImpl
+import com.gallr.shared.repository.ThoughtRepositoryImpl
 
 class MainActivity : ComponentActivity() {
+    private lateinit var supabaseClient: io.github.jan.supabase.SupabaseClient
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // Handle OAuth deeplink callback
+        intent.data?.let { uri ->
+            io.github.jan.supabase.auth.handleDeepLinks(supabaseClient, intent)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -29,13 +45,21 @@ class MainActivity : ComponentActivity() {
         initShareHandler(applicationContext)
 
         val dataStore = createDataStore()
+        supabaseClient = createGallrSupabaseClient(
+            supabaseUrl = BuildConfig.SUPABASE_URL,
+            supabaseKey = BuildConfig.SUPABASE_ANON_KEY,
+        )
         val exhibitionRepository = ExhibitionRepositoryImpl(
             ExhibitionApiClient(
                 supabaseUrl = BuildConfig.SUPABASE_URL,
                 anonKey = BuildConfig.SUPABASE_ANON_KEY,
             )
         )
-        val bookmarkRepository = BookmarkRepositoryImpl(dataStore)
+        val localBookmarkRepository = BookmarkRepositoryImpl(dataStore)
+        val cloudBookmarkRepository = CloudBookmarkRepository(supabaseClient)
+        val authRepository = AuthRepositoryImpl(supabaseClient)
+        val profileRepository = ProfileRepositoryImpl(supabaseClient)
+        val thoughtRepository = ThoughtRepositoryImpl(supabaseClient)
         val languageRepository = LanguageRepositoryImpl(dataStore) {
             val locale = java.util.Locale.getDefault().language
             if (locale == "ko") AppLanguage.KO else AppLanguage.EN
@@ -66,9 +90,14 @@ class MainActivity : ComponentActivity() {
 
             App(
                 exhibitionRepository = exhibitionRepository,
-                bookmarkRepository = bookmarkRepository,
+                localBookmarkRepository = localBookmarkRepository,
+                cloudBookmarkRepository = cloudBookmarkRepository,
+                authRepository = authRepository,
+                profileRepository = profileRepository,
+                thoughtRepository = thoughtRepository,
                 languageRepository = languageRepository,
                 themeRepository = themeRepository,
+                supabaseClient = supabaseClient,
             )
         }
     }

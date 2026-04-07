@@ -37,6 +37,17 @@
 	<string>gallr uses your location to show nearby galleries and exhibitions on the map.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.gallr.app</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>com.gallr.app</string>
+		</dict>
+	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

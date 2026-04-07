@@ -41,8 +41,8 @@ fun GallrNavigationBar(
     modifier: Modifier = Modifier,
 ) {
     val tabs = when (lang) {
-        AppLanguage.KO -> listOf("추천", "목록", "지도")
-        AppLanguage.EN -> listOf("FEATURED", "LIST", "MAP")
+        AppLanguage.KO -> listOf("추천", "목록", "지도", "프로필")
+        AppLanguage.EN -> listOf("FEATURED", "LIST", "MAP", "PROFILE")
     }
 
     Surface(

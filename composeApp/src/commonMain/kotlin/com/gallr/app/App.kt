@@ -45,10 +45,17 @@ import com.gallr.app.viewmodel.TabsViewModel
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.ThemeMode
-import com.gallr.shared.repository.BookmarkRepository
+import com.gallr.shared.data.model.AuthState
+import com.gallr.shared.repository.AuthRepository
+import com.gallr.shared.repository.BookmarkRepositoryImpl
+import com.gallr.shared.repository.CloudBookmarkRepository
 import com.gallr.shared.repository.ExhibitionRepository
 import com.gallr.shared.repository.LanguageRepository
+import com.gallr.shared.repository.ProfileRepository
+import com.gallr.shared.repository.SyncBookmarkRepository
 import com.gallr.shared.repository.ThemeRepository
+import com.gallr.shared.repository.ThoughtRepository
+import io.github.jan.supabase.SupabaseClient
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
@@ -70,12 +77,40 @@ private const val PRIVACY_POLICY_URL = "https://gallrmap.com/privacy"
 @Composable
 fun App(
     exhibitionRepository: ExhibitionRepository,
-    bookmarkRepository: BookmarkRepository,
+    localBookmarkRepository: BookmarkRepositoryImpl,
+    cloudBookmarkRepository: CloudBookmarkRepository,
+    authRepository: AuthRepository,
+    profileRepository: ProfileRepository,
+    thoughtRepository: ThoughtRepository,
     languageRepository: LanguageRepository,
     themeRepository: ThemeRepository,
+    supabaseClient: SupabaseClient,
 ) {
+    // Auth state drives SyncBookmarkRepository delegation
+    val authState by authRepository.observeAuthState()
+        .collectAsState(initial = AuthState.Loading)
+
+    val authStateFlow = remember {
+        kotlinx.coroutines.flow.MutableStateFlow<AuthState>(AuthState.Loading)
+    }
+    // Keep the StateFlow in sync + refresh cloud bookmarks on login
+    androidx.compose.runtime.LaunchedEffect(authState) {
+        authStateFlow.value = authState
+        if (authState is AuthState.Authenticated) {
+            try {
+                cloudBookmarkRepository.refresh()
+            } catch (e: Exception) {
+                println("BOOKMARK_REFRESH_ERROR: ${e.message}")
+            }
+        }
+    }
+
+    val syncBookmarkRepository = remember {
+        SyncBookmarkRepository(localBookmarkRepository, cloudBookmarkRepository, authStateFlow)
+    }
+
     val viewModel: TabsViewModel = viewModel(
-        factory = TabsViewModel.factory(exhibitionRepository, bookmarkRepository, languageRepository, themeRepository),
+        factory = TabsViewModel.factory(exhibitionRepository, syncBookmarkRepository, languageRepository, themeRepository),
     )
 
     val currentThemeMode by viewModel.themeMode.collectAsState()
@@ -186,6 +221,14 @@ fun App(
                             2 -> MapScreen(
                                 viewModel = viewModel,
                                 onExhibitionTap = { selectedExhibition = it },
+                                modifier = Modifier.padding(innerPadding),
+                            )
+                            3 -> com.gallr.app.ui.profile.ProfileTab(
+                                authState = authState,
+                                authRepository = authRepository,
+                                profileRepository = profileRepository,
+                                supabaseClient = supabaseClient,
+                                lang = lang,
                                 modifier = Modifier.padding(innerPadding),
                             )
                         }

@@ -92,6 +92,7 @@ kotlin {
             implementation(libs.kotlinx.datetime)
             implementation(libs.coil.compose)
             implementation(project(":shared"))
+            // Supabase auth/postgrest accessible via :shared module dependency
         }
         androidMain.dependencies {
             implementation(compose.preview)
