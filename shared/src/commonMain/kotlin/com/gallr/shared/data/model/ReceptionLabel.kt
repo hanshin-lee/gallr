@@ -30,7 +30,7 @@ fun receptionDateLabel(
     val thisMonday = today.plus(-daysSinceMonday, DateTimeUnit.DAY)
     val nextMonday = thisMonday.plus(7, DateTimeUnit.DAY)
 
-    val timeSuffix = if (!openingTime.isNullOrBlank()) ", $openingTime" else ""
+    val timeSuffix = if (!openingTime.isNullOrBlank()) ", ${openingTime.trim()}" else ""
 
     return when {
         // More than 1 week away → hide

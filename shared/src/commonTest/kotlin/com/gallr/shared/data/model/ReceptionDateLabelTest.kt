@@ -114,6 +114,21 @@ class ReceptionDateLabelTest {
         assertEquals("Opening today", label)
     }
 
+    @Test
+    fun pastDateWithinCurrentWeekEnglish() {
+        // Monday of the same week (today is Wednesday) — past but within thisMonday..<nextMonday
+        val monday = LocalDate(2026, 4, 6) // Monday of this week
+        val label = receptionDateLabel(monday, closingFuture, AppLanguage.EN, "5 PM", today)
+        assertEquals("Opening Apr 6, 5 PM", label)
+    }
+
+    @Test
+    fun pastDateWithinCurrentWeekNoTime() {
+        val monday = LocalDate(2026, 4, 6)
+        val label = receptionDateLabel(monday, closingFuture, AppLanguage.EN, null, today)
+        assertEquals("Opening Apr 6", label)
+    }
+
     // ── Edge cases: label hidden ────────────────────────────────────────
 
     @Test
