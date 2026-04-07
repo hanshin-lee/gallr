@@ -5,8 +5,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.gallr.app.viewmodel.TabsViewModel
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.AuthState
 import com.gallr.shared.repository.AuthRepository
@@ -21,7 +24,9 @@ fun ProfileTab(
     profileRepository: ProfileRepository,
     thoughtRepository: ThoughtRepository,
     supabaseClient: SupabaseClient,
+    viewModel: TabsViewModel,
     lang: AppLanguage,
+    onExhibitionTap: (com.gallr.shared.data.model.Exhibition) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     when (authState) {
@@ -44,7 +49,9 @@ fun ProfileTab(
                 profileRepository = profileRepository,
                 thoughtRepository = thoughtRepository,
                 supabaseClient = supabaseClient,
+                viewModel = viewModel,
                 lang = lang,
+                onExhibitionTap = onExhibitionTap,
                 modifier = modifier,
             )
         }

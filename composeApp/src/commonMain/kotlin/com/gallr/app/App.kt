@@ -232,7 +232,9 @@ fun App(
                                 profileRepository = profileRepository,
                                 thoughtRepository = thoughtRepository,
                                 supabaseClient = supabaseClient,
+                                viewModel = viewModel,
                                 lang = lang,
+                                onExhibitionTap = { selectedExhibition = it },
                                 modifier = Modifier.padding(innerPadding),
                             )
                         }

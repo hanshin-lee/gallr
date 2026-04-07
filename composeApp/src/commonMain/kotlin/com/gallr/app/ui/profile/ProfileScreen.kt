@@ -1,16 +1,20 @@
 package com.gallr.app.ui.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -21,6 +25,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,16 +35,28 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.painter.ColorPainter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import io.github.jan.supabase.auth.auth
+import coil3.compose.AsyncImage
+import com.gallr.app.ui.theme.GallrSpacing
+import com.gallr.app.viewmodel.ExhibitionListState
+import com.gallr.app.viewmodel.TabsViewModel
 import com.gallr.shared.data.model.AppLanguage
+import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.GallrUser
 import com.gallr.shared.data.model.Profile
 import com.gallr.shared.repository.AuthRepository
 import com.gallr.shared.repository.ProfileRepository
 import com.gallr.shared.repository.ThoughtRepository
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.postgrest.postgrest
+import com.gallr.shared.data.network.dto.ThoughtDto
 import kotlinx.coroutines.launch
 
 @Composable
@@ -47,14 +65,18 @@ fun ProfileScreen(
     authRepository: AuthRepository,
     profileRepository: ProfileRepository,
     thoughtRepository: ThoughtRepository,
-    supabaseClient: io.github.jan.supabase.SupabaseClient,
+    supabaseClient: SupabaseClient,
+    viewModel: TabsViewModel,
     lang: AppLanguage,
+    onExhibitionTap: (Exhibition) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showMyThoughts by remember { mutableStateOf(false) }
     var profile by remember { mutableStateOf<Profile?>(null) }
+    var thoughtExhibitionIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var thoughtCount by remember { mutableStateOf(0) }
 
     // Show My Thoughts screen
     if (showMyThoughts) {
@@ -67,23 +89,39 @@ fun ProfileScreen(
         return
     }
 
-    // Fetch profile from DB (more reliable than JWT metadata on iOS)
-    androidx.compose.runtime.LaunchedEffect(user.id) {
+    // Fetch profile + user's thought exhibition IDs
+    LaunchedEffect(user.id) {
         val userId = user.id.takeIf { it.isNotBlank() }
             ?: try { supabaseClient.auth.retrieveUserForCurrentSession()?.id } catch (_: Exception) { null }
         if (userId != null) {
             try { profile = profileRepository.getProfile(userId) } catch (_: Exception) {}
+            try {
+                val userThoughts = supabaseClient.postgrest
+                    .from("thoughts")
+                    .select { filter { eq("user_id", userId) } }
+                    .decodeList<ThoughtDto>()
+                thoughtExhibitionIds = userThoughts.map { it.exhibitionId }.toSet()
+                thoughtCount = userThoughts.size
+            } catch (_: Exception) {}
         }
     }
 
     val displayName = profile?.displayName?.takeIf { it.isNotBlank() }
         ?: user.displayName.takeIf { it.isNotBlank() }
 
+    // Get bookmarked exhibitions from the viewModel
+    val bookmarkedIds by viewModel.bookmarkedIds.collectAsState()
+    val allExhibitionsState by viewModel.filteredExhibitions.collectAsState()
+    val bookmarkedExhibitions = remember(allExhibitionsState, bookmarkedIds) {
+        val allExhibitions = (allExhibitionsState as? ExhibitionListState.Success)?.exhibitions ?: emptyList()
+        allExhibitions.filter { it.id in bookmarkedIds }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = GallrSpacing.screenMargin),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(24.dp))
@@ -113,34 +151,80 @@ fun ProfileScreen(
             style = MaterialTheme.typography.titleMedium,
         )
 
-        Spacer(Modifier.height(32.dp))
+        // ── Stats row ──────────────────────────────────────────────────
+        Spacer(Modifier.height(16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            StatItem(
+                count = bookmarkedIds.size,
+                label = when (lang) {
+                    AppLanguage.KO -> "북마크"
+                    AppLanguage.EN -> "Bookmarked"
+                },
+            )
+            Spacer(Modifier.width(32.dp))
+            StatItem(
+                count = thoughtCount,
+                label = when (lang) {
+                    AppLanguage.KO -> "감상평"
+                    AppLanguage.EN -> "Thoughts"
+                },
+            )
+        }
 
-        // Empty diary state
+        Spacer(Modifier.height(24.dp))
+
+        // ── Exhibition Diary section title ──────────────────────────────
         Text(
             text = when (lang) {
-                AppLanguage.KO -> "전시 일기가 비어있어요.\n북마크를 추가해서 기록을 시작해보세요."
-                AppLanguage.EN -> "Your exhibition diary is empty.\nBookmark exhibitions to start logging."
+                AppLanguage.KO -> "전시 일기"
+                AppLanguage.EN -> "EXHIBITION DIARY"
             },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.fillMaxWidth(),
         )
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(12.dp))
 
-        // My Thoughts button
-        OutlinedButton(
-            onClick = { showMyThoughts = true },
-            modifier = Modifier.fillMaxWidth().height(44.dp),
-            shape = RectangleShape,
-        ) {
+        if (bookmarkedExhibitions.isEmpty()) {
+            // Empty diary state
+            Spacer(Modifier.height(16.dp))
             Text(
                 text = when (lang) {
-                    AppLanguage.KO -> "내 감상평"
-                    AppLanguage.EN -> "My Thoughts"
+                    AppLanguage.KO -> "전시 일기가 비어있어요.\n북마크를 추가해서 기록을 시작해보세요."
+                    AppLanguage.EN -> "Your exhibition diary is empty.\nBookmark exhibitions to start logging."
                 },
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
+        } else {
+            // Exhibition diary grid (2 columns)
+            val rows = bookmarkedExhibitions.chunked(2)
+            rows.forEach { rowItems ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    rowItems.forEach { exhibition ->
+                        DiaryCard(
+                            exhibition = exhibition,
+                            lang = lang,
+                            hasThought = exhibition.id in thoughtExhibitionIds,
+                            onClick = { onExhibitionTap(exhibition) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    // Fill empty space if odd number
+                    if (rowItems.size == 1) {
+                        Spacer(Modifier.weight(1f))
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
         }
 
         Spacer(Modifier.height(32.dp))
@@ -250,5 +334,89 @@ fun ProfileScreen(
         }
 
         Spacer(Modifier.height(32.dp))
+    }
+}
+
+// ── Stat item ────────────────────────────────────────────────────────────────
+
+@Composable
+private fun StatItem(count: Int, label: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = "$count",
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+// ── Diary card ───────────────────────────────────────────────────────────────
+
+@Composable
+private fun DiaryCard(
+    exhibition: Exhibition,
+    lang: AppLanguage,
+    hasThought: Boolean,
+    onClick: () -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .border(1.dp, MaterialTheme.colorScheme.outline, RectangleShape)
+            .clickable { onClick() }
+            .padding(bottom = 12.dp),
+    ) {
+        // Cover image
+        val imageUrl = exhibition.coverImageUrl
+        if (!imageUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = exhibition.localizedName(lang),
+                contentScale = ContentScale.Crop,
+                placeholder = ColorPainter(MaterialTheme.colorScheme.surfaceVariant),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(4f / 3f),
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(4f / 3f)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+            )
+        }
+
+        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
+            Text(
+                text = exhibition.localizedName(lang),
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = exhibition.localizedVenueName(lang),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (hasThought) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "💭 ${when (lang) {
+                        AppLanguage.KO -> "감상평 작성됨"
+                        AppLanguage.EN -> "Thought written"
+                    }}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
