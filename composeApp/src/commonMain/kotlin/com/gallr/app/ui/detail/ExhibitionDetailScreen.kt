@@ -35,9 +35,9 @@ import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.AuthState
 import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.exhibitionStatus
+import com.gallr.shared.data.model.receptionDateLabel
 import com.gallr.shared.repository.ThoughtRepository
 import io.github.jan.supabase.SupabaseClient
-import com.gallr.shared.data.model.receptionDateLabel
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
@@ -52,7 +52,6 @@ fun ExhibitionDetailScreen(
     onBack: () -> Unit,
     thoughtRepository: ThoughtRepository? = null,
     authState: AuthState = AuthState.Anonymous,
-    isAdmin: Boolean = false,
     supabaseClient: SupabaseClient? = null,
 ) {
     Scaffold(
@@ -240,8 +239,7 @@ fun ExhibitionDetailScreen(
                         thoughtRepository = thoughtRepository,
                         authState = authState,
                         lang = lang,
-                        isAdmin = isAdmin,
-                        onSignInNeeded = { onBack() },
+                        onSignInNeeded = { /* TODO: navigate to sign-in */ },
                     )
                 }
 

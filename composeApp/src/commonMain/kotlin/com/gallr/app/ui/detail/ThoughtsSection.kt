@@ -43,35 +43,22 @@ fun ThoughtsSection(
     thoughtRepository: ThoughtRepository,
     authState: AuthState,
     lang: AppLanguage,
-    isAdmin: Boolean = false,
     onSignInNeeded: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val currentUserId = (authState as? AuthState.Authenticated)?.user?.id
     var thoughts by remember { mutableStateOf<List<Thought>>(emptyList()) }
-    var ownPendingThought by remember { mutableStateOf<Thought?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var showComposer by remember { mutableStateOf(false) }
     var refreshTrigger by remember { mutableStateOf(0) }
-    val hasUserThought = currentUserId != null && (
-        thoughts.any { it.userId == currentUserId } || ownPendingThought != null
-    )
+    val hasUserThought = currentUserId != null && thoughts.any { it.userId == currentUserId }
 
     LaunchedEffect(exhibitionId, refreshTrigger) {
         isLoading = true
         try {
             thoughts = thoughtRepository.getThoughtsForExhibition(exhibitionId)
-        } catch (e: Exception) {
-            println("ERROR [Thoughts] fetch: ${e.message}")
+        } catch (_: Exception) {
             thoughts = emptyList()
-        }
-        try {
-            if (currentUserId != null) {
-                val own = thoughtRepository.getUserThoughtForExhibition(exhibitionId)
-                ownPendingThought = own?.takeIf { !it.isApproved }
-            }
-        } catch (e: Exception) {
-            println("ERROR [Thoughts] own: ${e.message}")
         }
         isLoading = false
         showComposer = false
@@ -102,8 +89,14 @@ fun ThoughtsSection(
 
         Spacer(Modifier.height(GallrSpacing.md))
 
-        if (!isLoading && thoughts.isEmpty() && ownPendingThought == null && !showComposer) {
-            // Empty state — no approved thoughts and no pending own thought
+        if (isLoading) {
+            Text(
+                text = "...",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else if (thoughts.isEmpty() && !showComposer) {
+            // Empty state
             Text(
                 text = when (lang) {
                     AppLanguage.KO -> "아직 감상평이 없어요. 첫 번째로 나눠보세요."
@@ -115,114 +108,61 @@ fun ThoughtsSection(
         } else {
             // Thought list
             val scope = rememberCoroutineScope()
-
-            // Show user's own pending thought first with "Under review" label
-            if (ownPendingThought != null) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(GallrSpacing.sm),
-                ) {
-                    Text(
-                        text = when (lang) {
-                            AppLanguage.KO -> "검토 중"
-                            AppLanguage.EN -> "Under review"
-                        },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(GallrSpacing.xs))
-                    ThoughtCard(
-                        thought = ownPendingThought!!,
-                        lang = lang,
-                        isOwn = true,
-                        onDelete = {
-                            scope.launch {
-                                try {
-                                    thoughtRepository.deleteThought(ownPendingThought!!.id)
-                                    ownPendingThought = null
-                                    refreshTrigger++
-                                } catch (_: Exception) {}
-                            }
-                        },
-                    )
-                }
-                Spacer(Modifier.height(GallrSpacing.sm))
-            }
-
-            // Approved thoughts
             thoughts.forEach { thought ->
-                val canDelete = thought.userId == currentUserId || isAdmin
                 ThoughtCard(
                     thought = thought,
                     lang = lang,
-                    isOwn = canDelete,
-                    onDelete = if (canDelete) {
-                        {
-                            scope.launch {
-                                try {
-                                    thoughtRepository.deleteThought(thought.id)
-                                    refreshTrigger++
-                                } catch (_: Exception) {}
-                            }
+                    isOwn = thought.userId == currentUserId,
+                    onDelete = {
+                        scope.launch {
+                            try {
+                                thoughtRepository.deleteThought(thought.id)
+                                refreshTrigger++
+                            } catch (_: Exception) {}
                         }
-                    } else null,
+                    },
                 )
             }
         }
 
         Spacer(Modifier.height(GallrSpacing.md))
 
-        // Composer or CTA (hide during loading, show review status if pending)
-        if (!isLoading) {
-            if (showComposer) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                ThoughtComposer(
-                    exhibitionId = exhibitionId,
-                    thoughtRepository = thoughtRepository,
-                    lang = lang,
-                    onDismiss = { showComposer = false },
-                    onSubmitted = {
-                        showComposer = false
-                        refreshTrigger++
-                    },
-                )
-            } else if (ownPendingThought != null) {
-                // User has a thought being reviewed
+        // Composer or CTA (hide if user already posted)
+        if (showComposer) {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            ThoughtComposer(
+                exhibitionId = exhibitionId,
+                thoughtRepository = thoughtRepository,
+                lang = lang,
+                onDismiss = { showComposer = false },
+                onSubmitted = {
+                    showComposer = false
+                    refreshTrigger++
+                },
+            )
+        } else if (!hasUserThought) {
+            OutlinedButton(
+                onClick = {
+                    if (authState is AuthState.Authenticated) {
+                        showComposer = true
+                    } else {
+                        onSignInNeeded()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(44.dp),
+                shape = RectangleShape,
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = MaterialTheme.colorScheme.onBackground,
+                    contentColor = MaterialTheme.colorScheme.background,
+                ),
+            ) {
                 Text(
                     text = when (lang) {
-                        AppLanguage.KO -> "당신의 감상이 곧 전시됩니다"
-                        AppLanguage.EN -> "Your words are finding their place on the wall"
+                        AppLanguage.KO -> "✍️ 감상평 남기기"
+                        AppLanguage.EN -> "✍\uFE0F Share your thoughts"
                     },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.labelLarge,
                 )
-            } else if (!hasUserThought) {
-                OutlinedButton(
-                    onClick = {
-                        if (authState is AuthState.Authenticated) {
-                            showComposer = true
-                        } else {
-                            onSignInNeeded()
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(44.dp),
-                    shape = RectangleShape,
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = MaterialTheme.colorScheme.onBackground,
-                        contentColor = MaterialTheme.colorScheme.background,
-                    ),
-                ) {
-                    Text(
-                        text = when (lang) {
-                            AppLanguage.KO -> "✍️ 감상평 남기기"
-                            AppLanguage.EN -> "✍\uFE0F Share your thoughts"
-                        },
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                }
             }
         }
     }

@@ -93,30 +93,20 @@ fun App(
     val authStateFlow = remember {
         kotlinx.coroutines.flow.MutableStateFlow<AuthState>(AuthState.Loading)
     }
-    val syncBookmarkRepository = remember {
-        SyncBookmarkRepository(localBookmarkRepository, cloudBookmarkRepository, authStateFlow)
-    }
-
-    var isAdmin by remember { mutableStateOf(false) }
-
-    // Keep the StateFlow in sync + migrate & refresh bookmarks on login
+    // Keep the StateFlow in sync + refresh cloud bookmarks on login
     androidx.compose.runtime.LaunchedEffect(authState) {
         authStateFlow.value = authState
         if (authState is AuthState.Authenticated) {
             try {
-                syncBookmarkRepository.migrateLocalToCloud()
-            } catch (_: Exception) {}
-            // Check admin status
-            try {
-                val userId = (authState as AuthState.Authenticated).user.id
-                val profile = profileRepository.getProfile(userId)
-                isAdmin = profile?.isAdmin == true
-            } catch (_: Exception) {
-                isAdmin = false
+                cloudBookmarkRepository.refresh()
+            } catch (e: Exception) {
+                println("BOOKMARK_REFRESH_ERROR: ${e.message}")
             }
-        } else {
-            isAdmin = false
         }
+    }
+
+    val syncBookmarkRepository = remember {
+        SyncBookmarkRepository(localBookmarkRepository, cloudBookmarkRepository, authStateFlow)
     }
 
     val viewModel: TabsViewModel = viewModel(
@@ -131,9 +121,6 @@ fun App(
         var selectedTab by remember { mutableIntStateOf(0) }
         var selectedExhibition by remember { mutableStateOf<Exhibition?>(null) }
         val shareHandler = remember { createShareHandler() }
-
-        // Pre-warm keyboard on iOS (first keyboard appearance is slow without this)
-        com.gallr.app.ui.components.KeyboardPrewarm()
 
         // ── Detail screen with back handler ──────────────────────────────
         AnimatedContent(
@@ -151,7 +138,6 @@ fun App(
                     onBack = { selectedExhibition = null },
                     thoughtRepository = thoughtRepository,
                     authState = authState,
-                    isAdmin = isAdmin,
                     supabaseClient = supabaseClient,
                 )
             } else {
@@ -246,9 +232,7 @@ fun App(
                                 profileRepository = profileRepository,
                                 thoughtRepository = thoughtRepository,
                                 supabaseClient = supabaseClient,
-                                viewModel = viewModel,
                                 lang = lang,
-                                onExhibitionTap = { selectedExhibition = it },
                                 modifier = Modifier.padding(innerPadding),
                             )
                         }
