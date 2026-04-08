@@ -95,4 +95,52 @@ class ThoughtRepositoryImpl(
             .select { filter { eq("user_id", userId) } }
             .decodeList<ThoughtDto>()
             .size
+
+    override suspend fun getPendingThoughts(): List<Thought> {
+        val thoughts = supabaseClient.postgrest
+            .from("thoughts")
+            .select {
+                filter { eq("is_approved", false) }
+                order("created_at", Order.DESCENDING)
+            }
+            .decodeList<ThoughtDto>()
+
+        if (thoughts.isEmpty()) return emptyList()
+
+        val userIds = thoughts.map { it.userId }.distinct()
+        val profiles = supabaseClient.postgrest
+            .from("profiles")
+            .select { filter { isIn("id", userIds) } }
+            .decodeList<ProfileDto>()
+            .associateBy { it.id }
+
+        return thoughts.map { dto ->
+            val profile = profiles[dto.userId]
+            Thought(
+                id = dto.id,
+                userId = dto.userId,
+                exhibitionId = dto.exhibitionId,
+                content = dto.content,
+                isApproved = dto.isApproved,
+                createdAt = dto.createdAt,
+                updatedAt = dto.updatedAt,
+                authorDisplayName = profile?.displayName ?: "",
+                authorAvatarUrl = profile?.avatarUrl,
+            )
+        }
+    }
+
+    override suspend fun approveThought(thoughtId: String) {
+        supabaseClient.postgrest
+            .from("thoughts")
+            .update({ set("is_approved", true) }) {
+                filter { eq("id", thoughtId) }
+            }
+    }
+
+    override suspend fun rejectThought(thoughtId: String) {
+        supabaseClient.postgrest
+            .from("thoughts")
+            .delete { filter { eq("id", thoughtId) } }
+    }
 }

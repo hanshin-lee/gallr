@@ -9,4 +9,7 @@ interface ThoughtRepository {
     suspend fun deleteThought(thoughtId: String)
     suspend fun getUserThoughtForExhibition(exhibitionId: String): Thought?
     suspend fun getUserThoughtCount(userId: String): Int
+    suspend fun getPendingThoughts(): List<Thought>
+    suspend fun approveThought(thoughtId: String)
+    suspend fun rejectThought(thoughtId: String)
 }

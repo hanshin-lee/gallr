@@ -97,6 +97,8 @@ fun App(
         SyncBookmarkRepository(localBookmarkRepository, cloudBookmarkRepository, authStateFlow)
     }
 
+    var isAdmin by remember { mutableStateOf(false) }
+
     // Keep the StateFlow in sync + migrate & refresh bookmarks on login
     androidx.compose.runtime.LaunchedEffect(authState) {
         authStateFlow.value = authState
@@ -104,6 +106,16 @@ fun App(
             try {
                 syncBookmarkRepository.migrateLocalToCloud()
             } catch (_: Exception) {}
+            // Check admin status
+            try {
+                val userId = (authState as AuthState.Authenticated).user.id
+                val profile = profileRepository.getProfile(userId)
+                isAdmin = profile?.isAdmin == true
+            } catch (_: Exception) {
+                isAdmin = false
+            }
+        } else {
+            isAdmin = false
         }
     }
 
@@ -136,6 +148,7 @@ fun App(
                     onBack = { selectedExhibition = null },
                     thoughtRepository = thoughtRepository,
                     authState = authState,
+                    isAdmin = isAdmin,
                     supabaseClient = supabaseClient,
                 )
             } else {

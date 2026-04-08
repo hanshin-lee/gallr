@@ -43,20 +43,29 @@ fun ThoughtsSection(
     thoughtRepository: ThoughtRepository,
     authState: AuthState,
     lang: AppLanguage,
+    isAdmin: Boolean = false,
     onSignInNeeded: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val currentUserId = (authState as? AuthState.Authenticated)?.user?.id
     var thoughts by remember { mutableStateOf<List<Thought>>(emptyList()) }
+    var ownPendingThought by remember { mutableStateOf<Thought?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var showComposer by remember { mutableStateOf(false) }
     var refreshTrigger by remember { mutableStateOf(0) }
-    val hasUserThought = currentUserId != null && thoughts.any { it.userId == currentUserId }
+    val hasUserThought = currentUserId != null && (
+        thoughts.any { it.userId == currentUserId } || ownPendingThought != null
+    )
 
     LaunchedEffect(exhibitionId, refreshTrigger) {
         isLoading = true
         try {
             thoughts = thoughtRepository.getThoughtsForExhibition(exhibitionId)
+            // Also fetch user's own thought (may be pending/unapproved)
+            if (currentUserId != null) {
+                val own = thoughtRepository.getUserThoughtForExhibition(exhibitionId)
+                ownPendingThought = own?.takeIf { !it.isApproved }
+            }
         } catch (_: Exception) {
             thoughts = emptyList()
         }
@@ -95,8 +104,8 @@ fun ThoughtsSection(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        } else if (thoughts.isEmpty() && !showComposer) {
-            // Empty state
+        } else if (thoughts.isEmpty() && ownPendingThought == null && !showComposer) {
+            // Empty state — no approved thoughts and no pending own thought
             Text(
                 text = when (lang) {
                     AppLanguage.KO -> "아직 감상평이 없어요. 첫 번째로 나눠보세요."
@@ -108,19 +117,59 @@ fun ThoughtsSection(
         } else {
             // Thought list
             val scope = rememberCoroutineScope()
+
+            // Show user's own pending thought first with "Under review" label
+            if (ownPendingThought != null) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .padding(GallrSpacing.sm),
+                ) {
+                    Text(
+                        text = when (lang) {
+                            AppLanguage.KO -> "검토 중"
+                            AppLanguage.EN -> "Under review"
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(GallrSpacing.xs))
+                    ThoughtCard(
+                        thought = ownPendingThought!!,
+                        lang = lang,
+                        isOwn = true,
+                        onDelete = {
+                            scope.launch {
+                                try {
+                                    thoughtRepository.deleteThought(ownPendingThought!!.id)
+                                    ownPendingThought = null
+                                    refreshTrigger++
+                                } catch (_: Exception) {}
+                            }
+                        },
+                    )
+                }
+                Spacer(Modifier.height(GallrSpacing.sm))
+            }
+
+            // Approved thoughts
             thoughts.forEach { thought ->
+                val canDelete = thought.userId == currentUserId || isAdmin
                 ThoughtCard(
                     thought = thought,
                     lang = lang,
-                    isOwn = thought.userId == currentUserId,
-                    onDelete = {
-                        scope.launch {
-                            try {
-                                thoughtRepository.deleteThought(thought.id)
-                                refreshTrigger++
-                            } catch (_: Exception) {}
+                    isOwn = canDelete,
+                    onDelete = if (canDelete) {
+                        {
+                            scope.launch {
+                                try {
+                                    thoughtRepository.deleteThought(thought.id)
+                                    refreshTrigger++
+                                } catch (_: Exception) {}
+                            }
                         }
-                    },
+                    } else null,
                 )
             }
         }

@@ -26,7 +26,7 @@ class CloudBookmarkRepository(
     suspend fun addBookmark(exhibitionId: String) {
         supabaseClient.postgrest
             .from("bookmarks")
-            .insert(BookmarkInsert(exhibitionId = exhibitionId))
+            .upsert(BookmarkInsert(exhibitionId = exhibitionId)) { onConflict = "user_id,exhibition_id" }
         _bookmarkedIds.value = _bookmarkedIds.value + exhibitionId
     }
 
@@ -34,6 +34,14 @@ class CloudBookmarkRepository(
         supabaseClient.postgrest
             .from("bookmarks")
             .delete { filter { eq("exhibition_id", exhibitionId) } }
+        _bookmarkedIds.value = _bookmarkedIds.value - exhibitionId
+    }
+
+    fun optimisticAdd(exhibitionId: String) {
+        _bookmarkedIds.value = _bookmarkedIds.value + exhibitionId
+    }
+
+    fun optimisticRemove(exhibitionId: String) {
         _bookmarkedIds.value = _bookmarkedIds.value - exhibitionId
     }
 

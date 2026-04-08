@@ -36,6 +36,8 @@ class SyncBookmarkRepository(
         // Always write to local (offline cache)
         localRepository.addBookmark(exhibitionId)
         if (isAuthenticated) {
+            // Optimistic update: update cloud StateFlow immediately for responsive UI
+            cloudRepository.optimisticAdd(exhibitionId)
             try {
                 cloudRepository.addBookmark(exhibitionId)
             } catch (_: Exception) {
@@ -47,6 +49,8 @@ class SyncBookmarkRepository(
     override suspend fun removeBookmark(exhibitionId: String) {
         localRepository.removeBookmark(exhibitionId)
         if (isAuthenticated) {
+            // Optimistic update: update cloud StateFlow immediately for responsive UI
+            cloudRepository.optimisticRemove(exhibitionId)
             try {
                 cloudRepository.removeBookmark(exhibitionId)
             } catch (_: Exception) {

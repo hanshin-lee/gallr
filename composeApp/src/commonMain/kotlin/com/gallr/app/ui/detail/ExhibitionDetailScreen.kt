@@ -55,6 +55,7 @@ fun ExhibitionDetailScreen(
     onBack: () -> Unit,
     thoughtRepository: ThoughtRepository? = null,
     authState: AuthState = AuthState.Anonymous,
+    isAdmin: Boolean = false,
     supabaseClient: SupabaseClient? = null,
 ) {
     Scaffold(
@@ -242,6 +243,7 @@ fun ExhibitionDetailScreen(
                         thoughtRepository = thoughtRepository,
                         authState = authState,
                         lang = lang,
+                        isAdmin = isAdmin,
                         onSignInNeeded = { onBack() },
                     )
                 }

@@ -43,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.gallr.app.PlatformBackHandler
 import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.app.viewmodel.ExhibitionListState
 import com.gallr.app.viewmodel.TabsViewModel
@@ -79,30 +80,60 @@ fun ProfileScreen(
     var thoughtCount by remember { mutableStateOf(0) }
 
     var showEditProfile by remember { mutableStateOf(false) }
+    var showPendingThoughts by remember { mutableStateOf(false) }
+    var pendingCount by remember { mutableStateOf(0) }
+
+    // Get exhibitions (needed by multiple screens)
+    val allExhibitionsState by viewModel.filteredExhibitions.collectAsState()
+
+    // Show Pending Thoughts screen (admin only)
+    if (showPendingThoughts) {
+        val onBackPending = {
+            showPendingThoughts = false
+            // Refresh pending count
+            scope.launch {
+                try { pendingCount = thoughtRepository.getPendingThoughts().size } catch (_: Exception) {}
+            }
+            Unit
+        }
+        PlatformBackHandler { onBackPending() }
+        val allExhibitions = (allExhibitionsState as? ExhibitionListState.Success)?.exhibitions ?: emptyList()
+        PendingThoughtsScreen(
+            thoughtRepository = thoughtRepository,
+            exhibitions = allExhibitions,
+            lang = lang,
+            onBack = { onBackPending() },
+        )
+        return
+    }
 
     // Show Edit Profile screen
     if (showEditProfile) {
+        val onBackEdit = {
+            showEditProfile = false
+            // Refresh profile after edit
+            val userId = user.id.takeIf { it.isNotBlank() }
+            if (userId != null) {
+                scope.launch {
+                    try { profile = profileRepository.getProfile(userId) } catch (_: Exception) {}
+                }
+            }
+            Unit
+        }
+        PlatformBackHandler { onBackEdit() }
         EditProfileScreen(
             user = user,
             profile = profile,
             profileRepository = profileRepository,
             lang = lang,
-            onBack = {
-                showEditProfile = false
-                // Refresh profile after edit
-                val userId = user.id.takeIf { it.isNotBlank() }
-                if (userId != null) {
-                    scope.launch {
-                        try { profile = profileRepository.getProfile(userId) } catch (_: Exception) {}
-                    }
-                }
-            },
+            onBack = { onBackEdit() },
         )
         return
     }
 
     // Show My Thoughts screen
     if (showMyThoughts) {
+        PlatformBackHandler { showMyThoughts = false }
         MyThoughtsScreen(
             thoughtRepository = thoughtRepository,
             supabaseClient = supabaseClient,
@@ -126,6 +157,13 @@ fun ProfileScreen(
                 thoughtExhibitionIds = userThoughts.map { it.exhibitionId }.toSet()
                 thoughtCount = userThoughts.size
             } catch (_: Exception) {}
+            // Fetch pending count for admin
+            try {
+                val p = profileRepository.getProfile(userId)
+                if (p?.isAdmin == true) {
+                    pendingCount = thoughtRepository.getPendingThoughts().size
+                }
+            } catch (_: Exception) {}
         }
     }
 
@@ -134,7 +172,6 @@ fun ProfileScreen(
 
     // Get exhibitions with thoughts for the diary
     val bookmarkedIds by viewModel.bookmarkedIds.collectAsState()
-    val allExhibitionsState by viewModel.filteredExhibitions.collectAsState()
     val diaryExhibitions = remember(allExhibitionsState, thoughtExhibitionIds) {
         val allExhibitions = (allExhibitionsState as? ExhibitionListState.Success)?.exhibitions ?: emptyList()
         allExhibitions.filter { it.id in thoughtExhibitionIds }
@@ -183,6 +220,14 @@ fun ProfileScreen(
             },
             style = MaterialTheme.typography.titleMedium,
         )
+        if (profile?.isAdmin == true) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "Admin",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         Spacer(Modifier.height(8.dp))
         TextButton(onClick = { showEditProfile = true }) {
@@ -275,6 +320,35 @@ fun ProfileScreen(
         Spacer(Modifier.height(32.dp))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         Spacer(Modifier.height(16.dp))
+
+        // Admin section (visible only to admins)
+        if (profile?.isAdmin == true) {
+            Text(
+                text = when (lang) {
+                    AppLanguage.KO -> "관리"
+                    AppLanguage.EN -> "ADMIN"
+                },
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = { showPendingThoughts = true },
+                modifier = Modifier.fillMaxWidth().height(44.dp),
+                shape = RectangleShape,
+            ) {
+                Text(
+                    text = when (lang) {
+                        AppLanguage.KO -> "검토 대기 ${if (pendingCount > 0) "($pendingCount)" else ""}"
+                        AppLanguage.EN -> "Pending Reviews ${if (pendingCount > 0) "($pendingCount)" else ""}"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            Spacer(Modifier.height(24.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Spacer(Modifier.height(16.dp))
+        }
 
         // Settings section
         Text(
