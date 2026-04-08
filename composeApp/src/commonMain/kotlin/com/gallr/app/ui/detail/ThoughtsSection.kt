@@ -61,13 +61,17 @@ fun ThoughtsSection(
         isLoading = true
         try {
             thoughts = thoughtRepository.getThoughtsForExhibition(exhibitionId)
-            // Also fetch user's own thought (may be pending/unapproved)
+        } catch (e: Exception) {
+            println("ERROR [Thoughts] fetch: ${e.message}")
+            thoughts = emptyList()
+        }
+        try {
             if (currentUserId != null) {
                 val own = thoughtRepository.getUserThoughtForExhibition(exhibitionId)
                 ownPendingThought = own?.takeIf { !it.isApproved }
             }
-        } catch (_: Exception) {
-            thoughts = emptyList()
+        } catch (e: Exception) {
+            println("ERROR [Thoughts] own: ${e.message}")
         }
         isLoading = false
         showComposer = false
@@ -98,13 +102,7 @@ fun ThoughtsSection(
 
         Spacer(Modifier.height(GallrSpacing.md))
 
-        if (isLoading) {
-            Text(
-                text = "...",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        } else if (thoughts.isEmpty() && ownPendingThought == null && !showComposer) {
+        if (!isLoading && thoughts.isEmpty() && ownPendingThought == null && !showComposer) {
             // Empty state — no approved thoughts and no pending own thought
             Text(
                 text = when (lang) {
@@ -176,42 +174,55 @@ fun ThoughtsSection(
 
         Spacer(Modifier.height(GallrSpacing.md))
 
-        // Composer or CTA (hide if user already posted)
-        if (showComposer) {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            ThoughtComposer(
-                exhibitionId = exhibitionId,
-                thoughtRepository = thoughtRepository,
-                lang = lang,
-                onDismiss = { showComposer = false },
-                onSubmitted = {
-                    showComposer = false
-                    refreshTrigger++
-                },
-            )
-        } else if (!hasUserThought) {
-            OutlinedButton(
-                onClick = {
-                    if (authState is AuthState.Authenticated) {
-                        showComposer = true
-                    } else {
-                        onSignInNeeded()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().height(44.dp),
-                shape = RectangleShape,
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = MaterialTheme.colorScheme.onBackground,
-                    contentColor = MaterialTheme.colorScheme.background,
-                ),
-            ) {
+        // Composer or CTA (hide during loading, show review status if pending)
+        if (!isLoading) {
+            if (showComposer) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                ThoughtComposer(
+                    exhibitionId = exhibitionId,
+                    thoughtRepository = thoughtRepository,
+                    lang = lang,
+                    onDismiss = { showComposer = false },
+                    onSubmitted = {
+                        showComposer = false
+                        refreshTrigger++
+                    },
+                )
+            } else if (ownPendingThought != null) {
+                // User has a thought being reviewed
                 Text(
                     text = when (lang) {
-                        AppLanguage.KO -> "✍️ 감상평 남기기"
-                        AppLanguage.EN -> "✍\uFE0F Share your thoughts"
+                        AppLanguage.KO -> "당신의 감상이 곧 전시됩니다"
+                        AppLanguage.EN -> "Your words are finding their place on the wall"
                     },
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth(),
                 )
+            } else if (!hasUserThought) {
+                OutlinedButton(
+                    onClick = {
+                        if (authState is AuthState.Authenticated) {
+                            showComposer = true
+                        } else {
+                            onSignInNeeded()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(44.dp),
+                    shape = RectangleShape,
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.onBackground,
+                        contentColor = MaterialTheme.colorScheme.background,
+                    ),
+                ) {
+                    Text(
+                        text = when (lang) {
+                            AppLanguage.KO -> "✍️ 감상평 남기기"
+                            AppLanguage.EN -> "✍\uFE0F Share your thoughts"
+                        },
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
             }
         }
     }

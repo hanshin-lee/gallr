@@ -132,6 +132,9 @@ fun App(
         var selectedExhibition by remember { mutableStateOf<Exhibition?>(null) }
         val shareHandler = remember { createShareHandler() }
 
+        // Pre-warm keyboard on iOS (first keyboard appearance is slow without this)
+        com.gallr.app.ui.components.KeyboardPrewarm()
+
         // ── Detail screen with back handler ──────────────────────────────
         AnimatedContent(
             targetState = selectedExhibition,

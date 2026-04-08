@@ -76,17 +76,19 @@ class ThoughtRepositoryImpl(
     }
 
     override suspend fun getUserThoughtForExhibition(exhibitionId: String): Thought? {
-        val userId = supabaseClient.auth.currentUserOrNull()?.id ?: return null
-        return supabaseClient.postgrest
+        val userId = supabaseClient.auth.currentUserOrNull()?.id
+            ?: try { supabaseClient.auth.retrieveUserForCurrentSession()?.id } catch (_: Exception) { null }
+            ?: return null
+        val dto = supabaseClient.postgrest
             .from("thoughts")
-            .select(columns = io.github.jan.supabase.postgrest.query.Columns.raw("*, profiles(display_name, avatar_url)")) {
+            .select {
                 filter {
                     eq("exhibition_id", exhibitionId)
                     eq("user_id", userId)
                 }
             }
-            .decodeSingleOrNull<ThoughtDto>()
-            ?.toDomain()
+            .decodeSingleOrNull<ThoughtDto>() ?: return null
+        return dto.toDomain()
     }
 
     override suspend fun getUserThoughtCount(userId: String): Int =
