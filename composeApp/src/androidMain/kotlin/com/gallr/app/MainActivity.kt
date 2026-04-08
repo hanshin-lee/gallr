@@ -2,6 +2,7 @@ package com.gallr.app
 
 import android.content.Intent
 import android.os.Bundle
+import kotlinx.coroutines.launch
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -32,7 +33,9 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         // Handle OAuth deeplink callback
         intent.data?.let { uri ->
-            io.github.jan.supabase.auth.handleDeepLinks(supabaseClient, intent)
+            kotlinx.coroutines.MainScope().launch {
+                com.gallr.shared.data.network.handleAuthDeeplink(supabaseClient, uri.toString())
+            }
         }
     }
 

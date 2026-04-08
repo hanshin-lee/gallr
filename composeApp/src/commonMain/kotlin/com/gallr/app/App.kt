@@ -93,20 +93,18 @@ fun App(
     val authStateFlow = remember {
         kotlinx.coroutines.flow.MutableStateFlow<AuthState>(AuthState.Loading)
     }
-    // Keep the StateFlow in sync + refresh cloud bookmarks on login
+    val syncBookmarkRepository = remember {
+        SyncBookmarkRepository(localBookmarkRepository, cloudBookmarkRepository, authStateFlow)
+    }
+
+    // Keep the StateFlow in sync + migrate & refresh bookmarks on login
     androidx.compose.runtime.LaunchedEffect(authState) {
         authStateFlow.value = authState
         if (authState is AuthState.Authenticated) {
             try {
-                cloudBookmarkRepository.refresh()
-            } catch (e: Exception) {
-                println("BOOKMARK_REFRESH_ERROR: ${e.message}")
-            }
+                syncBookmarkRepository.migrateLocalToCloud()
+            } catch (_: Exception) {}
         }
-    }
-
-    val syncBookmarkRepository = remember {
-        SyncBookmarkRepository(localBookmarkRepository, cloudBookmarkRepository, authStateFlow)
     }
 
     val viewModel: TabsViewModel = viewModel(

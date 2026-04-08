@@ -5,6 +5,7 @@ import com.gallr.shared.data.model.GallrUser
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
+import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -52,9 +53,17 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun deleteAccount() {
-        // supabase-kt does not expose a client-side deleteUser().
-        // Use a Supabase Edge Function or RPC for production.
-        // For now, sign out (account deletion requires server-side implementation).
+        // TODO: Implement Supabase Edge Function for proper account deletion.
+        // Current limitation: supabase-kt does not expose client-side deleteUser().
+        // For now, delete user data (thoughts, bookmarks, profile) via Postgrest,
+        // then sign out. The auth.users row persists until an Edge Function is added.
+        try {
+            supabaseClient.postgrest.from("thoughts").delete { filter { eq("user_id", supabaseClient.auth.currentUserOrNull()?.id ?: "") } }
+            supabaseClient.postgrest.from("bookmarks").delete { filter { eq("user_id", supabaseClient.auth.currentUserOrNull()?.id ?: "") } }
+            supabaseClient.postgrest.from("profiles").delete { filter { eq("id", supabaseClient.auth.currentUserOrNull()?.id ?: "") } }
+        } catch (_: Exception) {
+            // Best effort — data deletion may fail if already signed out
+        }
         supabaseClient.auth.signOut()
     }
 }

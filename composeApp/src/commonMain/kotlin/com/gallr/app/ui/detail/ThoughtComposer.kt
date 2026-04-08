@@ -106,12 +106,7 @@ fun ThoughtComposer(
                     error = null
                     scope.launch {
                         try {
-                            if (existingContent != null) {
-                                // Updating existing thought — get thought ID first
-                                thoughtRepository.submitThought(exhibitionId, text.trim())
-                            } else {
-                                thoughtRepository.submitThought(exhibitionId, text.trim())
-                            }
+                            thoughtRepository.submitThought(exhibitionId, text.trim())
                             onSubmitted()
                         } catch (e: Exception) {
                             error = e.message?.take(60)

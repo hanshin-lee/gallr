@@ -34,7 +34,8 @@ fun createGallrSupabaseClient(
  * - Implicit: com.gallr.app://login-callback#access_token=...
  */
 suspend fun handleAuthDeeplink(supabaseClient: SupabaseClient, url: String) {
-    println("DEEPLINK_RECEIVED: $url")
+    // Log deeplink without tokens
+    println("DEEPLINK_RECEIVED: ${url.substringBefore("#").substringBefore("?")}")
     try {
         // Check for PKCE flow (code in query params)
         val queryPart = url.substringAfter("?", "").substringBefore("#")
@@ -45,7 +46,7 @@ suspend fun handleAuthDeeplink(supabaseClient: SupabaseClient, url: String) {
         val code = queryParams["code"]
 
         if (code != null) {
-            println("DEEPLINK_PKCE: exchanging code for session")
+            // PKCE flow
             supabaseClient.auth.exchangeCodeForSession(code)
             return
         }
@@ -53,7 +54,7 @@ suspend fun handleAuthDeeplink(supabaseClient: SupabaseClient, url: String) {
         // Check for implicit flow (tokens in fragment)
         val fragment = url.substringAfter("#", "")
         if (fragment.isNotEmpty()) {
-            println("DEEPLINK_IMPLICIT: parsing fragment")
+            // Implicit flow
             val params = fragment.split("&").filter { it.contains("=") }.associate {
                 val (key, value) = it.split("=", limit = 2)
                 key to value
@@ -71,6 +72,6 @@ suspend fun handleAuthDeeplink(supabaseClient: SupabaseClient, url: String) {
             )
         }
     } catch (e: Exception) {
-        println("DEEPLINK_ERROR: ${e::class.simpleName}: ${e.message}")
+        println("DEEPLINK_ERROR: ${e::class.simpleName}")
     }
 }

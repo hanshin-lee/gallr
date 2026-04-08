@@ -17,6 +17,9 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public read" ON profiles
     FOR SELECT USING (true);
 
+CREATE POLICY "Owner insert" ON profiles
+    FOR INSERT WITH CHECK (auth.uid() = id);
+
 CREATE POLICY "Owner write" ON profiles
     FOR UPDATE USING (auth.uid() = id);
 

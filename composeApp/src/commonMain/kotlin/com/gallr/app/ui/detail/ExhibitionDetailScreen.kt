@@ -242,7 +242,7 @@ fun ExhibitionDetailScreen(
                         thoughtRepository = thoughtRepository,
                         authState = authState,
                         lang = lang,
-                        onSignInNeeded = { /* TODO: navigate to sign-in */ },
+                        onSignInNeeded = { onBack() },
                     )
                 }
 
