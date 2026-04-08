@@ -78,6 +78,29 @@ fun ProfileScreen(
     var thoughtExhibitionIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var thoughtCount by remember { mutableStateOf(0) }
 
+    var showEditProfile by remember { mutableStateOf(false) }
+
+    // Show Edit Profile screen
+    if (showEditProfile) {
+        EditProfileScreen(
+            user = user,
+            profile = profile,
+            profileRepository = profileRepository,
+            lang = lang,
+            onBack = {
+                showEditProfile = false
+                // Refresh profile after edit
+                val userId = user.id.takeIf { it.isNotBlank() }
+                if (userId != null) {
+                    scope.launch {
+                        try { profile = profileRepository.getProfile(userId) } catch (_: Exception) {}
+                    }
+                }
+            },
+        )
+        return
+    }
+
     // Show My Thoughts screen
     if (showMyThoughts) {
         MyThoughtsScreen(
@@ -109,12 +132,12 @@ fun ProfileScreen(
     val displayName = profile?.displayName?.takeIf { it.isNotBlank() }
         ?: user.displayName.takeIf { it.isNotBlank() }
 
-    // Get bookmarked exhibitions from the viewModel
+    // Get exhibitions with thoughts for the diary
     val bookmarkedIds by viewModel.bookmarkedIds.collectAsState()
     val allExhibitionsState by viewModel.filteredExhibitions.collectAsState()
-    val bookmarkedExhibitions = remember(allExhibitionsState, bookmarkedIds) {
+    val diaryExhibitions = remember(allExhibitionsState, thoughtExhibitionIds) {
         val allExhibitions = (allExhibitionsState as? ExhibitionListState.Success)?.exhibitions ?: emptyList()
-        allExhibitions.filter { it.id in bookmarkedIds }
+        allExhibitions.filter { it.id in thoughtExhibitionIds }
     }
 
     Column(
@@ -127,6 +150,7 @@ fun ProfileScreen(
         Spacer(Modifier.height(24.dp))
 
         // Avatar
+        val avatarUrl = profile?.avatarUrl?.takeIf { it.isNotBlank() } ?: user.avatarUrl
         val initial = (displayName ?: "?").first().uppercase()
         Box(
             modifier = Modifier
@@ -135,11 +159,20 @@ fun ProfileScreen(
                 .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = initial,
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (avatarUrl != null) {
+                AsyncImage(
+                    model = avatarUrl,
+                    contentDescription = displayName,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                )
+            } else {
+                Text(
+                    text = initial,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
         Spacer(Modifier.height(12.dp))
@@ -150,6 +183,18 @@ fun ProfileScreen(
             },
             style = MaterialTheme.typography.titleMedium,
         )
+
+        Spacer(Modifier.height(8.dp))
+        TextButton(onClick = { showEditProfile = true }) {
+            Text(
+                text = when (lang) {
+                    AppLanguage.KO -> "프로필 수정"
+                    AppLanguage.EN -> "Edit Profile"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         // ── Stats row ──────────────────────────────────────────────────
         Spacer(Modifier.height(16.dp))
@@ -188,13 +233,13 @@ fun ProfileScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        if (bookmarkedExhibitions.isEmpty()) {
+        if (diaryExhibitions.isEmpty()) {
             // Empty diary state
             Spacer(Modifier.height(16.dp))
             Text(
                 text = when (lang) {
-                    AppLanguage.KO -> "전시 일기가 비어있어요.\n북마크를 추가해서 기록을 시작해보세요."
-                    AppLanguage.EN -> "Your exhibition diary is empty.\nBookmark exhibitions to start logging."
+                    AppLanguage.KO -> "전시 일기가 비어있어요.\n전시에 감상평을 남겨보세요."
+                    AppLanguage.EN -> "Your exhibition diary is empty.\nShare your thoughts on an exhibition to start."
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -203,7 +248,7 @@ fun ProfileScreen(
             )
         } else {
             // Exhibition diary grid (2 columns)
-            val rows = bookmarkedExhibitions.chunked(2)
+            val rows = diaryExhibitions.chunked(2)
             rows.forEach { rowItems ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -213,7 +258,7 @@ fun ProfileScreen(
                         DiaryCard(
                             exhibition = exhibition,
                             lang = lang,
-                            hasThought = exhibition.id in thoughtExhibitionIds,
+                            hasThought = true,
                             onClick = { onExhibitionTap(exhibition) },
                             modifier = Modifier.weight(1f),
                         )

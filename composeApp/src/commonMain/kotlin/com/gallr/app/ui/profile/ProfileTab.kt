@@ -38,6 +38,7 @@ fun ProfileTab(
         is AuthState.Anonymous -> {
             SignInScreen(
                 supabaseClient = supabaseClient,
+                authRepository = authRepository,
                 lang = lang,
                 modifier = modifier,
             )

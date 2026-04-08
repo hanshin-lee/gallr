@@ -21,11 +21,6 @@ Show visual badges on detail screen and cards for featured / editor's pick exhib
 - Effort: S (CC: ~30 min)
 - Context: `isFeatured` and `isEditorsPick` fields exist in data model.
 
-### Bookmark Cloud Sync
-Sync bookmarks across devices via Supabase (requires user identity).
-- Effort: M (CC: ~1 day)
-- Context: Currently DataStore-only (local). Multi-device users lose bookmarks.
-
 ## P2 — Quality of Life (continued)
 
 ### DESIGN.md — Codify the Design System

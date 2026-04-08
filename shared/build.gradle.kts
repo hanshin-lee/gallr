@@ -32,6 +32,7 @@ kotlin {
             // Supabase (auth + social layer) — api for composeApp access
             api(libs.supabase.auth)
             api(libs.supabase.postgrest)
+            api(libs.supabase.storage)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

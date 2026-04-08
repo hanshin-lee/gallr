@@ -6,6 +6,7 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.SessionManager
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.storage.Storage
 
 /**
  * Creates a SupabaseClient configured for gallr.
@@ -23,6 +24,7 @@ fun createGallrSupabaseClient(
         host = "login-callback"
     }
     install(Postgrest)
+    install(Storage)
 }
 
 /**

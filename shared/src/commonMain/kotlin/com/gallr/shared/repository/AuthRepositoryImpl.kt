@@ -48,6 +48,24 @@ class AuthRepositoryImpl(
             }
         }
 
+    override suspend fun signUpWithEmail(email: String, password: String) {
+        supabaseClient.auth.signUpWith(io.github.jan.supabase.auth.providers.builtin.Email) {
+            this.email = email
+            this.password = password
+        }
+    }
+
+    override suspend fun signInWithEmail(email: String, password: String) {
+        supabaseClient.auth.signInWith(io.github.jan.supabase.auth.providers.builtin.Email) {
+            this.email = email
+            this.password = password
+        }
+    }
+
+    override suspend fun resetPassword(email: String) {
+        supabaseClient.auth.resetPasswordForEmail(email)
+    }
+
     override suspend fun signOut() {
         supabaseClient.auth.signOut()
     }

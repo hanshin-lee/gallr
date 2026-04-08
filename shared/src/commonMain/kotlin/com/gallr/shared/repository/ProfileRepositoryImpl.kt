@@ -4,6 +4,7 @@ import com.gallr.shared.data.model.Profile
 import com.gallr.shared.data.network.dto.ProfileDto
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.storage.storage
 
 class ProfileRepositoryImpl(
     private val supabaseClient: SupabaseClient,
@@ -37,5 +38,17 @@ class ProfileRepositoryImpl(
                 displayName = displayName,
                 avatarUrl = avatarUrl,
             )) { onConflict = "id" }
+    }
+
+    override suspend fun uploadAvatar(userId: String, imageBytes: ByteArray): String {
+        val path = "$userId.jpg"
+        val bucket = supabaseClient.storage.from("avatars")
+        bucket.upload(path, imageBytes) { upsert = true }
+        val publicUrl = bucket.publicUrl(path)
+        // Update profile with new avatar URL
+        supabaseClient.postgrest
+            .from("profiles")
+            .update({ set("avatar_url", publicUrl) }) { filter { eq("id", userId) } }
+        return publicUrl
     }
 }

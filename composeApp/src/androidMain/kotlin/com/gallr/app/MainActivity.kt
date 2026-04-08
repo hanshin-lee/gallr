@@ -69,6 +69,13 @@ class MainActivity : ComponentActivity() {
         }
         val themeRepository = ThemeRepositoryImpl(dataStore)
 
+        // Handle deeplink from initial launch (cold start from OAuth redirect)
+        intent.data?.let { uri ->
+            kotlinx.coroutines.MainScope().launch {
+                com.gallr.shared.data.network.handleAuthDeeplink(supabaseClient, uri.toString())
+            }
+        }
+
         setContent {
             val currentThemeMode by themeRepository.observeThemeMode().collectAsState(initial = ThemeMode.SYSTEM)
             val isDarkTheme = when (currentThemeMode) {
