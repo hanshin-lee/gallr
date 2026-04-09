@@ -43,9 +43,14 @@ class ProfileRepositoryImpl(
     override suspend fun uploadAvatar(userId: String, imageBytes: ByteArray): String {
         val path = "$userId.jpg"
         val bucket = supabaseClient.storage.from("avatars")
-        bucket.upload(path, imageBytes) { upsert = true }
-        val publicUrl = bucket.publicUrl(path)
-        // Update profile with new avatar URL
+        bucket.upload(path, imageBytes) {
+            upsert = true
+            contentType = io.ktor.http.ContentType.Image.JPEG
+        }
+        // Append version timestamp so image caches (Coil, CDN) serve
+        // the new file instead of the stale cached version.
+        val publicUrl = bucket.publicUrl(path) +
+            "?v=${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"
         supabaseClient.postgrest
             .from("profiles")
             .update({ set("avatar_url", publicUrl) }) { filter { eq("id", userId) } }
