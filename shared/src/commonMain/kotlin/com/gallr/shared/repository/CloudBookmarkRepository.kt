@@ -3,6 +3,7 @@ package com.gallr.shared.repository
 import com.gallr.shared.data.network.dto.BookmarkDto
 import com.gallr.shared.data.network.dto.BookmarkInsert
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,6 +48,13 @@ class CloudBookmarkRepository(
 
     suspend fun isBookmarked(exhibitionId: String): Boolean =
         exhibitionId in _bookmarkedIds.value
+
+    suspend fun clearAll() {
+        supabaseClient.postgrest
+            .from("bookmarks")
+            .delete { filter { eq("user_id", supabaseClient.auth.currentUserOrNull()?.id ?: "") } }
+        _bookmarkedIds.value = emptySet()
+    }
 
     suspend fun bulkInsert(exhibitionIds: Set<String>) {
         if (exhibitionIds.isEmpty()) return

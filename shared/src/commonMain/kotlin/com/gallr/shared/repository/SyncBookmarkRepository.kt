@@ -64,7 +64,11 @@ class SyncBookmarkRepository(
         else localRepository.isBookmarked(exhibitionId)
 
     override suspend fun clearAll() {
-        localRepository.clearAll()
+        if (isAuthenticated) {
+            cloudRepository.clearAll()
+        } else {
+            localRepository.clearAll()
+        }
     }
 
     /**
