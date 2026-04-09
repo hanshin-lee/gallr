@@ -41,6 +41,11 @@ Replace the raw Ktor ExhibitionApiClient with supabase-kt's Postgrest module for
 - Depends on: Social layer Phase 1 complete (supabase-kt already in project)
 - Context: Two Ktor engines with potentially different versions cause subtle runtime bugs. The dual-client approach is accepted tech debt for the social layer launch but should be resolved in the next cleanup pass.
 
+### FilterViewModel Extraction
+Extract city/region filter state (distinctCities, distinctRegions, selectedCity, toggleRegion, clearRegions) from TabsViewModel into a dedicated FilterViewModel. TabsViewModel now has 17+ StateFlows after the city/region filter feature.
+- Effort: S (CC: ~1 hour)
+- Context: Natural extraction boundary. City/region filter logic is self-contained. Would also make the filter logic independently testable without mocking repositories.
+
 ### Proper Logging Framework
 Replace println() calls with Napier or similar KMP logging library. Production crashes and errors are currently invisible.
 - Effort: S (CC: ~1 hour)

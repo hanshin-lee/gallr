@@ -1,5 +1,8 @@
 package com.gallr.app.ui.tabs.list
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -18,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.DropdownMenu
@@ -38,7 +42,9 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -59,6 +65,7 @@ import com.gallr.app.viewmodel.TabsViewModel
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.FilterState
+import com.gallr.shared.data.model.RegionWithCount
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,6 +80,7 @@ fun ListScreen(
     val lang by viewModel.language.collectAsState()
     val selectedCity by viewModel.selectedCity.collectAsState()
     val distinctCities by viewModel.distinctCities.collectAsState()
+    val distinctRegions by viewModel.distinctRegions.collectAsState()
     val showMyListOnly by viewModel.showMyListOnly.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
@@ -82,6 +90,34 @@ fun ListScreen(
     val selectedTabIndex = if (showMyListOnly) 1 else 0
 
     val focusManager = LocalFocusManager.current
+
+    // ── Scroll-direction tracking for collapsible filters ────────────────
+    val listState = rememberLazyListState()
+    var previousScrollOffset by remember { mutableIntStateOf(0) }
+    var previousFirstVisibleItem by remember { mutableIntStateOf(0) }
+    var filtersVisible by remember { mutableStateOf(true) }
+
+    val isScrollingDown by remember {
+        derivedStateOf {
+            val currentFirst = listState.firstVisibleItemIndex
+            val currentOffset = listState.firstVisibleItemScrollOffset
+            val scrollingDown = if (currentFirst != previousFirstVisibleItem) {
+                currentFirst > previousFirstVisibleItem
+            } else {
+                currentOffset > previousScrollOffset
+            }
+            previousFirstVisibleItem = currentFirst
+            previousScrollOffset = currentOffset
+            scrollingDown
+        }
+    }
+
+    // Show filters when scrolling up or at the top, hide when scrolling down
+    if (isScrollingDown && listState.firstVisibleItemIndex > 0) {
+        filtersVisible = false
+    } else if (!isScrollingDown) {
+        filtersVisible = true
+    }
 
     Column(
         modifier = modifier
@@ -125,6 +161,13 @@ fun ListScreen(
             )
         }
 
+        // ── Collapsible filter section (hides on scroll down) ────────────
+        AnimatedVisibility(
+            visible = filtersVisible,
+            enter = expandVertically(),
+            exit = shrinkVertically(),
+        ) {
+            Column {
         // ── Compact search bar with magnifier icon ──────────────────────
         TextField(
             value = searchQuery,
@@ -191,13 +234,41 @@ fun ListScreen(
                 label = if (lang == AppLanguage.KO) "전체" else "All",
             )
             Spacer(Modifier.width(GallrSpacing.sm))
-            distinctCities.forEach { (cityKo, cityEn) ->
+            distinctCities.forEach { city ->
                 GallrFilterChip(
-                    selected = selectedCity == cityKo,
-                    onClick = { viewModel.setCity(cityKo) },
-                    label = if (lang == AppLanguage.KO) cityKo else cityEn.ifEmpty { cityKo },
+                    selected = selectedCity == city.cityKo,
+                    onClick = { viewModel.setCity(city.cityKo) },
+                    label = "${if (lang == AppLanguage.KO) city.cityKo else city.cityEn.ifEmpty { city.cityKo }} (${city.count})",
                 )
                 Spacer(Modifier.width(GallrSpacing.sm))
+            }
+        }
+
+        // ── Region sub-filter chips (visible when city selected) ────────
+        if (distinctRegions.isNotEmpty()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = GallrSpacing.screenMargin),
+            ) {
+                GallrFilterChip(
+                    selected = filter.regions.isEmpty(),
+                    onClick = { viewModel.clearRegions() },
+                    label = if (lang == AppLanguage.KO) "전체" else "All",
+                    small = true,
+                )
+                Spacer(Modifier.width(GallrSpacing.sm))
+                distinctRegions.forEach { region ->
+                    GallrFilterChip(
+                        selected = region.regionKo in filter.regions,
+                        onClick = { viewModel.toggleRegion(region.regionKo) },
+                        label = "${if (lang == AppLanguage.KO) region.regionKo else region.regionEn.ifEmpty { region.regionKo }} (${region.count})",
+                        small = true,
+                    )
+                    Spacer(Modifier.width(GallrSpacing.sm))
+                }
             }
         }
 
@@ -259,6 +330,8 @@ fun ListScreen(
         if (!hasActiveFilters && !(showMyListOnly && bookmarkedIds.isNotEmpty())) {
             Spacer(Modifier.height(GallrSpacing.xs))
         }
+            } // end Column inside AnimatedVisibility
+        } // end AnimatedVisibility
 
         // ── Exhibition list ───────────────────────────────────────────────
         when (val s = state) {
@@ -285,7 +358,7 @@ fun ListScreen(
                 if (s.exhibitions.isEmpty()) {
                     val cityName = selectedCity?.let { city ->
                         if (lang == AppLanguage.KO) city
-                        else distinctCities.firstOrNull { it.first == city }?.second?.ifEmpty { city } ?: city
+                        else distinctCities.firstOrNull { it.cityKo == city }?.cityEn?.ifEmpty { city } ?: city
                     }
                     GallrEmptyState(
                         message = when {
@@ -319,6 +392,7 @@ fun ListScreen(
                         modifier = Modifier.fillMaxSize(),
                     ) {
                         LazyColumn(
+                            state = listState,
                             contentPadding = PaddingValues(GallrSpacing.md),
                             modifier = Modifier.fillMaxSize(),
                         ) {
@@ -392,6 +466,7 @@ private fun GallrFilterChip(
     onClick: () -> Unit,
     label: String,
     modifier: Modifier = Modifier,
+    small: Boolean = false,
 ) {
     FilterChip(
         selected = selected,
@@ -399,7 +474,7 @@ private fun GallrFilterChip(
         label = {
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelLarge,
+                style = if (small) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelLarge,
             )
         },
         modifier = modifier,
