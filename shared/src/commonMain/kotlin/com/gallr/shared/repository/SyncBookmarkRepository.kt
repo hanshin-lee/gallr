@@ -3,8 +3,10 @@
 package com.gallr.shared.repository
 
 import com.gallr.shared.data.model.AuthState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 
@@ -12,8 +14,10 @@ import kotlinx.coroutines.flow.flatMapLatest
  * BookmarkRepository wrapper that delegates to local DataStore (anonymous)
  * or cloud Supabase (authenticated) based on the current auth state.
  *
- * The auth state flow is injected so this repository reacts automatically
- * when the user signs in or out.
+ * When authenticated, local bookmarks act as an immediate cache: the user
+ * sees their bookmarks instantly while the cloud refresh happens in the
+ * background. Once the cloud loads, the union of both sources is shown
+ * so nothing disappears during the transition.
  */
 class SyncBookmarkRepository(
     private val localRepository: BookmarkRepositoryImpl,
@@ -27,7 +31,15 @@ class SyncBookmarkRepository(
     override fun observeBookmarkedIds(): Flow<Set<String>> =
         authState.flatMapLatest { state ->
             when (state) {
-                is AuthState.Authenticated -> cloudRepository.observeBookmarkedIds()
+                is AuthState.Authenticated -> {
+                    // Combine local (instant, disk-cached) + cloud (network-loaded)
+                    // so the user always sees at least their local bookmarks while
+                    // the cloud refresh completes.
+                    combine(
+                        localRepository.observeBookmarkedIds(),
+                        cloudRepository.observeBookmarkedIds(),
+                    ) { local, cloud -> local + cloud }
+                }
                 else -> localRepository.observeBookmarkedIds()
             }
         }
@@ -60,8 +72,12 @@ class SyncBookmarkRepository(
     }
 
     override suspend fun isBookmarked(exhibitionId: String): Boolean =
-        if (isAuthenticated) cloudRepository.isBookmarked(exhibitionId)
-        else localRepository.isBookmarked(exhibitionId)
+        if (isAuthenticated) {
+            cloudRepository.isBookmarked(exhibitionId) ||
+                localRepository.isBookmarked(exhibitionId)
+        } else {
+            localRepository.isBookmarked(exhibitionId)
+        }
 
     override suspend fun clearAll() {
         localRepository.clearAll()
@@ -69,14 +85,40 @@ class SyncBookmarkRepository(
     }
 
     /**
-     * Migrate local bookmarks to cloud on first login.
-     * Called once after successful authentication.
+     * Migrate local bookmarks to cloud and refresh cloud state.
+     * Called after successful authentication. The bulk insert may fail
+     * (RLS policy, network) but refresh must still run so the user
+     * sees their cloud bookmarks.
      */
     suspend fun migrateLocalToCloud() {
         val localIds = localRepository.observeBookmarkedIds().first()
         if (localIds.isNotEmpty()) {
-            cloudRepository.bulkInsert(localIds)
+            try {
+                cloudRepository.bulkInsert(localIds)
+            } catch (e: Exception) {
+                println("WARN [SyncBookmarkRepository] Local→cloud migration failed (RLS or network): ${e.message}")
+            }
         }
-        cloudRepository.refresh()
+        refreshCloudWithRetry()
+    }
+
+    /**
+     * Refresh cloud bookmarks with retry. On failure the local cache
+     * still shows via the combine() in observeBookmarkedIds().
+     */
+    suspend fun refreshCloudWithRetry(maxAttempts: Int = 3) {
+        var lastError: Exception? = null
+        repeat(maxAttempts) { attempt ->
+            try {
+                cloudRepository.refresh()
+                return
+            } catch (e: Exception) {
+                lastError = e
+                if (attempt < maxAttempts - 1) {
+                    delay(1000L * (attempt + 1))
+                }
+            }
+        }
+        println("WARN [SyncBookmarkRepository] Cloud refresh failed after $maxAttempts attempts: ${lastError?.message}")
     }
 }

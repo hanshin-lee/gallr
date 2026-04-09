@@ -97,10 +97,20 @@ fun App(
     androidx.compose.runtime.LaunchedEffect(authState) {
         authStateFlow.value = authState
         if (authState is AuthState.Authenticated) {
+            // Migrate + refresh bookmarks (has its own retry logic, local
+            // cache keeps bookmarks visible even if cloud refresh fails)
             try {
-                cloudBookmarkRepository.refresh()
+                syncBookmarkRepository.migrateLocalToCloud()
             } catch (e: Exception) {
-                println("BOOKMARK_REFRESH_ERROR: ${e.message}")
+                println("WARN [App] Bookmark cloud sync failed: ${e.message}")
+            }
+            // Check admin status
+            try {
+                val userId = (authState as AuthState.Authenticated).user.id
+                val profile = profileRepository.getProfile(userId)
+                isAdmin = profile?.isAdmin == true
+            } catch (_: Exception) {
+                isAdmin = false
             }
         }
     }
