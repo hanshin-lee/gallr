@@ -2,6 +2,19 @@
 
 All notable changes to gallr will be documented in this file.
 
+## [0.0.2.0] - 2026-04-09
+
+### Added
+- City filter chips now sorted by exhibition count (most exhibitions first). Each chip shows the count, e.g. "Seoul (42)".
+- Region sub-filter chips appear below city chips when a city is selected. Multi-select support lets you combine regions (e.g. Gangnam-gu + Jongno-gu). Includes "All" chip for quick region reset.
+- `CityWithCount` and `RegionWithCount` data classes for type-safe city/region filter data.
+- 8 unit tests covering city sort-by-count, region grouping, active-only counting, and edge cases.
+
+### Changed
+- City filter counts only active (non-ended) exhibitions, so the displayed count matches visible results.
+- Switching cities or tapping "All" automatically clears region selection.
+- `GallrFilterChip` now supports a `small` variant for compact region chips.
+
 ## [0.0.1.0] - 2026-04-08
 
 ### Added
