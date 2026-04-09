@@ -65,7 +65,11 @@ class SyncBookmarkRepository(
 
     override suspend fun clearAll() {
         if (isAuthenticated) {
-            cloudRepository.clearAll()
+            try {
+                cloudRepository.clearAll()
+            } catch (_: Exception) {
+                // Network failure — don't crash; bookmarks remain server-side
+            }
         } else {
             localRepository.clearAll()
         }
