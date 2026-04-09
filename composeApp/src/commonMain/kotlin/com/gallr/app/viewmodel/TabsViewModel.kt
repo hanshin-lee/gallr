@@ -8,8 +8,10 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.ExhibitionMapPin
+import com.gallr.shared.data.model.CityWithCount
 import com.gallr.shared.data.model.FilterState
 import com.gallr.shared.data.model.MapDisplayMode
+import com.gallr.shared.data.model.RegionWithCount
 import com.gallr.shared.data.model.ThemeMode
 import com.gallr.shared.data.model.toMapPin
 import com.gallr.shared.repository.BookmarkRepository
@@ -102,17 +104,47 @@ class TabsViewModel(
 
     fun setCity(cityKo: String?) {
         _selectedCity.value = cityKo
+        _filterState.value = _filterState.value.copy(regions = emptyList())
     }
 
-    val distinctCities: StateFlow<List<Pair<String, String>>> =
+    val distinctCities: StateFlow<List<CityWithCount>> =
         _allExhibitions.map { state ->
+            val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
             (state as? ExhibitionListState.Success)
                 ?.exhibitions
-                ?.map { it.cityKo to it.cityEn }
-                ?.distinct()
-                ?.sortedBy { it.first }
+                ?.filter { it.closingDate >= today }
+                ?.groupBy { it.cityKo to it.cityEn }
+                ?.map { (city, exhs) -> CityWithCount(city.first, city.second, exhs.size) }
+                ?.sortedByDescending { it.count }
                 ?: emptyList()
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val distinctRegions: StateFlow<List<RegionWithCount>> =
+        combine(_allExhibitions, _selectedCity) { state, city ->
+            if (city == null) return@combine emptyList()
+            val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+            (state as? ExhibitionListState.Success)
+                ?.exhibitions
+                ?.filter { it.closingDate >= today && it.cityKo == city }
+                ?.groupBy { it.regionKo to it.regionEn }
+                ?.map { (region, exhs) -> RegionWithCount(region.first, region.second, exhs.size) }
+                ?.sortedByDescending { it.count }
+                ?: emptyList()
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun toggleRegion(regionKo: String) {
+        _filterState.value = _filterState.value.let { current ->
+            if (regionKo in current.regions) {
+                current.copy(regions = current.regions - regionKo)
+            } else {
+                current.copy(regions = current.regions + regionKo)
+            }
+        }
+    }
+
+    fun clearRegions() {
+        _filterState.value = _filterState.value.copy(regions = emptyList())
+    }
 
     // ── My List filter ────────────────────────────────────────────────────────
 

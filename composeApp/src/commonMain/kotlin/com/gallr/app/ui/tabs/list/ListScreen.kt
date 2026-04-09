@@ -59,6 +59,7 @@ import com.gallr.app.viewmodel.TabsViewModel
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.FilterState
+import com.gallr.shared.data.model.RegionWithCount
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,6 +74,7 @@ fun ListScreen(
     val lang by viewModel.language.collectAsState()
     val selectedCity by viewModel.selectedCity.collectAsState()
     val distinctCities by viewModel.distinctCities.collectAsState()
+    val distinctRegions by viewModel.distinctRegions.collectAsState()
     val showMyListOnly by viewModel.showMyListOnly.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
@@ -191,13 +193,41 @@ fun ListScreen(
                 label = if (lang == AppLanguage.KO) "전체" else "All",
             )
             Spacer(Modifier.width(GallrSpacing.sm))
-            distinctCities.forEach { (cityKo, cityEn) ->
+            distinctCities.forEach { city ->
                 GallrFilterChip(
-                    selected = selectedCity == cityKo,
-                    onClick = { viewModel.setCity(cityKo) },
-                    label = if (lang == AppLanguage.KO) cityKo else cityEn.ifEmpty { cityKo },
+                    selected = selectedCity == city.cityKo,
+                    onClick = { viewModel.setCity(city.cityKo) },
+                    label = "${if (lang == AppLanguage.KO) city.cityKo else city.cityEn.ifEmpty { city.cityKo }} (${city.count})",
                 )
                 Spacer(Modifier.width(GallrSpacing.sm))
+            }
+        }
+
+        // ── Region sub-filter chips (visible when city selected) ────────
+        if (distinctRegions.isNotEmpty()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = GallrSpacing.screenMargin),
+            ) {
+                GallrFilterChip(
+                    selected = filter.regions.isEmpty(),
+                    onClick = { viewModel.clearRegions() },
+                    label = if (lang == AppLanguage.KO) "전체" else "All",
+                    small = true,
+                )
+                Spacer(Modifier.width(GallrSpacing.sm))
+                distinctRegions.forEach { region ->
+                    GallrFilterChip(
+                        selected = region.regionKo in filter.regions,
+                        onClick = { viewModel.toggleRegion(region.regionKo) },
+                        label = "${if (lang == AppLanguage.KO) region.regionKo else region.regionEn.ifEmpty { region.regionKo }} (${region.count})",
+                        small = true,
+                    )
+                    Spacer(Modifier.width(GallrSpacing.sm))
+                }
             }
         }
 
@@ -285,7 +315,7 @@ fun ListScreen(
                 if (s.exhibitions.isEmpty()) {
                     val cityName = selectedCity?.let { city ->
                         if (lang == AppLanguage.KO) city
-                        else distinctCities.firstOrNull { it.first == city }?.second?.ifEmpty { city } ?: city
+                        else distinctCities.firstOrNull { it.cityKo == city }?.cityEn?.ifEmpty { city } ?: city
                     }
                     GallrEmptyState(
                         message = when {
@@ -392,6 +422,7 @@ private fun GallrFilterChip(
     onClick: () -> Unit,
     label: String,
     modifier: Modifier = Modifier,
+    small: Boolean = false,
 ) {
     FilterChip(
         selected = selected,
@@ -399,7 +430,7 @@ private fun GallrFilterChip(
         label = {
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelLarge,
+                style = if (small) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelLarge,
             )
         },
         modifier = modifier,
