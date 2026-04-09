@@ -228,7 +228,7 @@ fun ExhibitionDetailScreen(
                     )
                 }
 
-                // ── Thoughts 감상평 ─────────────────────────────────────────
+                // ── Thoughts 감상 ─────────────────────────────────────────
                 if (thoughtRepository != null) {
                     Spacer(Modifier.height(GallrSpacing.md))
                     HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)

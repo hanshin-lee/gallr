@@ -213,7 +213,7 @@ fun ProfileScreen(
             StatItem(
                 count = thoughtCount,
                 label = when (lang) {
-                    AppLanguage.KO -> "감상평"
+                    AppLanguage.KO -> "감상"
                     AppLanguage.EN -> "Thoughts"
                 },
             )
@@ -238,7 +238,7 @@ fun ProfileScreen(
             Spacer(Modifier.height(16.dp))
             Text(
                 text = when (lang) {
-                    AppLanguage.KO -> "전시 일기가 비어있어요.\n전시에 감상평을 남겨보세요."
+                    AppLanguage.KO -> "전시 일기가 비어있어요.\n전시에 감상을 남겨보세요."
                     AppLanguage.EN -> "Your exhibition diary is empty.\nShare your thoughts on an exhibition to start."
                 },
                 style = MaterialTheme.typography.bodyMedium,
@@ -314,7 +314,7 @@ fun ProfileScreen(
             ) {
                 Text(
                     text = when (lang) {
-                        AppLanguage.KO -> "계정을 삭제하시겠습니까? 모든 북마크와 감상평이 영구적으로 삭제됩니다."
+                        AppLanguage.KO -> "계정을 삭제하시겠습니까? 모든 북마크와 감상이 영구적으로 삭제됩니다."
                         AppLanguage.EN -> "Delete your account? All bookmarks and thoughts will be permanently deleted."
                     },
                     style = MaterialTheme.typography.bodySmall,
@@ -455,7 +455,7 @@ private fun DiaryCard(
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = "💭 ${when (lang) {
-                        AppLanguage.KO -> "감상평 작성됨"
+                        AppLanguage.KO -> "감상 작성됨"
                         AppLanguage.EN -> "Thought written"
                     }}",
                     style = MaterialTheme.typography.labelSmall,
