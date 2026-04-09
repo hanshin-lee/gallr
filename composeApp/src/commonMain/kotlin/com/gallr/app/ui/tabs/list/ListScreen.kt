@@ -1,5 +1,8 @@
 package com.gallr.app.ui.tabs.list
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -18,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.DropdownMenu
@@ -38,7 +42,9 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -85,6 +91,34 @@ fun ListScreen(
 
     val focusManager = LocalFocusManager.current
 
+    // ── Scroll-direction tracking for collapsible filters ────────────────
+    val listState = rememberLazyListState()
+    var previousScrollOffset by remember { mutableIntStateOf(0) }
+    var previousFirstVisibleItem by remember { mutableIntStateOf(0) }
+    var filtersVisible by remember { mutableStateOf(true) }
+
+    val isScrollingDown by remember {
+        derivedStateOf {
+            val currentFirst = listState.firstVisibleItemIndex
+            val currentOffset = listState.firstVisibleItemScrollOffset
+            val scrollingDown = if (currentFirst != previousFirstVisibleItem) {
+                currentFirst > previousFirstVisibleItem
+            } else {
+                currentOffset > previousScrollOffset
+            }
+            previousFirstVisibleItem = currentFirst
+            previousScrollOffset = currentOffset
+            scrollingDown
+        }
+    }
+
+    // Show filters when scrolling up or at the top, hide when scrolling down
+    if (isScrollingDown && listState.firstVisibleItemIndex > 0) {
+        filtersVisible = false
+    } else if (!isScrollingDown) {
+        filtersVisible = true
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -127,6 +161,13 @@ fun ListScreen(
             )
         }
 
+        // ── Collapsible filter section (hides on scroll down) ────────────
+        AnimatedVisibility(
+            visible = filtersVisible,
+            enter = expandVertically(),
+            exit = shrinkVertically(),
+        ) {
+            Column {
         // ── Compact search bar with magnifier icon ──────────────────────
         TextField(
             value = searchQuery,
@@ -289,6 +330,8 @@ fun ListScreen(
         if (!hasActiveFilters && !(showMyListOnly && bookmarkedIds.isNotEmpty())) {
             Spacer(Modifier.height(GallrSpacing.xs))
         }
+            } // end Column inside AnimatedVisibility
+        } // end AnimatedVisibility
 
         // ── Exhibition list ───────────────────────────────────────────────
         when (val s = state) {
@@ -349,6 +392,7 @@ fun ListScreen(
                         modifier = Modifier.fillMaxSize(),
                     ) {
                         LazyColumn(
+                            state = listState,
                             contentPadding = PaddingValues(GallrSpacing.md),
                             modifier = Modifier.fillMaxSize(),
                         ) {
