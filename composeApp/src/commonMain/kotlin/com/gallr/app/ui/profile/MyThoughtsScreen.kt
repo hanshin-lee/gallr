@@ -92,7 +92,7 @@ fun MyThoughtsScreen(
                 title = {
                     Text(
                         text = when (lang) {
-                            AppLanguage.KO -> "내 감상평"
+                            AppLanguage.KO -> "내 감상"
                             AppLanguage.EN -> "My Thoughts"
                         },
                         style = MaterialTheme.typography.titleMedium,
@@ -133,7 +133,7 @@ fun MyThoughtsScreen(
                 Spacer(Modifier.height(32.dp))
                 Text(
                     text = when (lang) {
-                        AppLanguage.KO -> "아직 감상평이 없어요."
+                        AppLanguage.KO -> "아직 감상이 없어요."
                         AppLanguage.EN -> "No thoughts yet."
                     },
                     style = MaterialTheme.typography.bodyMedium,

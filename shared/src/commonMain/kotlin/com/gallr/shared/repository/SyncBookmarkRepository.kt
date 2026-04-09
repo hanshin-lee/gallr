@@ -3,6 +3,7 @@
 package com.gallr.shared.repository
 
 import com.gallr.shared.data.model.AuthState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -12,8 +13,8 @@ import kotlinx.coroutines.flow.flatMapLatest
  * BookmarkRepository wrapper that delegates to local DataStore (anonymous)
  * or cloud Supabase (authenticated) based on the current auth state.
  *
- * The auth state flow is injected so this repository reacts automatically
- * when the user signs in or out.
+ * Local and cloud bookmarks are completely isolated. When authenticated,
+ * only cloud bookmarks are used. Local bookmarks are for anonymous users only.
  */
 class SyncBookmarkRepository(
     private val localRepository: BookmarkRepositoryImpl,
@@ -33,29 +34,28 @@ class SyncBookmarkRepository(
         }
 
     override suspend fun addBookmark(exhibitionId: String) {
-        // Always write to local (offline cache)
-        localRepository.addBookmark(exhibitionId)
         if (isAuthenticated) {
-            // Optimistic update: update cloud StateFlow immediately for responsive UI
             cloudRepository.optimisticAdd(exhibitionId)
             try {
                 cloudRepository.addBookmark(exhibitionId)
             } catch (_: Exception) {
-                // Network failure — local write succeeded, cloud syncs on next foreground
+                // Network failure — optimistic update keeps UI responsive
             }
+        } else {
+            localRepository.addBookmark(exhibitionId)
         }
     }
 
     override suspend fun removeBookmark(exhibitionId: String) {
-        localRepository.removeBookmark(exhibitionId)
         if (isAuthenticated) {
-            // Optimistic update: update cloud StateFlow immediately for responsive UI
             cloudRepository.optimisticRemove(exhibitionId)
             try {
                 cloudRepository.removeBookmark(exhibitionId)
             } catch (_: Exception) {
-                // Network failure — local delete succeeded, cloud syncs on next foreground
+                // Network failure — optimistic update keeps UI responsive
             }
+        } else {
+            localRepository.removeBookmark(exhibitionId)
         }
     }
 
@@ -64,19 +64,52 @@ class SyncBookmarkRepository(
         else localRepository.isBookmarked(exhibitionId)
 
     override suspend fun clearAll() {
-        localRepository.clearAll()
-        // Cloud bookmarks are not cleared — use delete account for that
+        if (isAuthenticated) {
+            try {
+                cloudRepository.clearAll()
+            } catch (_: Exception) {
+                // Network failure — don't crash; bookmarks remain server-side
+            }
+        } else {
+            localRepository.clearAll()
+        }
     }
 
     /**
-     * Migrate local bookmarks to cloud on first login.
-     * Called once after successful authentication.
+     * One-time migration of anonymous bookmarks to cloud on first login,
+     * then refresh cloud state. The bulk insert may fail (RLS policy,
+     * network) but refresh must still run so the user sees their
+     * cloud bookmarks. After migration, local bookmarks are cleared.
      */
     suspend fun migrateLocalToCloud() {
         val localIds = localRepository.observeBookmarkedIds().first()
         if (localIds.isNotEmpty()) {
-            cloudRepository.bulkInsert(localIds)
+            try {
+                cloudRepository.bulkInsert(localIds)
+                localRepository.clearAll()
+            } catch (e: Exception) {
+                println("WARN [SyncBookmarkRepository] Local→cloud migration failed (RLS or network): ${e.message}")
+            }
         }
-        cloudRepository.refresh()
+        refreshCloudWithRetry()
+    }
+
+    /**
+     * Refresh cloud bookmarks with retry on failure.
+     */
+    suspend fun refreshCloudWithRetry(maxAttempts: Int = 3) {
+        var lastError: Exception? = null
+        repeat(maxAttempts) { attempt ->
+            try {
+                cloudRepository.refresh()
+                return
+            } catch (e: Exception) {
+                lastError = e
+                if (attempt < maxAttempts - 1) {
+                    delay(1000L * (attempt + 1))
+                }
+            }
+        }
+        println("WARN [SyncBookmarkRepository] Cloud refresh failed after $maxAttempts attempts: ${lastError?.message}")
     }
 }

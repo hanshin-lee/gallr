@@ -75,12 +75,17 @@ class AuthRepositoryImpl(
         // Current limitation: supabase-kt does not expose client-side deleteUser().
         // For now, delete user data (thoughts, bookmarks, profile) via Postgrest,
         // then sign out. The auth.users row persists until an Edge Function is added.
-        try {
-            supabaseClient.postgrest.from("thoughts").delete { filter { eq("user_id", supabaseClient.auth.currentUserOrNull()?.id ?: "") } }
-            supabaseClient.postgrest.from("bookmarks").delete { filter { eq("user_id", supabaseClient.auth.currentUserOrNull()?.id ?: "") } }
-            supabaseClient.postgrest.from("profiles").delete { filter { eq("id", supabaseClient.auth.currentUserOrNull()?.id ?: "") } }
-        } catch (_: Exception) {
-            // Best effort — data deletion may fail if already signed out
+        val userId = supabaseClient.auth.currentUserOrNull()?.id
+            ?: try { supabaseClient.auth.retrieveUserForCurrentSession()?.id } catch (_: Exception) { null }
+        if (userId != null) {
+            try {
+                // RLS scopes each delete to the current user; explicit user_id filter for clarity
+                supabaseClient.postgrest.from("thoughts").delete { filter { eq("user_id", userId) } }
+                supabaseClient.postgrest.from("bookmarks").delete { filter { eq("user_id", userId) } }
+                supabaseClient.postgrest.from("profiles").delete { filter { eq("id", userId) } }
+            } catch (_: Exception) {
+                // Best effort — data deletion may fail if already signed out
+            }
         }
         supabaseClient.auth.signOut()
     }

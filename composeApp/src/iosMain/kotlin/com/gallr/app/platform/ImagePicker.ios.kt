@@ -19,7 +19,14 @@ import platform.UIKit.UIWindow
 import platform.UIKit.UIWindowScene
 import platform.UniformTypeIdentifiers.UTTypeImage
 import platform.darwin.NSObject
+import platform.darwin.dispatch_async
+import platform.darwin.dispatch_get_main_queue
 import platform.posix.memcpy
+
+// Module-level strong reference. PHPickerViewController.delegate is weak,
+// so without an explicit strong reference the Kotlin/Native GC collects the
+// delegate before the user picks a photo. Released after picker completes.
+private var activePickerDelegate: NSObject? = null
 
 @Composable
 actual fun rememberImagePicker(onImagePicked: (ByteArray?) -> Unit): () -> Unit {
@@ -32,34 +39,45 @@ actual fun rememberImagePicker(onImagePicked: (ByteArray?) -> Unit): () -> Unit 
             selectionLimit = 1
         }
         val picker = PHPickerViewController(configuration = config)
+
+        // Anonymous object: Kotlin/Native registers ObjC protocol conformance
+        // correctly for anonymous objects implementing ObjC protocols.
         val delegate = object : NSObject(), PHPickerViewControllerDelegateProtocol {
             override fun picker(picker: PHPickerViewController, didFinishPicking: List<*>) {
                 picker.dismissViewControllerAnimated(true, completion = null)
+
                 val result = didFinishPicking.firstOrNull() as? PHPickerResult
                 if (result == null) {
-                    callback(null)
+                    activePickerDelegate = null
+                    dispatch_async(dispatch_get_main_queue()) { callback(null) }
                     return
                 }
                 val provider: NSItemProvider = result.itemProvider
                 if (provider.hasItemConformingToTypeIdentifier(UTTypeImage.identifier)) {
                     provider.loadDataRepresentationForTypeIdentifier(UTTypeImage.identifier) { data, _ ->
-                        if (data != null) {
-                            val image = UIImage(data = data)
-                            val jpegData = UIImageJPEGRepresentation(image, 0.8)
-                            val bytes = jpegData?.toByteArray()
-                            callback(bytes)
-                        } else {
-                            callback(null)
+                        // Release strong reference now that async load is done
+                        activePickerDelegate = null
+                        dispatch_async(dispatch_get_main_queue()) {
+                            if (data != null) {
+                                val image = UIImage(data = data)
+                                val jpegData = UIImageJPEGRepresentation(image, 0.8)
+                                callback(jpegData?.toByteArray())
+                            } else {
+                                callback(null)
+                            }
                         }
                     }
                 } else {
-                    callback(null)
+                    activePickerDelegate = null
+                    dispatch_async(dispatch_get_main_queue()) { callback(null) }
                 }
             }
         }
+
+        activePickerDelegate = delegate
         picker.delegate = delegate
 
-        // Find root view controller using Obj-C compatible iteration
+        // Find the topmost view controller to present from
         var rootVC: platform.UIKit.UIViewController? = null
         for (scene in UIApplication.sharedApplication.connectedScenes) {
             val windowScene = scene as? UIWindowScene ?: continue
@@ -74,7 +92,6 @@ actual fun rememberImagePicker(onImagePicked: (ByteArray?) -> Unit): () -> Unit 
         }
 
         if (rootVC != null) {
-            // Present from the topmost presented controller
             var topVC = rootVC
             while (topVC?.presentedViewController != null) {
                 topVC = topVC.presentedViewController

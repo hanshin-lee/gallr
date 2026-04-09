@@ -48,6 +48,15 @@ class CloudBookmarkRepository(
     suspend fun isBookmarked(exhibitionId: String): Boolean =
         exhibitionId in _bookmarkedIds.value
 
+    suspend fun clearAll() {
+        val ids = _bookmarkedIds.value.toList()
+        if (ids.isEmpty()) return
+        supabaseClient.postgrest
+            .from("bookmarks")
+            .delete { filter { isIn("exhibition_id", ids) } }
+        _bookmarkedIds.value = emptySet()
+    }
+
     suspend fun bulkInsert(exhibitionIds: Set<String>) {
         if (exhibitionIds.isEmpty()) return
         val inserts = exhibitionIds.map { BookmarkInsert(exhibitionId = it) }

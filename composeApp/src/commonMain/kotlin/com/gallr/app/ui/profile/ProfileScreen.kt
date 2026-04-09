@@ -75,70 +75,66 @@ fun ProfileScreen(
     val scope = rememberCoroutineScope()
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showMyThoughts by remember { mutableStateOf(false) }
+    var showPendingThoughts by remember { mutableStateOf(false) }
     var profile by remember { mutableStateOf<Profile?>(null) }
     var thoughtExhibitionIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var thoughtCount by remember { mutableStateOf(0) }
-
-    var showEditProfile by remember { mutableStateOf(false) }
-    var showPendingThoughts by remember { mutableStateOf(false) }
     var pendingCount by remember { mutableStateOf(0) }
 
-    // Get exhibitions (needed by multiple screens)
-    val allExhibitionsState by viewModel.filteredExhibitions.collectAsState()
-
-    // Show Pending Thoughts screen (admin only)
-    if (showPendingThoughts) {
-        val onBackPending = {
-            showPendingThoughts = false
-            // Refresh pending count
-            scope.launch {
-                try { pendingCount = thoughtRepository.getPendingThoughts().size } catch (_: Exception) {}
-            }
-            Unit
-        }
-        PlatformBackHandler { onBackPending() }
-        val allExhibitions = (allExhibitionsState as? ExhibitionListState.Success)?.exhibitions ?: emptyList()
-        PendingThoughtsScreen(
-            thoughtRepository = thoughtRepository,
-            exhibitions = allExhibitions,
-            lang = lang,
-            onBack = { onBackPending() },
-        )
-        return
-    }
+    var showEditProfile by remember { mutableStateOf(false) }
 
     // Show Edit Profile screen
     if (showEditProfile) {
-        val onBackEdit = {
-            showEditProfile = false
-            // Refresh profile after edit
-            val userId = user.id.takeIf { it.isNotBlank() }
-            if (userId != null) {
-                scope.launch {
-                    try { profile = profileRepository.getProfile(userId) } catch (_: Exception) {}
-                }
-            }
-            Unit
-        }
-        PlatformBackHandler { onBackEdit() }
         EditProfileScreen(
             user = user,
             profile = profile,
             profileRepository = profileRepository,
             lang = lang,
-            onBack = { onBackEdit() },
+            onBack = {
+                showEditProfile = false
+                // Refresh profile after edit
+                val userId = user.id.takeIf { it.isNotBlank() }
+                if (userId != null) {
+                    scope.launch {
+                        try { profile = profileRepository.getProfile(userId) } catch (_: Exception) {}
+                    }
+                }
+            },
         )
         return
     }
 
     // Show My Thoughts screen
     if (showMyThoughts) {
-        PlatformBackHandler { showMyThoughts = false }
         MyThoughtsScreen(
             thoughtRepository = thoughtRepository,
             supabaseClient = supabaseClient,
             lang = lang,
             onBack = { showMyThoughts = false },
+        )
+        return
+    }
+
+    // Show Pending Thoughts screen (admin only)
+    if (showPendingThoughts) {
+        val allExhibitionsState by viewModel.filteredExhibitions.collectAsState()
+        val allExhibitions = (allExhibitionsState as? ExhibitionListState.Success)?.exhibitions ?: emptyList()
+        PlatformBackHandler {
+            showPendingThoughts = false
+            scope.launch {
+                try { pendingCount = thoughtRepository.getPendingThoughts().size } catch (_: Exception) {}
+            }
+        }
+        PendingThoughtsScreen(
+            thoughtRepository = thoughtRepository,
+            exhibitions = allExhibitions,
+            lang = lang,
+            onBack = {
+                showPendingThoughts = false
+                scope.launch {
+                    try { pendingCount = thoughtRepository.getPendingThoughts().size } catch (_: Exception) {}
+                }
+            },
         )
         return
     }
@@ -158,12 +154,10 @@ fun ProfileScreen(
                 thoughtCount = userThoughts.size
             } catch (_: Exception) {}
             // Fetch pending count for admin
-            try {
-                val p = profileRepository.getProfile(userId)
-                if (p?.isAdmin == true) {
-                    pendingCount = thoughtRepository.getPendingThoughts().size
-                }
-            } catch (_: Exception) {}
+            val p = profile
+            if (p?.isAdmin == true) {
+                try { pendingCount = thoughtRepository.getPendingThoughts().size } catch (_: Exception) {}
+            }
         }
     }
 
@@ -172,6 +166,7 @@ fun ProfileScreen(
 
     // Get exhibitions with thoughts for the diary
     val bookmarkedIds by viewModel.bookmarkedIds.collectAsState()
+    val allExhibitionsState by viewModel.filteredExhibitions.collectAsState()
     val diaryExhibitions = remember(allExhibitionsState, thoughtExhibitionIds) {
         val allExhibitions = (allExhibitionsState as? ExhibitionListState.Success)?.exhibitions ?: emptyList()
         allExhibitions.filter { it.id in thoughtExhibitionIds }
@@ -220,14 +215,6 @@ fun ProfileScreen(
             },
             style = MaterialTheme.typography.titleMedium,
         )
-        if (profile?.isAdmin == true) {
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = "Admin",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
 
         Spacer(Modifier.height(8.dp))
         TextButton(onClick = { showEditProfile = true }) {
@@ -258,7 +245,7 @@ fun ProfileScreen(
             StatItem(
                 count = thoughtCount,
                 label = when (lang) {
-                    AppLanguage.KO -> "감상평"
+                    AppLanguage.KO -> "감상"
                     AppLanguage.EN -> "Thoughts"
                 },
             )
@@ -283,7 +270,7 @@ fun ProfileScreen(
             Spacer(Modifier.height(16.dp))
             Text(
                 text = when (lang) {
-                    AppLanguage.KO -> "전시 일기가 비어있어요.\n전시에 감상평을 남겨보세요."
+                    AppLanguage.KO -> "전시 일기가 비어있어요.\n전시에 감상을 남겨보세요."
                     AppLanguage.EN -> "Your exhibition diary is empty.\nShare your thoughts on an exhibition to start."
                 },
                 style = MaterialTheme.typography.bodyMedium,
@@ -317,21 +304,19 @@ fun ProfileScreen(
             }
         }
 
-        Spacer(Modifier.height(32.dp))
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        Spacer(Modifier.height(16.dp))
-
         // Admin section (visible only to admins)
         if (profile?.isAdmin == true) {
+            Spacer(Modifier.height(24.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Spacer(Modifier.height(16.dp))
+
             Text(
-                text = when (lang) {
-                    AppLanguage.KO -> "관리"
-                    AppLanguage.EN -> "ADMIN"
-                },
+                text = "Admin",
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(12.dp))
+
             OutlinedButton(
                 onClick = { showPendingThoughts = true },
                 modifier = Modifier.fillMaxWidth().height(44.dp),
@@ -345,10 +330,11 @@ fun ProfileScreen(
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
-            Spacer(Modifier.height(24.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            Spacer(Modifier.height(16.dp))
         }
+
+        Spacer(Modifier.height(32.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Spacer(Modifier.height(16.dp))
 
         // Settings section
         Text(
@@ -388,7 +374,7 @@ fun ProfileScreen(
             ) {
                 Text(
                     text = when (lang) {
-                        AppLanguage.KO -> "계정을 삭제하시겠습니까? 모든 북마크와 감상평이 영구적으로 삭제됩니다."
+                        AppLanguage.KO -> "계정을 삭제하시겠습니까? 모든 북마크와 감상이 영구적으로 삭제됩니다."
                         AppLanguage.EN -> "Delete your account? All bookmarks and thoughts will be permanently deleted."
                     },
                     style = MaterialTheme.typography.bodySmall,
@@ -529,7 +515,7 @@ private fun DiaryCard(
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = "💭 ${when (lang) {
-                        AppLanguage.KO -> "감상평 작성됨"
+                        AppLanguage.KO -> "감상 작성됨"
                         AppLanguage.EN -> "Thought written"
                     }}",
                     style = MaterialTheme.typography.labelSmall,

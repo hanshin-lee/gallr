@@ -85,7 +85,7 @@ fun ThoughtsSection(
         ) {
             Text(
                 text = when (lang) {
-                    AppLanguage.KO -> "감상평"
+                    AppLanguage.KO -> "감상"
                     AppLanguage.EN -> "THOUGHTS"
                 },
                 style = MaterialTheme.typography.labelLarge,
@@ -106,7 +106,7 @@ fun ThoughtsSection(
             // Empty state — no approved thoughts and no pending own thought
             Text(
                 text = when (lang) {
-                    AppLanguage.KO -> "아직 감상평이 없어요. 첫 번째로 나눠보세요."
+                    AppLanguage.KO -> "아직 감상이 없어요. 첫 번째로 나눠보세요."
                     AppLanguage.EN -> "No thoughts yet. Be the first to share."
                 },
                 style = MaterialTheme.typography.bodyMedium,
@@ -217,7 +217,7 @@ fun ThoughtsSection(
                 ) {
                     Text(
                         text = when (lang) {
-                            AppLanguage.KO -> "✍️ 감상평 남기기"
+                            AppLanguage.KO -> "✍️ 감상 남기기"
                             AppLanguage.EN -> "✍\uFE0F Share your thoughts"
                         },
                         style = MaterialTheme.typography.labelLarge,

@@ -118,7 +118,7 @@ fun PendingThoughtsScreen(
                 Spacer(Modifier.height(32.dp))
                 Text(
                     text = when (lang) {
-                        AppLanguage.KO -> "검토할 감상평이 없습니다."
+                        AppLanguage.KO -> "검토할 감상이 없습니다."
                         AppLanguage.EN -> "No pending thoughts to review."
                     },
                     style = MaterialTheme.typography.bodyMedium,

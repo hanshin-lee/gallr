@@ -105,7 +105,9 @@ fun App(
         if (authState is AuthState.Authenticated) {
             try {
                 syncBookmarkRepository.migrateLocalToCloud()
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                println("WARN [App] Bookmark cloud sync failed: ${e.message}")
+            }
             // Check admin status
             try {
                 val userId = (authState as AuthState.Authenticated).user.id
@@ -131,9 +133,6 @@ fun App(
         var selectedTab by remember { mutableIntStateOf(0) }
         var selectedExhibition by remember { mutableStateOf<Exhibition?>(null) }
         val shareHandler = remember { createShareHandler() }
-
-        // Pre-warm keyboard on iOS (first keyboard appearance is slow without this)
-        com.gallr.app.ui.components.KeyboardPrewarm()
 
         // ── Detail screen with back handler ──────────────────────────────
         AnimatedContent(

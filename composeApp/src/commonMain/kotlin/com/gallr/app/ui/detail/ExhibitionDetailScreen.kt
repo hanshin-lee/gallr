@@ -35,9 +35,9 @@ import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.AuthState
 import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.exhibitionStatus
+import com.gallr.shared.data.model.receptionDateLabel
 import com.gallr.shared.repository.ThoughtRepository
 import io.github.jan.supabase.SupabaseClient
-import com.gallr.shared.data.model.receptionDateLabel
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
@@ -229,7 +229,7 @@ fun ExhibitionDetailScreen(
                     )
                 }
 
-                // ── Thoughts 감상평 ─────────────────────────────────────────
+                // ── Thoughts 감상 ─────────────────────────────────────────
                 if (thoughtRepository != null) {
                     Spacer(Modifier.height(GallrSpacing.md))
                     HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)

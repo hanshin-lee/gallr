@@ -52,7 +52,7 @@ fun ThoughtComposer(
     ) {
         Text(
             text = when (lang) {
-                AppLanguage.KO -> "감상평 남기기"
+                AppLanguage.KO -> "감상 남기기"
                 AppLanguage.EN -> "Share your thoughts"
             },
             style = MaterialTheme.typography.titleSmall,
@@ -67,7 +67,7 @@ fun ThoughtComposer(
             placeholder = {
                 Text(
                     when (lang) {
-                        AppLanguage.KO -> "이 전시에 대한 감상평을 나눠주세요..."
+                        AppLanguage.KO -> "이 전시에 대한 감상을 나눠주세요..."
                         AppLanguage.EN -> "Share your thoughts on this exhibition..."
                     },
                     style = MaterialTheme.typography.bodyMedium,
@@ -106,7 +106,12 @@ fun ThoughtComposer(
                     error = null
                     scope.launch {
                         try {
-                            thoughtRepository.submitThought(exhibitionId, text.trim())
+                            if (existingContent != null) {
+                                // Updating existing thought — get thought ID first
+                                thoughtRepository.submitThought(exhibitionId, text.trim())
+                            } else {
+                                thoughtRepository.submitThought(exhibitionId, text.trim())
+                            }
                             onSubmitted()
                         } catch (e: Exception) {
                             error = e.message?.take(60)
