@@ -37,12 +37,9 @@ import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.exhibitionStatus
 import com.gallr.shared.repository.ThoughtRepository
 import io.github.jan.supabase.SupabaseClient
+import com.gallr.shared.data.model.receptionDateLabel
 import kotlinx.datetime.Clock
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.DayOfWeek
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.plus
 import kotlinx.datetime.todayIn
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -176,7 +173,7 @@ fun ExhibitionDetailScreen(
 
                 // ── Reception date (orange label) ────────────────────────
                 val receptionLabel = exhibition.receptionDate?.let {
-                    receptionDateLabel(it, exhibition.closingDate, lang)
+                    receptionDateLabel(it, exhibition.closingDate, lang, exhibition.openingTime)
                 }
                 if (receptionLabel != null) {
                     Spacer(Modifier.height(GallrSpacing.sm))
@@ -254,52 +251,3 @@ fun ExhibitionDetailScreen(
     }
 }
 
-// ── Reception date label logic ──────────────────────────────────────────────
-// Returns null when the label should be hidden.
-private fun receptionDateLabel(
-    receptionDate: LocalDate,
-    closingDate: LocalDate,
-    lang: AppLanguage,
-): String? {
-    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-
-    // Exhibition ended → hide
-    if (closingDate < today) return null
-
-    // Find Monday of the current week
-    val daysSinceMonday = (today.dayOfWeek.ordinal - DayOfWeek.MONDAY.ordinal + 7) % 7
-    val thisMonday = today.plus(-daysSinceMonday, DateTimeUnit.DAY)
-    val nextMonday = thisMonday.plus(7, DateTimeUnit.DAY)
-
-    return when {
-        // More than 1 week away → hide
-        receptionDate >= nextMonday -> null
-        // Today
-        receptionDate == today -> if (lang == AppLanguage.KO) "오프닝 오늘" else "Opening today"
-        // Tomorrow
-        receptionDate == today.plus(1, DateTimeUnit.DAY) -> if (lang == AppLanguage.KO) "오프닝 내일" else "Opening tomorrow"
-        // Within this week (future)
-        receptionDate in thisMonday..< nextMonday && receptionDate > today -> {
-            val dayName = when (receptionDate.dayOfWeek) {
-                DayOfWeek.MONDAY -> if (lang == AppLanguage.KO) "월요일" else "Monday"
-                DayOfWeek.TUESDAY -> if (lang == AppLanguage.KO) "화요일" else "Tuesday"
-                DayOfWeek.WEDNESDAY -> if (lang == AppLanguage.KO) "수요일" else "Wednesday"
-                DayOfWeek.THURSDAY -> if (lang == AppLanguage.KO) "목요일" else "Thursday"
-                DayOfWeek.FRIDAY -> if (lang == AppLanguage.KO) "금요일" else "Friday"
-                DayOfWeek.SATURDAY -> if (lang == AppLanguage.KO) "토요일" else "Saturday"
-                DayOfWeek.SUNDAY -> if (lang == AppLanguage.KO) "일요일" else "Sunday"
-            }
-            if (lang == AppLanguage.KO) "오프닝 $dayName" else "Opening $dayName"
-        }
-        // Past but exhibition still running → show full date
-        receptionDate < today -> {
-            val months = arrayOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-            if (lang == AppLanguage.KO) {
-                "오프닝 ${receptionDate.monthNumber}월 ${receptionDate.dayOfMonth}일"
-            } else {
-                "Opening ${months[receptionDate.monthNumber - 1]} ${receptionDate.dayOfMonth}"
-            }
-        }
-        else -> null
-    }
-}

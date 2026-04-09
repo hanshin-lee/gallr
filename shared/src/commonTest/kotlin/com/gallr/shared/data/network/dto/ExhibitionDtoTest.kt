@@ -136,4 +136,24 @@ class ExhibitionDtoTest {
         val exhibition = assertNotNull(testJson.decodeFromString<ExhibitionDto>(koOnlyJson).toDomain())
         assertEquals("전시회", exhibition.localizedName(AppLanguage.EN))
     }
+
+    @Test
+    fun `ExhibitionDto deserializes opening_time when present`() {
+        val jsonWithTime = bilingualJson.replace(
+            "\"updated_at\"",
+            "\"opening_time\": \"5 PM\", \"updated_at\""
+        )
+        val dto = testJson.decodeFromString<ExhibitionDto>(jsonWithTime)
+        assertEquals("5 PM", dto.openingTime)
+        val exhibition = assertNotNull(dto.toDomain())
+        assertEquals("5 PM", exhibition.openingTime)
+    }
+
+    @Test
+    fun `ExhibitionDto defaults openingTime to null when missing`() {
+        val dto = testJson.decodeFromString<ExhibitionDto>(bilingualJson)
+        assertNull(dto.openingTime)
+        val exhibition = assertNotNull(dto.toDomain())
+        assertNull(exhibition.openingTime)
+    }
 }
