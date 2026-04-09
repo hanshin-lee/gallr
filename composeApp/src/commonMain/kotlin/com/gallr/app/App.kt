@@ -93,12 +93,16 @@ fun App(
     val authStateFlow = remember {
         kotlinx.coroutines.flow.MutableStateFlow<AuthState>(AuthState.Loading)
     }
-    // Keep the StateFlow in sync + refresh cloud bookmarks on login
+    val syncBookmarkRepository = remember {
+        SyncBookmarkRepository(localBookmarkRepository, cloudBookmarkRepository, authStateFlow)
+    }
+
+    var isAdmin by remember { mutableStateOf(false) }
+
+    // Keep the StateFlow in sync + migrate & refresh bookmarks on login
     androidx.compose.runtime.LaunchedEffect(authState) {
         authStateFlow.value = authState
         if (authState is AuthState.Authenticated) {
-            // Migrate + refresh bookmarks (has its own retry logic, local
-            // cache keeps bookmarks visible even if cloud refresh fails)
             try {
                 syncBookmarkRepository.migrateLocalToCloud()
             } catch (e: Exception) {
@@ -112,11 +116,9 @@ fun App(
             } catch (_: Exception) {
                 isAdmin = false
             }
+        } else {
+            isAdmin = false
         }
-    }
-
-    val syncBookmarkRepository = remember {
-        SyncBookmarkRepository(localBookmarkRepository, cloudBookmarkRepository, authStateFlow)
     }
 
     val viewModel: TabsViewModel = viewModel(
@@ -148,6 +150,7 @@ fun App(
                     onBack = { selectedExhibition = null },
                     thoughtRepository = thoughtRepository,
                     authState = authState,
+                    isAdmin = isAdmin,
                     supabaseClient = supabaseClient,
                 )
             } else {
@@ -242,7 +245,9 @@ fun App(
                                 profileRepository = profileRepository,
                                 thoughtRepository = thoughtRepository,
                                 supabaseClient = supabaseClient,
+                                viewModel = viewModel,
                                 lang = lang,
+                                onExhibitionTap = { selectedExhibition = it },
                                 modifier = Modifier.padding(innerPadding),
                             )
                         }
