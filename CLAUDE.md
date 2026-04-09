@@ -1,6 +1,6 @@
 # gallr Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-02
+Auto-generated from all feature plans. Last updated: 2026-04-07
 
 ## Active Technologies
 - Kotlin 2.1.x, Compose Multiplatform 1.8.0 + Compose Multiplatform, Material3, compose-resources (CMP 1.8.0 (002-monochrome-design-system)
@@ -35,6 +35,8 @@ Auto-generated from all feature plans. Last updated: 2026-04-02
 - Kotlin 2.1.20 (KMP) + Compose Multiplatform 1.8.0, Material3, Coil 3.1.0 (`coil3.compose.AsyncImage`) (019-card-image-background)
 - Kotlin 2.1.20 (KMP) + Compose Multiplatform 1.8.0, Material3, kotlinx-datetime (022-status-labels-map-filter)
 - N/A — no new persistence; status is computed from existing `openingDate` / `closingDate` (022-status-labels-map-filter)
+- Kotlin 2.1.20 (KMP shared + composeApp), Google Apps Script V8 (gas/), SQL (Supabase) + kotlinx-serialization 1.7.3, kotlinx-datetime 0.6.1, Compose Multiplatform 1.8.0, Material3 (025-opening-time-display)
+- Supabase Postgres (exhibitions table), Google Sheets (gallr_gallery_list) (025-opening-time-display)
 
 - Kotlin 2.0+ (2.3.0 recommended), Compose Multiplatform 1.8.0+ + Ktor 2.9+ (networking), DataStore Preferences 1.1+ (bookmarks), AndroidX ViewModel 2.8.0+, kotlinx.serialization 1.7+, kotlinx-datetime (001-exhibition-tabs)
 
@@ -54,9 +56,9 @@ tests/
 Kotlin 2.0+ (2.3.0 recommended), Compose Multiplatform 1.8.0+: Follow standard conventions
 
 ## Recent Changes
+- 025-opening-time-display: Added Kotlin 2.1.20 (KMP shared + composeApp), Google Apps Script V8 (gas/), SQL (Supabase) + kotlinx-serialization 1.7.3, kotlinx-datetime 0.6.1, Compose Multiplatform 1.8.0, Material3
 - 022-status-labels-map-filter: Added Kotlin 2.1.20 (KMP) + Compose Multiplatform 1.8.0, Material3, kotlinx-datetime
 - 019-card-image-background: Added Kotlin 2.1.20 (KMP) + Compose Multiplatform 1.8.0, Material3, Coil 3.1.0 (`coil3.compose.AsyncImage`)
-- 018-fix-android-insets: Added Kotlin 2.1.20 (KMP), composeApp Android targe + androidx.activity:activity-compose 1.9.3, Compose Multiplatform 1.8.0, Material3
 
 
 <!-- MANUAL ADDITIONS START -->
