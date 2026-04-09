@@ -394,7 +394,9 @@ fun SignInScreen(
                         isLoading = true
                         error = null
                         try {
-                            supabaseClient.auth.signInWith(Google)
+                            supabaseClient.auth.signInWith(Google) {
+                                queryParams["prompt"] = "select_account"
+                            }
                         } catch (e: Exception) {
                             error = e.message ?: when (lang) {
                                 AppLanguage.KO -> "Google 로그인 실패"

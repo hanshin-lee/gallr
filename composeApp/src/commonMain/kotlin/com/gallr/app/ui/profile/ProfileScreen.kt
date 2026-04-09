@@ -43,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.gallr.app.PlatformBackHandler
 import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.app.viewmodel.ExhibitionListState
 import com.gallr.app.viewmodel.TabsViewModel
@@ -74,9 +75,11 @@ fun ProfileScreen(
     val scope = rememberCoroutineScope()
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showMyThoughts by remember { mutableStateOf(false) }
+    var showPendingThoughts by remember { mutableStateOf(false) }
     var profile by remember { mutableStateOf<Profile?>(null) }
     var thoughtExhibitionIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var thoughtCount by remember { mutableStateOf(0) }
+    var pendingCount by remember { mutableStateOf(0) }
 
     var showEditProfile by remember { mutableStateOf(false) }
 
@@ -112,6 +115,30 @@ fun ProfileScreen(
         return
     }
 
+    // Show Pending Thoughts screen (admin only)
+    if (showPendingThoughts) {
+        val allExhibitionsState by viewModel.filteredExhibitions.collectAsState()
+        val allExhibitions = (allExhibitionsState as? ExhibitionListState.Success)?.exhibitions ?: emptyList()
+        PlatformBackHandler {
+            showPendingThoughts = false
+            scope.launch {
+                try { pendingCount = thoughtRepository.getPendingThoughts().size } catch (_: Exception) {}
+            }
+        }
+        PendingThoughtsScreen(
+            thoughtRepository = thoughtRepository,
+            exhibitions = allExhibitions,
+            lang = lang,
+            onBack = {
+                showPendingThoughts = false
+                scope.launch {
+                    try { pendingCount = thoughtRepository.getPendingThoughts().size } catch (_: Exception) {}
+                }
+            },
+        )
+        return
+    }
+
     // Fetch profile + user's thought exhibition IDs
     LaunchedEffect(user.id) {
         val userId = user.id.takeIf { it.isNotBlank() }
@@ -126,6 +153,11 @@ fun ProfileScreen(
                 thoughtExhibitionIds = userThoughts.map { it.exhibitionId }.toSet()
                 thoughtCount = userThoughts.size
             } catch (_: Exception) {}
+            // Fetch pending count for admin
+            val p = profile
+            if (p?.isAdmin == true) {
+                try { pendingCount = thoughtRepository.getPendingThoughts().size } catch (_: Exception) {}
+            }
         }
     }
 
@@ -269,6 +301,34 @@ fun ProfileScreen(
                     }
                 }
                 Spacer(Modifier.height(12.dp))
+            }
+        }
+
+        // Admin section (visible only to admins)
+        if (profile?.isAdmin == true) {
+            Spacer(Modifier.height(24.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Spacer(Modifier.height(16.dp))
+
+            Text(
+                text = "Admin",
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(12.dp))
+
+            OutlinedButton(
+                onClick = { showPendingThoughts = true },
+                modifier = Modifier.fillMaxWidth().height(44.dp),
+                shape = RectangleShape,
+            ) {
+                Text(
+                    text = when (lang) {
+                        AppLanguage.KO -> "검토 대기 ${if (pendingCount > 0) "($pendingCount)" else ""}"
+                        AppLanguage.EN -> "Pending Reviews ${if (pendingCount > 0) "($pendingCount)" else ""}"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                )
             }
         }
 
