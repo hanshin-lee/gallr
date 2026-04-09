@@ -1,7 +1,9 @@
 package com.gallr.app.ui.detail
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,8 +32,11 @@ import com.gallr.app.ui.components.BookmarkButton
 import com.gallr.app.ui.theme.GallrAccent
 import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.shared.data.model.AppLanguage
+import com.gallr.shared.data.model.AuthState
 import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.exhibitionStatus
+import com.gallr.shared.repository.ThoughtRepository
+import io.github.jan.supabase.SupabaseClient
 import com.gallr.shared.data.model.receptionDateLabel
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
@@ -45,6 +50,10 @@ fun ExhibitionDetailScreen(
     isBookmarked: Boolean,
     onBookmarkToggle: () -> Unit,
     onBack: () -> Unit,
+    thoughtRepository: ThoughtRepository? = null,
+    authState: AuthState = AuthState.Anonymous,
+    isAdmin: Boolean = false,
+    supabaseClient: SupabaseClient? = null,
 ) {
     Scaffold(
         topBar = {
@@ -73,10 +82,15 @@ fun ExhibitionDetailScreen(
             )
         },
     ) { innerPadding ->
+        val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                ) { focusManager.clearFocus() }
                 .verticalScroll(rememberScrollState()),
         ) {
             // ── Cover image with placeholder ─────────────────────────────
@@ -212,6 +226,22 @@ fun ExhibitionDetailScreen(
                         text = description,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
+
+                // ── Thoughts 감상평 ─────────────────────────────────────────
+                if (thoughtRepository != null) {
+                    Spacer(Modifier.height(GallrSpacing.md))
+                    HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(Modifier.height(GallrSpacing.md))
+
+                    ThoughtsSection(
+                        exhibitionId = exhibition.id,
+                        thoughtRepository = thoughtRepository,
+                        authState = authState,
+                        lang = lang,
+                        isAdmin = isAdmin,
+                        onSignInNeeded = { onBack() },
                     )
                 }
 

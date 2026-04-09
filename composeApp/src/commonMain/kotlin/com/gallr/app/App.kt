@@ -45,10 +45,17 @@ import com.gallr.app.viewmodel.TabsViewModel
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.ThemeMode
-import com.gallr.shared.repository.BookmarkRepository
+import com.gallr.shared.data.model.AuthState
+import com.gallr.shared.repository.AuthRepository
+import com.gallr.shared.repository.BookmarkRepositoryImpl
+import com.gallr.shared.repository.CloudBookmarkRepository
 import com.gallr.shared.repository.ExhibitionRepository
 import com.gallr.shared.repository.LanguageRepository
+import com.gallr.shared.repository.ProfileRepository
+import com.gallr.shared.repository.SyncBookmarkRepository
 import com.gallr.shared.repository.ThemeRepository
+import com.gallr.shared.repository.ThoughtRepository
+import io.github.jan.supabase.SupabaseClient
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
@@ -70,12 +77,50 @@ private const val PRIVACY_POLICY_URL = "https://gallrmap.com/privacy"
 @Composable
 fun App(
     exhibitionRepository: ExhibitionRepository,
-    bookmarkRepository: BookmarkRepository,
+    localBookmarkRepository: BookmarkRepositoryImpl,
+    cloudBookmarkRepository: CloudBookmarkRepository,
+    authRepository: AuthRepository,
+    profileRepository: ProfileRepository,
+    thoughtRepository: ThoughtRepository,
     languageRepository: LanguageRepository,
     themeRepository: ThemeRepository,
+    supabaseClient: SupabaseClient,
 ) {
+    // Auth state drives SyncBookmarkRepository delegation
+    val authState by authRepository.observeAuthState()
+        .collectAsState(initial = AuthState.Loading)
+
+    val authStateFlow = remember {
+        kotlinx.coroutines.flow.MutableStateFlow<AuthState>(AuthState.Loading)
+    }
+    val syncBookmarkRepository = remember {
+        SyncBookmarkRepository(localBookmarkRepository, cloudBookmarkRepository, authStateFlow)
+    }
+
+    var isAdmin by remember { mutableStateOf(false) }
+
+    // Keep the StateFlow in sync + migrate & refresh bookmarks on login
+    androidx.compose.runtime.LaunchedEffect(authState) {
+        authStateFlow.value = authState
+        if (authState is AuthState.Authenticated) {
+            try {
+                syncBookmarkRepository.migrateLocalToCloud()
+            } catch (_: Exception) {}
+            // Check admin status
+            try {
+                val userId = (authState as AuthState.Authenticated).user.id
+                val profile = profileRepository.getProfile(userId)
+                isAdmin = profile?.isAdmin == true
+            } catch (_: Exception) {
+                isAdmin = false
+            }
+        } else {
+            isAdmin = false
+        }
+    }
+
     val viewModel: TabsViewModel = viewModel(
-        factory = TabsViewModel.factory(exhibitionRepository, bookmarkRepository, languageRepository, themeRepository),
+        factory = TabsViewModel.factory(exhibitionRepository, syncBookmarkRepository, languageRepository, themeRepository),
     )
 
     val currentThemeMode by viewModel.themeMode.collectAsState()
@@ -86,6 +131,9 @@ fun App(
         var selectedTab by remember { mutableIntStateOf(0) }
         var selectedExhibition by remember { mutableStateOf<Exhibition?>(null) }
         val shareHandler = remember { createShareHandler() }
+
+        // Pre-warm keyboard on iOS (first keyboard appearance is slow without this)
+        com.gallr.app.ui.components.KeyboardPrewarm()
 
         // ── Detail screen with back handler ──────────────────────────────
         AnimatedContent(
@@ -101,6 +149,10 @@ fun App(
                     isBookmarked = exhibition.id in bookmarkedIds,
                     onBookmarkToggle = { viewModel.toggleBookmark(exhibition.id) },
                     onBack = { selectedExhibition = null },
+                    thoughtRepository = thoughtRepository,
+                    authState = authState,
+                    isAdmin = isAdmin,
+                    supabaseClient = supabaseClient,
                 )
             } else {
                 Scaffold(
@@ -185,6 +237,17 @@ fun App(
                             )
                             2 -> MapScreen(
                                 viewModel = viewModel,
+                                onExhibitionTap = { selectedExhibition = it },
+                                modifier = Modifier.padding(innerPadding),
+                            )
+                            3 -> com.gallr.app.ui.profile.ProfileTab(
+                                authState = authState,
+                                authRepository = authRepository,
+                                profileRepository = profileRepository,
+                                thoughtRepository = thoughtRepository,
+                                supabaseClient = supabaseClient,
+                                viewModel = viewModel,
+                                lang = lang,
                                 onExhibitionTap = { selectedExhibition = it },
                                 modifier = Modifier.padding(innerPadding),
                             )

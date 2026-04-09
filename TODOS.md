@@ -21,10 +21,12 @@ Show visual badges on detail screen and cards for featured / editor's pick exhib
 - Effort: S (CC: ~30 min)
 - Context: `isFeatured` and `isEditorsPick` fields exist in data model.
 
-### Bookmark Cloud Sync
-Sync bookmarks across devices via Supabase (requires user identity).
-- Effort: M (CC: ~1 day)
-- Context: Currently DataStore-only (local). Multi-device users lose bookmarks.
+## P2 — Quality of Life (continued)
+
+### DESIGN.md — Codify the Design System
+Formalize gallr's design system (colors, typography, spacing, component patterns, accent usage rules) in a DESIGN.md file. Currently the design system lives only in Kotlin code (GallrColors.kt, GallrTypography.kt). Every new screen requires reading source code to understand visual rules. GallrAccent has explicit usage rules (only for CTA, active indicator, interaction feedback) in code comments but not in a design doc.
+- Effort: S (CC: ~15 min)
+- Context: No prerequisites. Can be done anytime. Run `/design-consultation` for a thorough approach, or extract directly from GallrColors.kt + GallrTypography.kt.
 
 ## P3 — Technical Debt
 
@@ -32,6 +34,12 @@ Sync bookmarks across devices via Supabase (requires user identity).
 Split TabsViewModel (15+ StateFlows) into domain-specific ViewModels (ExhibitionViewModel, FilterViewModel, MapViewModel). Cleaner separation, easier testing.
 - Effort: M (human) → S (CC: ~2 hours)
 - Context: Single VM is manageable now but approaching god-object threshold.
+
+### Migrate ExhibitionApiClient to supabase-kt Postgrest
+Replace the raw Ktor ExhibitionApiClient with supabase-kt's Postgrest module for exhibition fetching. Eliminates dual HTTP client tech debt (two Ktor instances = two connection pools, two configs). ExhibitionApiClient.kt is 49 lines doing `GET /exhibitions?select=*`. Equivalent supabase-kt: `supabase.from("exhibitions").select()`. Migration is ~30 lines.
+- Effort: S (CC: ~15 min)
+- Depends on: Social layer Phase 1 complete (supabase-kt already in project)
+- Context: Two Ktor engines with potentially different versions cause subtle runtime bugs. The dual-client approach is accepted tech debt for the social layer launch but should be resolved in the next cleanup pass.
 
 ### Proper Logging Framework
 Replace println() calls with Napier or similar KMP logging library. Production crashes and errors are currently invisible.

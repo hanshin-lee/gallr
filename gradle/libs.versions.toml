@@ -2,7 +2,8 @@
 agp = "8.5.2"
 kotlin = "2.1.20"
 compose-multiplatform = "1.8.0"
-ktor = "3.1.1"
+ktor = "3.0.3"
+supabase = "3.1.0"
 datastore = "1.1.1"
 lifecycle = "2.8.7"
 jetbrains-lifecycle = "2.8.4"
@@ -50,6 +51,13 @@ naver-map-compose = { module = "io.github.fornewid:naver-map-compose", version.r
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
 coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
+
+# Supabase
+supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt", version.ref = "supabase" }
+supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt", version.ref = "supabase" }
+supabase-compose-auth = { module = "io.github.jan-tennert.supabase:compose-auth", version.ref = "supabase" }
+supabase-compose-auth-ui = { module = "io.github.jan-tennert.supabase:compose-auth-ui", version.ref = "supabase" }
+supabase-storage = { module = "io.github.jan-tennert.supabase:storage-kt", version.ref = "supabase" }
 
 # Test
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
