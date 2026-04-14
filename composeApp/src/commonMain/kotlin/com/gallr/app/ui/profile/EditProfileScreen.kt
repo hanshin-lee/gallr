@@ -171,6 +171,9 @@ fun EditProfileScreen(
         TextButton(
             onClick = { pickImage() },
             enabled = !isUploadingAvatar,
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
         ) {
             Text(
                 text = when (lang) {
@@ -178,7 +181,6 @@ fun EditProfileScreen(
                     AppLanguage.EN -> "Change Photo"
                 },
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
