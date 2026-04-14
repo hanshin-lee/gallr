@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -123,15 +122,14 @@ fun EditProfileScreen(
 
         // ── Avatar ──────────────────────────────────────────────────
         val avatarDescription = when (lang) {
-            AppLanguage.KO -> "프로필 사진 변경"
-            AppLanguage.EN -> "Change profile photo"
+            AppLanguage.KO -> "프로필 사진"
+            AppLanguage.EN -> "Profile photo"
         }
         Box(
             modifier = Modifier
                 .size(72.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                .clickable(enabled = !isUploadingAvatar) { pickImage() }
                 .semantics { contentDescription = avatarDescription },
             contentAlignment = Alignment.Center,
         ) {
@@ -177,6 +175,7 @@ fun EditProfileScreen(
             },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.clickable(enabled = !isUploadingAvatar) { pickImage() },
         )
 
         Spacer(Modifier.height(32.dp))
