@@ -167,24 +167,6 @@ fun EditProfileScreen(
                     )
                 }
             }
-
-            // Camera icon overlay
-            if (!isUploadingAvatar) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .offset(x = 2.dp, y = 2.dp)
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.onBackground),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "📷",
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                }
-            }
         }
 
         Spacer(Modifier.height(8.dp))
