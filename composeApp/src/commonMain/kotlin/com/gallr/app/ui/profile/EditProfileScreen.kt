@@ -1,7 +1,6 @@
 package com.gallr.app.ui.profile
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -21,6 +20,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -168,15 +168,19 @@ fun EditProfileScreen(
         }
 
         Spacer(Modifier.height(8.dp))
-        Text(
-            text = when (lang) {
-                AppLanguage.KO -> "사진 변경"
-                AppLanguage.EN -> "Change Photo"
-            },
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.clickable(enabled = !isUploadingAvatar) { pickImage() },
-        )
+        TextButton(
+            onClick = { pickImage() },
+            enabled = !isUploadingAvatar,
+        ) {
+            Text(
+                text = when (lang) {
+                    AppLanguage.KO -> "사진 변경"
+                    AppLanguage.EN -> "Change Photo"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         Spacer(Modifier.height(32.dp))
 
