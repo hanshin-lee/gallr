@@ -2,6 +2,16 @@
 
 All notable changes to gallr will be documented in this file.
 
+## [0.0.3.0] - 2026-04-15
+
+### Changed
+- App now defaults to Korean on first launch, regardless of device locale. Existing users with a saved language preference are unaffected.
+- Profile photo change button ("사진 변경") is now the sole tap target for the photo picker. The profile photo circle is display-only.
+
+### Fixed
+- Removed camera emoji overlay from profile photo circle, consistent with the Reductionist design system.
+- Photo change button now uses Material3 TextButton with proper ripple, touch target, and disabled state dimming.
+
 ## [0.0.2.0] - 2026-04-09
 
 ### Added

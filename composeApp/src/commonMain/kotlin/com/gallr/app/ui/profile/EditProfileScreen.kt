@@ -1,14 +1,12 @@
 package com.gallr.app.ui.profile
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -22,6 +20,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -123,15 +122,14 @@ fun EditProfileScreen(
 
         // ── Avatar ──────────────────────────────────────────────────
         val avatarDescription = when (lang) {
-            AppLanguage.KO -> "프로필 사진 변경"
-            AppLanguage.EN -> "Change profile photo"
+            AppLanguage.KO -> "프로필 사진"
+            AppLanguage.EN -> "Profile photo"
         }
         Box(
             modifier = Modifier
                 .size(72.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                .clickable(enabled = !isUploadingAvatar) { pickImage() }
                 .semantics { contentDescription = avatarDescription },
             contentAlignment = Alignment.Center,
         ) {
@@ -167,35 +165,24 @@ fun EditProfileScreen(
                     )
                 }
             }
-
-            // Camera icon overlay
-            if (!isUploadingAvatar) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .offset(x = 2.dp, y = 2.dp)
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.onBackground),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "📷",
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                }
-            }
         }
 
         Spacer(Modifier.height(8.dp))
-        Text(
-            text = when (lang) {
-                AppLanguage.KO -> "사진 변경"
-                AppLanguage.EN -> "Change Photo"
-            },
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        TextButton(
+            onClick = { pickImage() },
+            enabled = !isUploadingAvatar,
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+        ) {
+            Text(
+                text = when (lang) {
+                    AppLanguage.KO -> "사진 변경"
+                    AppLanguage.EN -> "Change Photo"
+                },
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
 
         Spacer(Modifier.height(32.dp))
 

@@ -1,7 +1,6 @@
 package com.gallr.app
 
 import androidx.compose.ui.window.ComposeUIViewController
-import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.network.ExhibitionApiClient
 import com.gallr.shared.data.network.createGallrSupabaseClient
 import com.gallr.shared.platform.createDataStore
@@ -17,9 +16,6 @@ import com.gallr.shared.data.network.handleAuthDeeplink
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
-import platform.Foundation.NSLocale
-import platform.Foundation.currentLocale
-import platform.Foundation.languageCode
 
 // Module-level reference for deeplink handling from Swift
 private var _supabaseClient: SupabaseClient? = null
@@ -47,10 +43,7 @@ fun MainViewController(supabaseUrl: String, anonKey: String) = ComposeUIViewCont
     val authRepository = AuthRepositoryImpl(supabaseClient)
     val profileRepository = ProfileRepositoryImpl(supabaseClient)
     val thoughtRepository = ThoughtRepositoryImpl(supabaseClient)
-    val languageRepository = LanguageRepositoryImpl(dataStore) {
-        val locale = NSLocale.currentLocale.languageCode
-        if (locale == "ko") AppLanguage.KO else AppLanguage.EN
-    }
+    val languageRepository = LanguageRepositoryImpl(dataStore)
     val themeRepository = ThemeRepositoryImpl(dataStore)
 
     App(

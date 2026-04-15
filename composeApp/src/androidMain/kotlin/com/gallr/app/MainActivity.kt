@@ -11,7 +11,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.ThemeMode
 import com.gallr.shared.data.network.ExhibitionApiClient
 import com.gallr.shared.data.network.createGallrSupabaseClient
@@ -63,10 +62,7 @@ class MainActivity : ComponentActivity() {
         val authRepository = AuthRepositoryImpl(supabaseClient)
         val profileRepository = ProfileRepositoryImpl(supabaseClient)
         val thoughtRepository = ThoughtRepositoryImpl(supabaseClient)
-        val languageRepository = LanguageRepositoryImpl(dataStore) {
-            val locale = java.util.Locale.getDefault().language
-            if (locale == "ko") AppLanguage.KO else AppLanguage.EN
-        }
+        val languageRepository = LanguageRepositoryImpl(dataStore)
         val themeRepository = ThemeRepositoryImpl(dataStore)
 
         // Handle deeplink from initial launch (cold start from OAuth redirect)
