@@ -13,8 +13,6 @@ import platform.PhotosUI.PHPickerResult
 import platform.PhotosUI.PHPickerViewController
 import platform.PhotosUI.PHPickerViewControllerDelegateProtocol
 import platform.UIKit.UIApplication
-import platform.UIKit.UIImage
-import platform.UIKit.UIImageJPEGRepresentation
 import platform.UIKit.UIWindow
 import platform.UIKit.UIWindowScene
 import platform.UniformTypeIdentifiers.UTTypeImage
@@ -58,13 +56,8 @@ actual fun rememberImagePicker(onImagePicked: (ByteArray?) -> Unit): () -> Unit 
                         // Release strong reference now that async load is done
                         activePickerDelegate = null
                         dispatch_async(dispatch_get_main_queue()) {
-                            if (data != null) {
-                                val image = UIImage(data = data)
-                                val jpegData = UIImageJPEGRepresentation(image, 0.8)
-                                callback(jpegData?.toByteArray())
-                            } else {
-                                callback(null)
-                            }
+                            // Return raw image bytes — crop screen handles compression
+                            callback(data?.toByteArray())
                         }
                     }
                 } else {

@@ -36,7 +36,12 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.gestures.detectTapGestures
+import com.gallr.app.platform.cropAndCompress
+import com.gallr.app.platform.decodeImageBitmap
 import coil3.compose.AsyncImage
 import com.gallr.app.platform.rememberImagePicker
 import com.gallr.shared.data.model.AppLanguage
@@ -68,25 +73,65 @@ fun EditProfileScreen(
             profile?.avatarUrl?.takeIf { it.isNotBlank() } ?: user.avatarUrl
         )
     }
+    // Crop screen state: holds the decoded ImageBitmap + raw bytes for cropping
+    var cropImageBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+    var cropRawBytes by remember { mutableStateOf<ByteArray?>(null) }
 
-    // Image picker
+    // Image picker — returns raw bytes, then we show the crop screen
     val pickImage = rememberImagePicker { bytes ->
         if (bytes != null) {
-            isUploadingAvatar = true
-            scope.launch {
-                try {
-                    val url = profileRepository.uploadAvatar(user.id, bytes)
-                    avatarUrl = url
-                } catch (e: Exception) {
-                    error = e.message ?: when (lang) {
-                        AppLanguage.KO -> "사진 업로드에 실패했습니다"
-                        AppLanguage.EN -> "Failed to upload photo"
-                    }
-                } finally {
-                    isUploadingAvatar = false
+            val bitmap = decodeImageBitmap(bytes)
+            if (bitmap != null) {
+                cropImageBitmap = bitmap
+                cropRawBytes = bytes
+            } else {
+                error = when (lang) {
+                    AppLanguage.KO -> "이미지를 읽을 수 없습니다"
+                    AppLanguage.EN -> "Could not read image"
                 }
             }
         }
+    }
+
+    // Show crop screen when an image is selected
+    val bitmapToCrop = cropImageBitmap
+    if (bitmapToCrop != null) {
+        CropScreen(
+            imageBitmap = bitmapToCrop,
+            lang = lang,
+            onConfirm = { cropOffset, cropSize ->
+                val raw = cropRawBytes ?: return@CropScreen
+                cropImageBitmap = null
+                cropRawBytes = null
+                isUploadingAvatar = true
+                scope.launch {
+                    try {
+                        val cropped = cropAndCompress(raw, cropOffset, cropSize)
+                        if (cropped != null) {
+                            val url = profileRepository.uploadAvatar(user.id, cropped)
+                            avatarUrl = url
+                        } else {
+                            error = when (lang) {
+                                AppLanguage.KO -> "사진 처리에 실패했습니다"
+                                AppLanguage.EN -> "Failed to process photo"
+                            }
+                        }
+                    } catch (e: Exception) {
+                        error = e.message ?: when (lang) {
+                            AppLanguage.KO -> "사진 업로드에 실패했습니다"
+                            AppLanguage.EN -> "Failed to upload photo"
+                        }
+                    } finally {
+                        isUploadingAvatar = false
+                    }
+                }
+            },
+            onCancel = {
+                cropImageBitmap = null
+                cropRawBytes = null
+            },
+        )
+        return
     }
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
@@ -103,6 +148,7 @@ fun EditProfileScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .pointerInput(Unit) { detectTapGestures { focusManager.clearFocus() } }
             .padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
