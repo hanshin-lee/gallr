@@ -65,6 +65,12 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.zIndex
+import androidx.compose.runtime.CompositionLocalProvider
+import com.gallr.app.ui.profile.CropOverlayState
+import com.gallr.app.ui.profile.CropScreen
+import com.gallr.app.ui.profile.LocalCropOverlay
 import gallr.composeapp.generated.resources.Res
 import gallr.composeapp.generated.resources.ic_info
 import gallr.composeapp.generated.resources.ic_settings
@@ -132,8 +138,11 @@ fun App(
         val bookmarkedIds by viewModel.bookmarkedIds.collectAsState()
         var selectedTab by remember { mutableIntStateOf(0) }
         var selectedExhibition by remember { mutableStateOf<Exhibition?>(null) }
+        val cropOverlayState = remember { CropOverlayState() }
         val shareHandler = remember { createShareHandler() }
 
+        CompositionLocalProvider(LocalCropOverlay provides cropOverlayState) {
+        Box(modifier = Modifier.fillMaxSize()) {
         // ── Detail screen with back handler ──────────────────────────────
         AnimatedContent(
             targetState = selectedExhibition,
@@ -255,6 +264,26 @@ fun App(
                 }
             }
         }
+
+        // Fullscreen crop overlay — zIndex above Scaffold bars (which use zIndex 1.0f)
+        val cropBitmap = cropOverlayState.imageBitmap
+        if (cropBitmap != null) {
+            Box(modifier = Modifier.fillMaxSize().zIndex(2f)) {
+                CropScreen(
+                    imageBitmap = cropBitmap,
+                    lang = lang,
+                    onConfirm = { offset, size ->
+                        cropOverlayState.onConfirm?.invoke(offset, size)
+                    },
+                    onCancel = {
+                        cropOverlayState.onCancel?.invoke()
+                    },
+                )
+            }
+        }
+
+        } // Box
+        } // CompositionLocalProvider
     }
 }
 
