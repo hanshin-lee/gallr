@@ -2,6 +2,17 @@
 
 All notable changes to gallr will be documented in this file.
 
+## [0.0.4.0] - 2026-04-16
+
+### Added
+- Profile photo crop & resize screen with pan/pinch-to-zoom and circle overlay. Users can frame their photo before uploading.
+- Skeleton placeholders on Profile tab while data loads, eliminating flash of default username/avatar.
+- Keyboard dismiss on tap outside text fields in Edit Profile screen.
+
+### Changed
+- Image picker now returns raw bytes; compression happens after cropping for better quality.
+- Crop overlay renders at app level with proper z-ordering on both iOS and Android.
+
 ## [0.0.3.0] - 2026-04-15
 
 ### Changed

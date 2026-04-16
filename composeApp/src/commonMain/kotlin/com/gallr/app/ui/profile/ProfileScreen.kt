@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -76,6 +77,7 @@ fun ProfileScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showMyThoughts by remember { mutableStateOf(false) }
     var showPendingThoughts by remember { mutableStateOf(false) }
+    var isProfileLoading by remember { mutableStateOf(true) }
     var profile by remember { mutableStateOf<Profile?>(null) }
     var thoughtExhibitionIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var thoughtCount by remember { mutableStateOf(0) }
@@ -141,6 +143,7 @@ fun ProfileScreen(
 
     // Fetch profile + user's thought exhibition IDs
     LaunchedEffect(user.id) {
+        isProfileLoading = true
         val userId = user.id.takeIf { it.isNotBlank() }
             ?: try { supabaseClient.auth.retrieveUserForCurrentSession()?.id } catch (_: Exception) { null }
         if (userId != null) {
@@ -159,6 +162,7 @@ fun ProfileScreen(
                 try { pendingCount = thoughtRepository.getPendingThoughts().size } catch (_: Exception) {}
             }
         }
+        isProfileLoading = false
     }
 
     val displayName = profile?.displayName?.takeIf { it.isNotBlank() }
@@ -181,40 +185,56 @@ fun ProfileScreen(
     ) {
         Spacer(Modifier.height(24.dp))
 
-        // Avatar
-        val avatarUrl = profile?.avatarUrl?.takeIf { it.isNotBlank() } ?: user.avatarUrl
-        val initial = (displayName ?: "?").first().uppercase()
-        Box(
-            modifier = Modifier
-                .size(72.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (avatarUrl != null) {
-                AsyncImage(
-                    model = avatarUrl,
-                    contentDescription = displayName,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().clip(CircleShape),
-                )
-            } else {
-                Text(
-                    text = initial,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        // Avatar — show skeleton while loading to avoid flash of default content
+        if (isProfileLoading) {
+            // Skeleton avatar
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+            )
+            Spacer(Modifier.height(12.dp))
+            // Skeleton name
+            Box(
+                modifier = Modifier
+                    .size(width = 80.dp, height = 20.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp)),
+            )
+        } else {
+            val avatarUrl = profile?.avatarUrl?.takeIf { it.isNotBlank() } ?: user.avatarUrl
+            val initial = (displayName ?: "?").first().uppercase()
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (avatarUrl != null) {
+                    AsyncImage(
+                        model = avatarUrl,
+                        contentDescription = displayName,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    )
+                } else {
+                    Text(
+                        text = initial,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = displayName ?: when (lang) {
+                    AppLanguage.KO -> "이름 없음"
+                    AppLanguage.EN -> "No name"
+                },
+                style = MaterialTheme.typography.titleMedium,
+            )
         }
-
-        Spacer(Modifier.height(12.dp))
-        Text(
-            text = displayName ?: when (lang) {
-                AppLanguage.KO -> "이름 없음"
-                AppLanguage.EN -> "No name"
-            },
-            style = MaterialTheme.typography.titleMedium,
-        )
 
         Spacer(Modifier.height(8.dp))
         TextButton(onClick = { showEditProfile = true }) {
