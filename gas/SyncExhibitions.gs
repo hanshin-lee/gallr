@@ -338,6 +338,14 @@ function buildRecord(row, headerMap) {
 
     // Nullable text fields — empty strings become null
     if (header === 'hours' || header === 'contact' || header === 'opening_time') {
+      // opening_time may come in as a Date if the sheet cell is formatted
+      // as time-of-day. Extract h:mm a in the sheet's timezone; otherwise
+      // use the raw string as the user typed it.
+      if (header === 'opening_time' && raw instanceof Date) {
+        var tz = Session.getScriptTimeZone();
+        record[header] = Utilities.formatDate(raw, tz, 'h:mm a');
+        return;
+      }
       var txt = String(raw || '').trim();
       record[header] = txt || null;
       return;
