@@ -12,14 +12,14 @@ import kotlinx.datetime.todayIn
  * Returns a human-readable label for an exhibition's reception (opening) date,
  * or null when the label should be hidden.
  *
- * @param openingTime optional free-text time string (e.g., "5 PM") appended to the label
+ * @param receptionTime optional free-text reception time (e.g., "5 PM") appended to the label
  * @param today injectable reference date for testability; defaults to system clock
  */
 fun receptionDateLabel(
     receptionDate: LocalDate,
     closingDate: LocalDate,
     lang: AppLanguage,
-    openingTime: String? = null,
+    receptionTime: String? = null,
     today: LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault()),
 ): String? {
     // Exhibition ended → hide
@@ -30,7 +30,7 @@ fun receptionDateLabel(
     val thisMonday = today.plus(-daysSinceMonday, DateTimeUnit.DAY)
     val nextMonday = thisMonday.plus(7, DateTimeUnit.DAY)
 
-    val timeSuffix = if (!openingTime.isNullOrBlank()) ", ${openingTime.trim()}" else ""
+    val timeSuffix = if (!receptionTime.isNullOrBlank()) ", ${receptionTime.trim()}" else ""
 
     return when {
         // More than 1 week away → hide

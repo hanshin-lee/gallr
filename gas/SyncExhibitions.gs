@@ -265,7 +265,7 @@ var KNOWN_COLUMNS = [
   'hours',
   'contact',
   'reception_date',
-  'opening_time',
+  'reception_time',
 ];
 
 // ---------------------------------------------------------------------------
@@ -337,7 +337,7 @@ function buildRecord(row, headerMap) {
     }
 
     // Nullable text fields — empty strings become null
-    if (header === 'hours' || header === 'contact' || header === 'opening_time') {
+    if (header === 'hours' || header === 'contact' || header === 'reception_time') {
       var txt = String(raw || '').trim();
       record[header] = txt || null;
       return;

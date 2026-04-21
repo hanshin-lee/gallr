@@ -138,22 +138,22 @@ class ExhibitionDtoTest {
     }
 
     @Test
-    fun `ExhibitionDto deserializes opening_time when present`() {
+    fun `ExhibitionDto deserializes reception_time when present`() {
         val jsonWithTime = bilingualJson.replace(
             "\"updated_at\"",
-            "\"opening_time\": \"5 PM\", \"updated_at\""
+            "\"reception_time\": \"5 PM\", \"updated_at\""
         )
         val dto = testJson.decodeFromString<ExhibitionDto>(jsonWithTime)
-        assertEquals("5 PM", dto.openingTime)
+        assertEquals("5 PM", dto.receptionTime)
         val exhibition = assertNotNull(dto.toDomain())
-        assertEquals("5 PM", exhibition.openingTime)
+        assertEquals("5 PM", exhibition.receptionTime)
     }
 
     @Test
-    fun `ExhibitionDto defaults openingTime to null when missing`() {
+    fun `ExhibitionDto defaults receptionTime to null when missing`() {
         val dto = testJson.decodeFromString<ExhibitionDto>(bilingualJson)
-        assertNull(dto.openingTime)
+        assertNull(dto.receptionTime)
         val exhibition = assertNotNull(dto.toDomain())
-        assertNull(exhibition.openingTime)
+        assertNull(exhibition.receptionTime)
     }
 }

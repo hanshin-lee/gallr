@@ -173,7 +173,7 @@ fun ExhibitionDetailScreen(
 
                 // ── Reception date (orange label) ────────────────────────
                 val receptionLabel = exhibition.receptionDate?.let {
-                    receptionDateLabel(it, exhibition.closingDate, lang, exhibition.openingTime)
+                    receptionDateLabel(it, exhibition.closingDate, lang, exhibition.receptionTime)
                 }
                 if (receptionLabel != null) {
                     Spacer(Modifier.height(GallrSpacing.sm))
