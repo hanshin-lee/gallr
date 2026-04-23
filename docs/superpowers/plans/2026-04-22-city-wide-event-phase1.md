@@ -177,7 +177,7 @@ class HexColorTest {
 - [ ] **Step 2: Run the test to verify it fails**
 
 ```bash
-./gradlew :shared:allTests --tests "com.gallr.shared.util.HexColorTest"
+./gradlew :shared:testDebugUnitTest --tests "com.gallr.shared.util.HexColorTest"
 ```
 
 Expected: FAIL with "unresolved reference: parseHexColor".
@@ -206,7 +206,7 @@ fun parseHexColor(input: String?): Long? {
 - [ ] **Step 4: Run tests to verify they pass**
 
 ```bash
-./gradlew :shared:allTests --tests "com.gallr.shared.util.HexColorTest"
+./gradlew :shared:testDebugUnitTest --tests "com.gallr.shared.util.HexColorTest"
 ```
 
 Expected: 7 tests PASS.
@@ -322,7 +322,7 @@ class EventTest {
 - [ ] **Step 2: Run the test to verify it fails**
 
 ```bash
-./gradlew :shared:allTests --tests "com.gallr.shared.data.model.EventTest"
+./gradlew :shared:testDebugUnitTest --tests "com.gallr.shared.data.model.EventTest"
 ```
 
 Expected: FAIL with "unresolved reference: Event".
@@ -386,7 +386,7 @@ data class Event(
 - [ ] **Step 4: Run tests to verify they pass**
 
 ```bash
-./gradlew :shared:allTests --tests "com.gallr.shared.data.model.EventTest"
+./gradlew :shared:testDebugUnitTest --tests "com.gallr.shared.data.model.EventTest"
 ```
 
 Expected: 11 tests PASS.
@@ -447,7 +447,7 @@ Append to `shared/src/commonTest/kotlin/com/gallr/shared/data/model/EventTest.kt
 - [ ] **Step 2: Run the test to verify it fails**
 
 ```bash
-./gradlew :shared:allTests --tests "com.gallr.shared.data.model.EventTest"
+./gradlew :shared:testDebugUnitTest --tests "com.gallr.shared.data.model.EventTest"
 ```
 
 Expected: FAIL with "unresolved reference: EventDto".
@@ -505,7 +505,7 @@ data class EventDto(
 - [ ] **Step 4: Run tests to verify they pass**
 
 ```bash
-./gradlew :shared:allTests --tests "com.gallr.shared.data.model.EventTest"
+./gradlew :shared:testDebugUnitTest --tests "com.gallr.shared.data.model.EventTest"
 ```
 
 Expected: 13 tests PASS (11 from Task 3 + 2 new).
@@ -575,7 +575,7 @@ Then in `toDomain()`, add `eventId = eventId,` as the last line of the `Exhibiti
 - [ ] **Step 3: Verify the existing exhibition tests still pass**
 
 ```bash
-./gradlew :shared:allTests
+./gradlew :shared:testDebugUnitTest
 ```
 
 Expected: all tests PASS (no exhibition tests reference `eventId` yet, default `null` keeps them passing).
@@ -820,7 +820,7 @@ class EventRepositoryTest {
 - [ ] **Step 2: Run the test to verify it fails**
 
 ```bash
-./gradlew :shared:allTests --tests "com.gallr.shared.repository.EventRepositoryTest"
+./gradlew :shared:testDebugUnitTest --tests "com.gallr.shared.repository.EventRepositoryTest"
 ```
 
 Expected: FAIL with "unresolved reference: EventRepositoryImpl".
@@ -880,7 +880,7 @@ class EventRepositoryImpl(
 - [ ] **Step 4: Run tests to verify they pass**
 
 ```bash
-./gradlew :shared:allTests --tests "com.gallr.shared.repository.EventRepositoryTest"
+./gradlew :shared:testDebugUnitTest --tests "com.gallr.shared.repository.EventRepositoryTest"
 ```
 
 Expected: 8 tests PASS.
@@ -1051,7 +1051,7 @@ iOS Swift side: if the entry point invokes the Compose `App` via a Kotlin shim t
 - [ ] **Step 4: Verify the project still builds**
 
 ```bash
-./gradlew :composeApp:compileCommonMainKotlinMetadata :shared:allTests
+./gradlew :composeApp:compileCommonMainKotlinMetadata :shared:testDebugUnitTest
 ```
 
 Expected: BUILD SUCCESSFUL; all existing tests still PASS.
