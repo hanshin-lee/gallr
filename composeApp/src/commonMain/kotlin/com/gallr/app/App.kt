@@ -37,10 +37,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gallr.app.ui.components.GallrNavigationBar
 import com.gallr.app.ui.detail.ExhibitionDetailScreen
+import com.gallr.app.ui.event.EventDetailScreen
 import com.gallr.app.ui.tabs.featured.FeaturedScreen
 import com.gallr.app.ui.tabs.list.ListScreen
 import com.gallr.app.ui.tabs.map.MapScreen
 import com.gallr.app.ui.theme.GallrTheme
+import com.gallr.app.viewmodel.EventDetailViewModel
 import com.gallr.app.viewmodel.TabsViewModel
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Exhibition
@@ -140,6 +142,7 @@ fun App(
         val bookmarkedIds by viewModel.bookmarkedIds.collectAsState()
         var selectedTab by remember { mutableIntStateOf(0) }
         var selectedExhibition by remember { mutableStateOf<Exhibition?>(null) }
+        var selectedEventId by remember { mutableStateOf<String?>(null) }
         val cropOverlayState = remember { CropOverlayState() }
         val shareHandler = remember { createShareHandler() }
 
@@ -147,24 +150,39 @@ fun App(
         Box(modifier = Modifier.fillMaxSize()) {
         // ── Detail screen with back handler ──────────────────────────────
         AnimatedContent(
-            targetState = selectedExhibition,
+            targetState = Triple(selectedExhibition, selectedEventId, selectedTab),
             transitionSpec = { fadeIn(animationSpec = androidx.compose.animation.core.tween(200)) togetherWith fadeOut(animationSpec = androidx.compose.animation.core.tween(200)) },
             label = "detailTransition",
-        ) { exhibition ->
-            if (exhibition != null) {
-                PlatformBackHandler { selectedExhibition = null }
-                ExhibitionDetailScreen(
-                    exhibition = exhibition,
-                    lang = lang,
-                    isBookmarked = exhibition.id in bookmarkedIds,
-                    onBookmarkToggle = { viewModel.toggleBookmark(exhibition.id) },
-                    onBack = { selectedExhibition = null },
-                    thoughtRepository = thoughtRepository,
-                    authState = authState,
-                    isAdmin = isAdmin,
-                    supabaseClient = supabaseClient,
-                )
-            } else {
+        ) { (exhibition, eventId, _) ->
+            when {
+                exhibition != null -> {
+                    PlatformBackHandler { selectedExhibition = null }
+                    ExhibitionDetailScreen(
+                        exhibition = exhibition,
+                        lang = lang,
+                        isBookmarked = exhibition.id in bookmarkedIds,
+                        onBookmarkToggle = { viewModel.toggleBookmark(exhibition.id) },
+                        onBack = { selectedExhibition = null },
+                        thoughtRepository = thoughtRepository,
+                        authState = authState,
+                        isAdmin = isAdmin,
+                        supabaseClient = supabaseClient,
+                    )
+                }
+                eventId != null -> {
+                    PlatformBackHandler { selectedEventId = null }
+                    val eventDetailVm: EventDetailViewModel = viewModel(
+                        key = "event-$eventId",
+                        factory = EventDetailViewModel.factory(eventId, eventRepository),
+                    )
+                    EventDetailScreen(
+                        viewModel = eventDetailVm,
+                        lang = lang,
+                        onBack = { selectedEventId = null },
+                        onExhibitionTap = { selectedExhibition = it },
+                    )
+                }
+                else -> {
                 Scaffold(
                     topBar = {
                         val uriHandler = LocalUriHandler.current
@@ -238,7 +256,7 @@ fun App(
                             0 -> FeaturedScreen(
                                 viewModel = viewModel,
                                 onExhibitionTap = { selectedExhibition = it },
-                                onEventTap = { /* wired in Task 10 */ },
+                                onEventTap = { id -> selectedEventId = id },
                                 modifier = Modifier.padding(innerPadding),
                             )
                             1 -> ListScreen(
@@ -265,7 +283,8 @@ fun App(
                         }
                     }
                 }
-            }
+                } // else ->
+            } // when
         }
 
         // Fullscreen crop overlay — zIndex above Scaffold bars (which use zIndex 1.0f)
