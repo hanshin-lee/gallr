@@ -150,10 +150,10 @@ fun App(
         Box(modifier = Modifier.fillMaxSize()) {
         // ── Detail screen with back handler ──────────────────────────────
         AnimatedContent(
-            targetState = Triple(selectedExhibition, selectedEventId, selectedTab),
+            targetState = selectedExhibition to selectedEventId,
             transitionSpec = { fadeIn(animationSpec = androidx.compose.animation.core.tween(200)) togetherWith fadeOut(animationSpec = androidx.compose.animation.core.tween(200)) },
             label = "detailTransition",
-        ) { (exhibition, eventId, _) ->
+        ) { (exhibition, eventId) ->
             when {
                 exhibition != null -> {
                     PlatformBackHandler { selectedExhibition = null }

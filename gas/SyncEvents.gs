@@ -112,6 +112,14 @@ function syncEventsToSupabase() {
   }
 
   try {
+    // CAVEAT: deleteAllEvents() fires Postgres ON DELETE SET NULL on every
+    // exhibitions.event_id that references a deleted row, even though we
+    // re-insert the same id milliseconds later. Until the next exhibitions
+    // sync runs (up to 5 minutes), event-linked exhibitions appear orphaned
+    // — Event Detail will show empty Venues/Exhibitions sections in that
+    // window. Acceptable for Phase 1 (single rare event). Phase 2's filter
+    // chip and pin recoloring will need an upsert+diff pattern to avoid
+    // visible flicker.
     deleteAllEvents(supabaseUrl, serviceKey);
     insertEvents(uniqueRows, supabaseUrl, serviceKey);
     Logger.log(JSON.stringify({
