@@ -238,6 +238,7 @@ fun App(
                             0 -> FeaturedScreen(
                                 viewModel = viewModel,
                                 onExhibitionTap = { selectedExhibition = it },
+                                onEventTap = { /* wired in Task 10 */ },
                                 modifier = Modifier.padding(innerPadding),
                             )
                             1 -> ListScreen(
