@@ -49,6 +49,7 @@ import com.gallr.shared.data.model.AuthState
 import com.gallr.shared.repository.AuthRepository
 import com.gallr.shared.repository.BookmarkRepositoryImpl
 import com.gallr.shared.repository.CloudBookmarkRepository
+import com.gallr.shared.repository.EventRepository
 import com.gallr.shared.repository.ExhibitionRepository
 import com.gallr.shared.repository.LanguageRepository
 import com.gallr.shared.repository.ProfileRepository
@@ -83,6 +84,7 @@ private const val PRIVACY_POLICY_URL = "https://gallrmap.com/privacy"
 @Composable
 fun App(
     exhibitionRepository: ExhibitionRepository,
+    eventRepository: EventRepository,
     localBookmarkRepository: BookmarkRepositoryImpl,
     cloudBookmarkRepository: CloudBookmarkRepository,
     authRepository: AuthRepository,
@@ -128,7 +130,7 @@ fun App(
     }
 
     val viewModel: TabsViewModel = viewModel(
-        factory = TabsViewModel.factory(exhibitionRepository, syncBookmarkRepository, languageRepository, themeRepository),
+        factory = TabsViewModel.factory(exhibitionRepository, syncBookmarkRepository, languageRepository, themeRepository, eventRepository),
     )
 
     val currentThemeMode by viewModel.themeMode.collectAsState()

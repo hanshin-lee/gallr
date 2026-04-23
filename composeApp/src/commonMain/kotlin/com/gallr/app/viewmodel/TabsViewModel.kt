@@ -14,7 +14,9 @@ import com.gallr.shared.data.model.MapDisplayMode
 import com.gallr.shared.data.model.RegionWithCount
 import com.gallr.shared.data.model.ThemeMode
 import com.gallr.shared.data.model.toMapPin
+import com.gallr.shared.data.model.Event
 import com.gallr.shared.repository.BookmarkRepository
+import com.gallr.shared.repository.EventRepository
 import com.gallr.shared.repository.ExhibitionRepository
 import com.gallr.shared.repository.LanguageRepository
 import com.gallr.shared.repository.ThemeRepository
@@ -40,6 +42,7 @@ class TabsViewModel(
     private val bookmarkRepository: BookmarkRepository,
     private val languageRepository: LanguageRepository,
     private val themeRepository: ThemeRepository,
+    private val eventRepository: EventRepository,
 ) : ViewModel() {
 
     // ── Theme ─────────────────────────────────────────────────────────────────
@@ -78,6 +81,22 @@ class TabsViewModel(
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing
+
+    // ── Active event ─────────────────────────────────────────────────────────
+
+    private val _activeEvent = MutableStateFlow<Event?>(null)
+    val activeEvent: StateFlow<Event?> = _activeEvent
+
+    fun loadActiveEvent() {
+        viewModelScope.launch {
+            eventRepository.getActiveEvents()
+                .onSuccess { events -> _activeEvent.value = events.firstOrNull() }
+                .onFailure {
+                    println("ERROR [TabsViewModel] loadActiveEvent: ${it.message}")
+                    _activeEvent.value = null
+                }
+        }
+    }
 
     // ── Search ────────────────────────────────────────────────────────────────
 
@@ -297,6 +316,7 @@ class TabsViewModel(
     fun refresh() {
         loadFeaturedExhibitions()
         loadAllExhibitions()
+        loadActiveEvent()
     }
 
     private fun classifyError(e: Throwable): String {
@@ -311,6 +331,7 @@ class TabsViewModel(
     init {
         loadFeaturedExhibitions()
         loadAllExhibitions()
+        loadActiveEvent()
     }
 
     // ── Factory ─────────────────────────────────────────────────────────────
@@ -321,9 +342,16 @@ class TabsViewModel(
             bookmarkRepository: BookmarkRepository,
             languageRepository: LanguageRepository,
             themeRepository: ThemeRepository,
+            eventRepository: EventRepository,
         ): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                TabsViewModel(exhibitionRepository, bookmarkRepository, languageRepository, themeRepository)
+                TabsViewModel(
+                    exhibitionRepository,
+                    bookmarkRepository,
+                    languageRepository,
+                    themeRepository,
+                    eventRepository,
+                )
             }
         }
     }
