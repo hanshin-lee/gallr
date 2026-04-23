@@ -82,4 +82,35 @@ class EventTest {
         assertEquals("Solo", Event.nameLastToken("Solo"))
         assertEquals("", Event.nameLastToken(""))
     }
+
+    @Test
+    fun `EventDto toDomain returns null when start_date is malformed`() {
+        val dto = com.gallr.shared.data.network.dto.EventDto(
+            id = "x",
+            nameKo = "x", nameEn = "x",
+            locationLabelKo = "x", locationLabelEn = "x",
+            startDate = "not-a-date",
+            endDate = "2025-05-10",
+            brandColor = "#000000",
+        )
+        kotlin.test.assertNull(dto.toDomain())
+    }
+
+    @Test
+    fun `EventDto toDomain returns Event with parsed dates and defaults`() {
+        val dto = com.gallr.shared.data.network.dto.EventDto(
+            id = "loop-lab-busan-2025",
+            nameKo = "루프랩 부산 2025", nameEn = "Loop Lab Busan 2025",
+            locationLabelKo = "부산 전역", locationLabelEn = "Across Busan",
+            startDate = "2025-04-18",
+            endDate = "2025-05-10",
+            brandColor = "#0099FF",
+        )
+        val event = dto.toDomain()!!
+        kotlin.test.assertEquals(LocalDate(2025, 4, 18), event.startDate)
+        kotlin.test.assertEquals(LocalDate(2025, 5, 10), event.endDate)
+        kotlin.test.assertEquals("", event.descriptionKo)  // default
+        kotlin.test.assertEquals(true, event.isActive)     // default
+        kotlin.test.assertEquals(null, event.accentColor)  // optional
+    }
 }
