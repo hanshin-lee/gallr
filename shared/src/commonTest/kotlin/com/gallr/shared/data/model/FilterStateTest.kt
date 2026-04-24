@@ -123,7 +123,7 @@ class FilterStateTest {
     }
 
     @Test
-    fun defaultFilterState_hasEventOnlyFalse() {
+    fun `default FilterState has eventOnly false`() {
         val filter = FilterState()
         kotlin.test.assertEquals(false, filter.eventOnly)
     }

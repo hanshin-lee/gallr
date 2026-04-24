@@ -87,7 +87,7 @@ class TabsViewModel(
     private val _activeEvent = MutableStateFlow<Event?>(null)
     val activeEvent: StateFlow<Event?> = _activeEvent
 
-    fun loadActiveEvent() {
+    private fun loadActiveEvent() {
         viewModelScope.launch {
             eventRepository.getActiveEvents()
                 .onSuccess { events -> _activeEvent.value = events.firstOrNull() }
