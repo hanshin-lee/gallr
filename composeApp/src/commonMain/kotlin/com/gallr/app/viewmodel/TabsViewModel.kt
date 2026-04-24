@@ -203,7 +203,7 @@ class TabsViewModel(
 
     val filteredExhibitions: StateFlow<ExhibitionListState> =
         combine(
-            _allExhibitions, _filterState, _selectedCity, _showMyListOnly, bookmarkedIds, _searchQuery,
+            _allExhibitions, _filterState, _selectedCity, _showMyListOnly, bookmarkedIds, _searchQuery, _activeEvent,
         ) { values ->
             val state = values[0] as ExhibitionListState
             val filter = values[1] as FilterState
@@ -213,6 +213,7 @@ class TabsViewModel(
             @Suppress("UNCHECKED_CAST")
             val bookmarked = values[4] as Set<String>
             val query = (values[5] as String).trim().lowercase()
+            val activeEvent = values[6] as Event?
             when (state) {
                 is ExhibitionListState.Loading -> ExhibitionListState.Loading
                 is ExhibitionListState.Error -> state
@@ -229,6 +230,12 @@ class TabsViewModel(
                                 it.nameEn.lowercase().contains(query) ||
                                 it.venueNameKo.lowercase().contains(query) ||
                                 it.venueNameEn.lowercase().contains(query)
+                        }
+                        .filter {
+                            // Phase 2b — event-only filter. Short-circuits when activeEvent is null
+                            // so stale eventOnly state doesn't transiently empty the list while the
+                            // auto-reset collector (init block) clears it.
+                            !filter.eventOnly || activeEvent == null || it.eventId == activeEvent.id
                         }
                     ExhibitionListState.Success(filtered)
                 }
@@ -332,6 +339,17 @@ class TabsViewModel(
         loadFeaturedExhibitions()
         loadAllExhibitions()
         loadActiveEvent()
+
+        // Phase 2b — when the active event disappears (expired, deactivated, network
+        // failure on refresh), silently clear any stranded eventOnly filter so the
+        // List tab doesn't show an empty feed with no way to recover.
+        viewModelScope.launch {
+            _activeEvent.collect { event ->
+                if (event == null && _filterState.value.eventOnly) {
+                    _filterState.value = _filterState.value.copy(eventOnly = false)
+                }
+            }
+        }
     }
 
     // ── Factory ─────────────────────────────────────────────────────────────
