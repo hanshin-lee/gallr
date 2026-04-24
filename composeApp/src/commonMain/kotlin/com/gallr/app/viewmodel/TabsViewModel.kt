@@ -87,12 +87,19 @@ class TabsViewModel(
     private val _activeEvent = MutableStateFlow<Event?>(null)
     val activeEvent: StateFlow<Event?> = _activeEvent
 
-    private fun loadActiveEvent() {
+    private val _activeEventsById = MutableStateFlow<Map<String, Event>>(emptyMap())
+    val activeEventsById: StateFlow<Map<String, Event>> = _activeEventsById
+
+    private fun loadActiveEvents() {
         viewModelScope.launch {
             eventRepository.getActiveEvents()
-                .onSuccess { events -> _activeEvent.value = events.firstOrNull() }
+                .onSuccess { events ->
+                    _activeEventsById.value = events.associateBy { it.id }
+                    _activeEvent.value = events.firstOrNull()
+                }
                 .onFailure {
-                    println("ERROR [TabsViewModel] loadActiveEvent: ${it.message}")
+                    println("ERROR [TabsViewModel] loadActiveEvents: ${it.message}")
+                    _activeEventsById.value = emptyMap()
                     _activeEvent.value = null
                 }
         }
@@ -256,23 +263,23 @@ class TabsViewModel(
     }
 
     val myListMapPins: StateFlow<List<ExhibitionMapPin>> =
-        combine(_allExhibitions, bookmarkedIds, language) { state, bookmarked, lang ->
+        combine(_allExhibitions, bookmarkedIds, language, _activeEventsById) { state, bookmarked, lang, eventsById ->
             val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
             (state as? ExhibitionListState.Success)
                 ?.exhibitions
                 ?.filter { it.id in bookmarked }
                 ?.filter { it.closingDate >= today }
-                ?.mapNotNull { it.toMapPin(lang) }
+                ?.mapNotNull { it.toMapPin(lang, eventsById) }
                 ?: emptyList()
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val allMapPins: StateFlow<List<ExhibitionMapPin>> =
-        combine(_allExhibitions, language) { state, lang ->
+        combine(_allExhibitions, language, _activeEventsById) { state, lang, eventsById ->
             val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
             (state as? ExhibitionListState.Success)
                 ?.exhibitions
                 ?.filter { it.closingDate >= today }
-                ?.mapNotNull { it.toMapPin(lang) }
+                ?.mapNotNull { it.toMapPin(lang, eventsById) }
                 ?: emptyList()
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -323,7 +330,7 @@ class TabsViewModel(
     fun refresh() {
         loadFeaturedExhibitions()
         loadAllExhibitions()
-        loadActiveEvent()
+        loadActiveEvents()
     }
 
     private fun classifyError(e: Throwable): String {
@@ -338,7 +345,7 @@ class TabsViewModel(
     init {
         loadFeaturedExhibitions()
         loadAllExhibitions()
-        loadActiveEvent()
+        loadActiveEvents()
 
         // Phase 2b — when the active event disappears (expired, deactivated, network
         // failure on refresh), silently clear any stranded eventOnly filter so the
