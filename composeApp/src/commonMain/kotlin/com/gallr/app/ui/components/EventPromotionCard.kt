@@ -6,14 +6,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -55,7 +53,6 @@ fun EventPromotionCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(140.dp)
             .background(brand)
             .border(1.dp, Color.Black)
             .clickable(onClick = onTap),
@@ -66,14 +63,14 @@ fun EventPromotionCard(
                 model = event.coverImageUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.matchParentSize(),
             )
         }
 
         // Layer 2: bottom-to-top dark scrim for text legibility
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .matchParentSize()
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)),
@@ -81,10 +78,10 @@ fun EventPromotionCard(
                 ),
         )
 
-        // Layer 3: text content anchored bottom-left
+        // Layer 3: text content — fills width and height; Box wraps around this content
         Column(
             modifier = Modifier
-                .align(Alignment.BottomStart)
+                .fillMaxWidth()
                 .padding(14.dp),
         ) {
             Text(

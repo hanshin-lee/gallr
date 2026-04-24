@@ -128,9 +128,9 @@ fun ListScreen(
             .fillMaxSize()
             .pointerInput(Unit) { detectTapGestures { focusManager.clearFocus() } },
     ) {
-        // ── Event banner (Phase 2b) — shown only on the All tab when active ──
+        // ── Event banner (Phase 2b) — shown on both sub-tabs when active ──
         val event = activeEvent
-        if (event != null && !showMyListOnly) {
+        if (event != null) {
             EventListBanner(
                 event = event,
                 lang = lang,

@@ -32,6 +32,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.gallr.app.ui.components.EventTreatment
+import com.gallr.app.ui.components.ExhibitionCard
 import com.gallr.app.viewmodel.EventDetailViewModel
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Event
@@ -43,6 +45,8 @@ import com.gallr.shared.util.parseHexColor
 fun EventDetailScreen(
     viewModel: EventDetailViewModel,
     lang: AppLanguage,
+    bookmarkedIds: Set<String>,
+    onToggleBookmark: (String) -> Unit,
     onBack: () -> Unit,
     onExhibitionTap: (Exhibition) -> Unit,
     modifier: Modifier = Modifier,
@@ -193,34 +197,24 @@ fun EventDetailScreen(
                     SectionLabel(if (lang == AppLanguage.KO) "전시" else "EXHIBITIONS")
                 }
                 items(exhibitions, key = { it.id }) { exhibition ->
-                    Box(
+                    val treatment = current.let { evt ->
+                        val localized = evt.localizedName(lang)
+                        EventTreatment(
+                            brandColor = brand,
+                            label = if (localized.length > 20) localized.take(20) + "…" else localized,
+                        )
+                    }
+                    ExhibitionCard(
+                        exhibition = exhibition,
+                        isBookmarked = exhibition.id in bookmarkedIds,
+                        onBookmarkToggle = { onToggleBookmark(exhibition.id) },
+                        onTap = { onExhibitionTap(exhibition) },
+                        lang = lang,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp)
-                            .border(1.dp, brand)
-                            .clickable(onClick = { onExhibitionTap(exhibition) })
-                            .padding(8.dp),
-                    ) {
-                        Column {
-                            Text(
-                                text = exhibition.localizedVenueName(lang),
-                                color = brand,
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            )
-                            Spacer(Modifier.height(2.dp))
-                            Text(
-                                text = exhibition.localizedName(lang),
-                                color = MaterialTheme.colorScheme.onBackground,
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                            )
-                            Spacer(Modifier.height(2.dp))
-                            Text(
-                                text = exhibition.localizedDateRange(lang),
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                                style = MaterialTheme.typography.labelMedium,
-                            )
-                        }
-                    }
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        eventTreatment = treatment,
+                    )
                 }
             }
 

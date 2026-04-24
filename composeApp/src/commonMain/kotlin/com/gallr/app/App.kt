@@ -178,6 +178,8 @@ fun App(
                     EventDetailScreen(
                         viewModel = eventDetailVm,
                         lang = lang,
+                        bookmarkedIds = bookmarkedIds,
+                        onToggleBookmark = { viewModel.toggleBookmark(it) },
                         onBack = { selectedEventId = null },
                         onExhibitionTap = { selectedExhibition = it },
                     )
