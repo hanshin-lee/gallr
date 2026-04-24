@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,8 +31,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import coil3.compose.AsyncImage
 import com.gallr.app.ui.theme.GallrAccent
 import com.gallr.app.ui.theme.GallrMotion
@@ -42,6 +46,16 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 
+/**
+ * Visual treatment applied to an ExhibitionCard when it belongs to the current
+ * active city-wide event. Null for regular exhibitions.
+ */
+data class EventTreatment(
+    val brandColor: Color,
+    /** Pre-localized, pre-truncated (≤ 20 chars + ellipsis) event name for the corner label. */
+    val label: String,
+)
+
 @Composable
 fun ExhibitionCard(
     exhibition: Exhibition,
@@ -50,6 +64,7 @@ fun ExhibitionCard(
     onTap: () -> Unit,
     lang: AppLanguage,
     modifier: Modifier = Modifier,
+    eventTreatment: EventTreatment? = null,
 ) {
     // ── Press state — detectTapGestures, NOT collectIsPressedAsState (CMP bug #3417) ──
     var isPressed by remember { mutableStateOf(false) }
@@ -156,6 +171,30 @@ fun ExhibitionCard(
                 modifier = Modifier
                     .matchParentSize()
                     .background(scrimColor),
+            )
+        }
+
+        // ── Layer 2b: Event treatment (Phase 2b) — left edge + corner label ──
+        if (eventTreatment != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .fillMaxHeight()
+                    .width(3.dp)
+                    .background(eventTreatment.brandColor),
+            )
+            Text(
+                text = eventTreatment.label,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.08.em,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .background(eventTreatment.brandColor)
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
             )
         }
 
