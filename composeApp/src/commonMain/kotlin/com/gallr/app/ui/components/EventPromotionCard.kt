@@ -37,13 +37,15 @@ fun EventPromotionCard(
     val accent = parseHexColor(event.accentColor)?.let { Color(it) }
 
     val name = event.localizedName(lang)
-    // Phase 1: render plain text. AnnotatedString + SpanStyle accent-color span
-    // crashes iOS Skia paragraph builder (see Phase 1 smoke test). Coral accent
-    // on last token is deferred to Phase 2 once the iOS path is stable.
-    @Suppress("UNUSED_VARIABLE")
-    val unusedAccent = accent
-    @Suppress("UNUSED_VARIABLE")
-    val unusedToken = Event.nameLastToken(name)
+    val lastToken = Event.nameLastToken(name)
+    val nameDisplay = buildAnnotatedString {
+        if (accent != null && lastToken.isNotEmpty() && name.endsWith(lastToken)) {
+            append(name.dropLast(lastToken.length))
+            withStyle(SpanStyle(color = accent)) { append(lastToken) }
+        } else {
+            append(name)
+        }
+    }
 
     val eyebrow = if (lang == AppLanguage.KO) "지금 진행 중 · ART EVENT" else "NOW ON · ART EVENT"
     val meta = "${event.localizedDateRange(lang)} · ${event.localizedLocationLabel(lang)}"
@@ -65,7 +67,7 @@ fun EventPromotionCard(
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = name,
+                    text = nameDisplay,
                     color = Color.White,
                     style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
                 )
