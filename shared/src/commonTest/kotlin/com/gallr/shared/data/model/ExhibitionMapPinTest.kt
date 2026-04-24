@@ -91,4 +91,10 @@ class ExhibitionMapPinTest {
         val pin = exhibition(latitude = null).toMapPin(AppLanguage.KO, emptyMap())
         assertNull(pin)
     }
+
+    @Test
+    fun `toMapPin returns null when longitude missing`() {
+        val pin = exhibition(longitude = null).toMapPin(AppLanguage.KO, emptyMap())
+        assertNull(pin)
+    }
 }

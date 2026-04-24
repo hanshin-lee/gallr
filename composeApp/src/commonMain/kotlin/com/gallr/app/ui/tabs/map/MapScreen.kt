@@ -78,67 +78,68 @@ fun MapScreen(
 
     val selectedTabIndex = if (mapMode == MapDisplayMode.MY_LIST) 0 else 1
 
-    Box(modifier = modifier.fillMaxSize()) { Column(modifier = Modifier.fillMaxSize()) {
-        TabRow(
-            selectedTabIndex = selectedTabIndex,
-            containerColor = MaterialTheme.colorScheme.background,
-            contentColor = MaterialTheme.colorScheme.onBackground,
-            indicator = { tabPositions ->
-                if (selectedTabIndex < tabPositions.size) {
-                    TabRowDefaults.SecondaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                }
-            },
-            divider = {},
-        ) {
-            Tab(
-                selected = mapMode == MapDisplayMode.MY_LIST,
-                onClick = { viewModel.setMapDisplayMode(MapDisplayMode.MY_LIST) },
-                text = {
-                    Text(
-                        text = if (lang == AppLanguage.KO) "내 전시" else "MY LIST",
-                        style = MaterialTheme.typography.labelLarge,
-                    )
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            TabRow(
+                selectedTabIndex = selectedTabIndex,
+                containerColor = MaterialTheme.colorScheme.background,
+                contentColor = MaterialTheme.colorScheme.onBackground,
+                indicator = { tabPositions ->
+                    if (selectedTabIndex < tabPositions.size) {
+                        TabRowDefaults.SecondaryIndicator(
+                            modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                    }
                 },
-            )
-            Tab(
-                selected = mapMode == MapDisplayMode.ALL,
-                onClick = { viewModel.setMapDisplayMode(MapDisplayMode.ALL) },
-                text = {
-                    Text(
-                        text = if (lang == AppLanguage.KO) "전체" else "ALL",
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                },
-            )
-        }
-        HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
-
-        if (mapMode == MapDisplayMode.MY_LIST && myListPins.isEmpty()) {
-            Box(modifier = Modifier.fillMaxWidth().padding(GallrSpacing.screenMargin)) {
-                Text(
-                    text = if (lang == AppLanguage.KO) "저장한 전시가 없습니다.\n전시를 북마크하면 지도에 표시됩니다."
-                           else "No saved exhibitions yet.\nBookmark exhibitions to see them on the map.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                divider = {},
+            ) {
+                Tab(
+                    selected = mapMode == MapDisplayMode.MY_LIST,
+                    onClick = { viewModel.setMapDisplayMode(MapDisplayMode.MY_LIST) },
+                    text = {
+                        Text(
+                            text = if (lang == AppLanguage.KO) "내 전시" else "MY LIST",
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    },
+                )
+                Tab(
+                    selected = mapMode == MapDisplayMode.ALL,
+                    onClick = { viewModel.setMapDisplayMode(MapDisplayMode.ALL) },
+                    text = {
+                        Text(
+                            text = if (lang == AppLanguage.KO) "전체" else "ALL",
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    },
                 )
             }
-        }
+            HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
 
-        MapView(
-            locations = locations,
-            onLocationTap = { location ->
-                if (location.count == 1) {
-                    selectedPin = location.pins.first()
-                } else {
-                    selectedLocation = location
+            if (mapMode == MapDisplayMode.MY_LIST && myListPins.isEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth().padding(GallrSpacing.screenMargin)) {
+                    Text(
+                        text = if (lang == AppLanguage.KO) "저장한 전시가 없습니다.\n전시를 북마크하면 지도에 표시됩니다."
+                               else "No saved exhibitions yet.\nBookmark exhibitions to see them on the map.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
-            },
-            modifier = Modifier.weight(1f),
-            enableUserLocation = locationPermission.isGranted,
-        )
+            }
+
+            MapView(
+                locations = locations,
+                onLocationTap = { location ->
+                    if (location.count == 1) {
+                        selectedPin = location.pins.first()
+                    } else {
+                        selectedLocation = location
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                enableUserLocation = locationPermission.isGranted,
+            )
         }
         activeEvent?.let { event ->
             EventMapFab(

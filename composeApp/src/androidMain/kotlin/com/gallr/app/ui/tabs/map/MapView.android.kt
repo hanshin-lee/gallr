@@ -22,7 +22,7 @@ import com.naver.maps.map.overlay.OverlayImage
 
 private val SEOUL = LatLng(37.5665, 126.9780)
 private const val INITIAL_ZOOM = 10.0
-private const val ACCENT_ARGB = 0xFFFF5400.toInt()
+private const val ACCENT_ARGB: Int = 0xFFFF5400.toInt()
 
 /**
  * Creates a simple pin-shaped marker bitmap filled with the given color.
