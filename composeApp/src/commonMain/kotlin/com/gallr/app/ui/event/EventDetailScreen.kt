@@ -23,12 +23,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.gallr.app.viewmodel.EventDetailViewModel
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Event
@@ -93,11 +96,33 @@ fun EventDetailScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(150.dp)
-                        .background(brand)
-                        .padding(16.dp),
-                    contentAlignment = Alignment.BottomStart,
+                        .background(brand),
                 ) {
-                    Column {
+                    // Layer 1: hero image fills the box; absent / failed → brand color shows through
+                    if (current.coverImageUrl != null) {
+                        AsyncImage(
+                            model = current.coverImageUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                    // Layer 2: bottom-to-top dark scrim for text legibility
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)),
+                                )
+                            ),
+                    )
+                    // Layer 3: text content anchored bottom-left
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(16.dp),
+                    ) {
                         Text(
                             text = if (lang == AppLanguage.KO)
                                 "도시 전역 · ART EVENT · ${current.localizedLocationLabel(lang)}"
