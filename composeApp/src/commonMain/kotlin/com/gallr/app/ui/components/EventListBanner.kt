@@ -31,8 +31,7 @@ fun EventListBanner(
     onTap: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val brand = parseHexColor(event.brandColor)?.let { Color(it) }
-        ?: MaterialTheme.colorScheme.onBackground
+    val brand = parseHexColor(event.brandColor)?.let { Color(it) } ?: Color.Black
     val accent = parseHexColor(event.accentColor)?.let { Color(it) }
 
     val name = event.localizedName(lang)

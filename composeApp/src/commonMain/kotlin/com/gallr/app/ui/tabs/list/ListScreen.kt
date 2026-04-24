@@ -133,12 +133,12 @@ fun ListScreen(
             .pointerInput(Unit) { detectTapGestures { focusManager.clearFocus() } },
     ) {
         // ── Event banner (Phase 2b) — shown only on the All tab when active ──
-        val banner = activeEvent
-        if (banner != null && !showMyListOnly) {
+        val event = activeEvent
+        if (event != null && !showMyListOnly) {
             EventListBanner(
-                event = banner,
+                event = event,
                 lang = lang,
-                onTap = { onEventTap(banner.id) },
+                onTap = { onEventTap(event.id) },
             )
         }
 
@@ -298,8 +298,7 @@ fun ListScreen(
                 .padding(horizontal = GallrSpacing.screenMargin),
         ) {
             activeEvent?.let { event ->
-                val brand = parseHexColor(event.brandColor)?.let { Color(it) }
-                    ?: MaterialTheme.colorScheme.onBackground
+                val brand = parseHexColor(event.brandColor)?.let { Color(it) } ?: Color.Black
                 GallrEventFilterChip(
                     selected = filter.eventOnly,
                     onClick = { viewModel.updateFilter { copy(eventOnly = !eventOnly) } },
@@ -429,17 +428,18 @@ fun ListScreen(
                             modifier = Modifier.fillMaxSize(),
                         ) {
                             items(s.exhibitions, key = { it.id }) { exhibition ->
-                                val treatment = activeEvent
-                                    ?.takeIf { exhibition.eventId == it.id }
-                                    ?.let { event ->
-                                        val localized = event.localizedName(lang)
-                                        val brand = parseHexColor(event.brandColor)?.let { Color(it) }
-                                            ?: MaterialTheme.colorScheme.onBackground
-                                        EventTreatment(
-                                            brandColor = brand,
-                                            label = if (localized.length > 20) localized.take(20) + "…" else localized,
-                                        )
-                                    }
+                                val treatment = remember(activeEvent, exhibition.eventId, lang) {
+                                    activeEvent
+                                        ?.takeIf { exhibition.eventId == it.id }
+                                        ?.let { event ->
+                                            val localized = event.localizedName(lang)
+                                            val brand = parseHexColor(event.brandColor)?.let { Color(it) } ?: Color.Black
+                                            EventTreatment(
+                                                brandColor = brand,
+                                                label = if (localized.length > 20) localized.take(20) + "…" else localized,
+                                            )
+                                        }
+                                }
                                 ExhibitionCard(
                                     exhibition = exhibition,
                                     isBookmarked = exhibition.id in bookmarkedIds,
@@ -549,17 +549,17 @@ private fun GallrEventFilterChip(
     selected: Boolean,
     onClick: () -> Unit,
     label: String,
-    brandColor: androidx.compose.ui.graphics.Color,
+    brandColor: Color,
     modifier: Modifier = Modifier,
 ) {
     FilterChip(
         selected = selected,
         onClick = onClick,
         leadingIcon = {
-            androidx.compose.foundation.layout.Box(
+            Box(
                 Modifier
                     .size(4.dp)
-                    .background(if (selected) androidx.compose.ui.graphics.Color.White else brandColor),
+                    .background(if (selected) Color.White else brandColor),
             )
         },
         label = {
@@ -574,7 +574,7 @@ private fun GallrEventFilterChip(
             containerColor = MaterialTheme.colorScheme.background,
             labelColor = brandColor,
             selectedContainerColor = brandColor,
-            selectedLabelColor = androidx.compose.ui.graphics.Color.White,
+            selectedLabelColor = Color.White,
         ),
         border = FilterChipDefaults.filterChipBorder(
             enabled = true,
