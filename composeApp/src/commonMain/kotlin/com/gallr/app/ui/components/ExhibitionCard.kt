@@ -189,6 +189,8 @@ fun ExhibitionCard(
                 color = Color.White,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 0.08.em,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .background(eventTreatment.brandColor)
