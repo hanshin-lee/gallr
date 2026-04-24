@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -50,11 +51,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.gallr.app.ui.components.EventListBanner
+import com.gallr.app.ui.components.EventTreatment
 import com.gallr.app.ui.components.ExhibitionCard
 import com.gallr.app.ui.components.GallrEmptyState
 import com.gallr.app.ui.components.SkeletonCard
@@ -63,15 +67,18 @@ import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.app.viewmodel.ExhibitionListState
 import com.gallr.app.viewmodel.TabsViewModel
 import com.gallr.shared.data.model.AppLanguage
+import com.gallr.shared.data.model.Event
 import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.FilterState
 import com.gallr.shared.data.model.RegionWithCount
+import com.gallr.shared.util.parseHexColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListScreen(
     viewModel: TabsViewModel,
     onExhibitionTap: (Exhibition) -> Unit,
+    onEventTap: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val filter by viewModel.filterState.collectAsState()
@@ -84,6 +91,7 @@ fun ListScreen(
     val showMyListOnly by viewModel.showMyListOnly.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val activeEvent by viewModel.activeEvent.collectAsState()
 
     val hasActiveFilters = filter != FilterState() || selectedCity != null
 
@@ -124,6 +132,16 @@ fun ListScreen(
             .fillMaxSize()
             .pointerInput(Unit) { detectTapGestures { focusManager.clearFocus() } },
     ) {
+        // ── Event banner (Phase 2b) — shown only on the All tab when active ──
+        val banner = activeEvent
+        if (banner != null && !showMyListOnly) {
+            EventListBanner(
+                event = banner,
+                lang = lang,
+                onTap = { onEventTap(banner.id) },
+            )
+        }
+
         // ── Tab toggle: All Exhibitions / My List ─────────────────────────
         TabRow(
             selectedTabIndex = selectedTabIndex,
@@ -279,6 +297,17 @@ fun ListScreen(
                 .horizontalScroll(rememberScrollState())
                 .padding(horizontal = GallrSpacing.screenMargin),
         ) {
+            activeEvent?.let { event ->
+                val brand = parseHexColor(event.brandColor)?.let { Color(it) }
+                    ?: MaterialTheme.colorScheme.onBackground
+                GallrEventFilterChip(
+                    selected = filter.eventOnly,
+                    onClick = { viewModel.updateFilter { copy(eventOnly = !eventOnly) } },
+                    label = event.localizedName(lang),
+                    brandColor = brand,
+                )
+                Spacer(Modifier.width(GallrSpacing.sm))
+            }
             GallrFilterChip(
                 selected = filter.showFeatured,
                 onClick = { viewModel.updateFilter { copy(showFeatured = !showFeatured) } },
@@ -370,6 +399,9 @@ fun ListScreen(
                             showMyListOnly ->
                                 if (lang == AppLanguage.KO) "필터에 맞는 저장 전시가 없습니다."
                                 else "No saved exhibitions match the current filters."
+                            filter.eventOnly && activeEvent != null ->
+                                if (lang == AppLanguage.KO) "${activeEvent!!.nameKo}에 참여하는 전시가 없습니다."
+                                else "No exhibitions in ${activeEvent!!.nameEn}."
                             cityName != null ->
                                 if (lang == AppLanguage.KO) "${cityName}에 전시가 없습니다."
                                 else "No exhibitions in $cityName."
@@ -397,6 +429,17 @@ fun ListScreen(
                             modifier = Modifier.fillMaxSize(),
                         ) {
                             items(s.exhibitions, key = { it.id }) { exhibition ->
+                                val treatment = activeEvent
+                                    ?.takeIf { exhibition.eventId == it.id }
+                                    ?.let { event ->
+                                        val localized = event.localizedName(lang)
+                                        val brand = parseHexColor(event.brandColor)?.let { Color(it) }
+                                            ?: MaterialTheme.colorScheme.onBackground
+                                        EventTreatment(
+                                            brandColor = brand,
+                                            label = if (localized.length > 20) localized.take(20) + "…" else localized,
+                                        )
+                                    }
                                 ExhibitionCard(
                                     exhibition = exhibition,
                                     isBookmarked = exhibition.id in bookmarkedIds,
@@ -406,6 +449,7 @@ fun ListScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(bottom = GallrSpacing.md),
+                                    eventTreatment = treatment,
                                 )
                             }
                         }
@@ -492,6 +536,51 @@ private fun GallrFilterChip(
             selected = selected,
             borderColor = MaterialTheme.colorScheme.outline,
             selectedBorderColor = GallrAccent.activeIndicator,
+            borderWidth = 1.dp,
+            selectedBorderWidth = 1.dp,
+        ),
+    )
+}
+
+// ── Event filter chip (Phase 2b) ─────────────────────────────────────────────
+
+@Composable
+private fun GallrEventFilterChip(
+    selected: Boolean,
+    onClick: () -> Unit,
+    label: String,
+    brandColor: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        leadingIcon = {
+            androidx.compose.foundation.layout.Box(
+                Modifier
+                    .size(4.dp)
+                    .background(if (selected) androidx.compose.ui.graphics.Color.White else brandColor),
+            )
+        },
+        label = {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+            )
+        },
+        modifier = modifier,
+        shape = RectangleShape,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = MaterialTheme.colorScheme.background,
+            labelColor = brandColor,
+            selectedContainerColor = brandColor,
+            selectedLabelColor = androidx.compose.ui.graphics.Color.White,
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = selected,
+            borderColor = brandColor,
+            selectedBorderColor = brandColor,
             borderWidth = 1.dp,
             selectedBorderWidth = 1.dp,
         ),
