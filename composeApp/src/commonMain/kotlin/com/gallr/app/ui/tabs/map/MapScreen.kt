@@ -29,9 +29,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
+import com.gallr.app.ui.components.EventMapFab
 import com.gallr.app.ui.theme.GallrAccent
 import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.app.viewmodel.TabsViewModel
@@ -50,12 +52,14 @@ import kotlinx.datetime.todayIn
 fun MapScreen(
     viewModel: TabsViewModel,
     onExhibitionTap: (Exhibition) -> Unit,
+    onEventTap: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val mapMode by viewModel.mapDisplayMode.collectAsState()
     val myListPins by viewModel.myListMapPins.collectAsState()
     val allPins by viewModel.allMapPins.collectAsState()
     val lang by viewModel.language.collectAsState()
+    val activeEvent by viewModel.activeEvent.collectAsState()
 
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
     val activePins = if (mapMode == MapDisplayMode.MY_LIST) myListPins else allPins
@@ -74,7 +78,7 @@ fun MapScreen(
 
     val selectedTabIndex = if (mapMode == MapDisplayMode.MY_LIST) 0 else 1
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize()) { Column(modifier = Modifier.fillMaxSize()) {
         TabRow(
             selectedTabIndex = selectedTabIndex,
             containerColor = MaterialTheme.colorScheme.background,
@@ -135,6 +139,17 @@ fun MapScreen(
             modifier = Modifier.weight(1f),
             enableUserLocation = locationPermission.isGranted,
         )
+        }
+        activeEvent?.let { event ->
+            EventMapFab(
+                event = event,
+                lang = lang,
+                onTap = { onEventTap(event.id) },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+            )
+        }
     }
 
     // ── Single exhibition dialog ────────────────────────────────────────────
