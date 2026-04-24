@@ -372,6 +372,14 @@ function buildRecord(row, headerMap) {
       return;
     }
 
+    // FK column — blank cell must become null, never empty string,
+    // or Postgres rejects with FK violation 23503 (no events row has id="").
+    if (header === 'event_id') {
+      var eid = String(raw || '').trim();
+      record[header] = eid || null;
+      return;
+    }
+
     // Nullable text fields — empty strings become null
     if (header === 'hours' || header === 'contact' || header === 'opening_time') {
       // opening_time may come in as a Date if the sheet cell is formatted
