@@ -199,18 +199,35 @@ function isHexColor(v) {
   return /^#?[0-9A-Fa-f]{6}$/.test(s);
 }
 
+// Schema defaults for events table. Under upsert
+// (Prefer: resolution=merge-duplicates), omitting a field leaves the
+// existing DB value untouched — wrong when the operator cleared the cell.
+// Sending explicit null violates NOT NULL columns. So map blank cells to
+// the schema's actual default per column.
+//   - description_ko/en, is_active: NOT NULL DEFAULT — send the default
+//   - accent_color, ticket_url, cover_image_url: nullable — send null
+//   - required columns (id, name_*, location_label_*, start_date, end_date,
+//     brand_color): can't be blank, validateRow catches that upstream
+var BLANK_DEFAULTS = {
+  description_ko: '',
+  description_en: '',
+  is_active: true,
+  accent_color: null,
+  ticket_url: null,
+  cover_image_url: null,
+};
+
 function buildRecord(row, headerMap) {
   var record = {};
   KNOWN_COLUMNS.forEach(function(col) {
     if (!(col in headerMap)) return;
     var raw = getCell(row, headerMap, col);
     if (raw === '' || raw === null || raw === undefined) {
-      // Send explicit null so upsert (Prefer: resolution=merge-duplicates)
-      // overwrites the existing value. Omitting the field would leave the
-      // old value untouched. Required-column blanks are caught upstream
-      // by validateRow before buildRecord is called, so any blank we see
-      // here is genuinely an optional column the operator cleared.
-      record[col] = null;
+      if (col in BLANK_DEFAULTS) {
+        record[col] = BLANK_DEFAULTS[col];
+      }
+      // Required columns: omit silently — validateRow upstream guarantees
+      // we never reach here with a required column blank.
       return;
     }
 
