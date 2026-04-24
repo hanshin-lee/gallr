@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import com.gallr.app.ui.components.EventPromotionCard
 import com.gallr.app.ui.components.ExhibitionCard
 import com.gallr.app.ui.components.GallrEmptyState
 import com.gallr.app.ui.components.SkeletonCard
@@ -31,14 +32,27 @@ import com.gallr.shared.data.model.Exhibition
 fun FeaturedScreen(
     viewModel: TabsViewModel,
     onExhibitionTap: (Exhibition) -> Unit,
+    onEventTap: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.featuredState.collectAsState()
     val bookmarkedIds by viewModel.bookmarkedIds.collectAsState()
     val lang by viewModel.language.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val activeEvent by viewModel.activeEvent.collectAsState()
 
     Column(modifier = modifier.fillMaxSize()) {
+        activeEvent?.let { event ->
+            EventPromotionCard(
+                event = event,
+                lang = lang,
+                onTap = { onEventTap(event.id) },
+                modifier = Modifier.padding(
+                    horizontal = GallrSpacing.md,
+                    vertical = GallrSpacing.sm,
+                ),
+            )
+        }
         Text(
             text = if (lang == AppLanguage.KO) "추천" else "FEATURED",
             style = MaterialTheme.typography.labelLarge,

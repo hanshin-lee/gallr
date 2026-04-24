@@ -50,6 +50,32 @@ var REQUIRED_ROW_FIELDS = [
 ];
 
 // ---------------------------------------------------------------------------
+// Event id validation — fetches all event ids once per sync run.
+// Returns a Set-like object: knownIds[id] === true when the id exists.
+// ---------------------------------------------------------------------------
+
+function fetchKnownEventIds(supabaseUrl, serviceKey) {
+  var url = supabaseUrl + '/rest/v1/events?select=id';
+  var response = UrlFetchApp.fetch(url, {
+    method: 'get',
+    headers: {
+      'apikey': serviceKey,
+      'Authorization': 'Bearer ' + serviceKey,
+    },
+    muteHttpExceptions: true,
+  });
+  var code = response.getResponseCode();
+  if (code !== 200) {
+    Logger.log('WARN: events fetch returned ' + code + ' — event_id validation disabled this run');
+    return null; // null signals "validation disabled" so we don't accidentally skip every row
+  }
+  var rows = JSON.parse(response.getContentText());
+  var set = {};
+  rows.forEach(function(r) { if (r && r.id) set[r.id] = true; });
+  return set;
+}
+
+// ---------------------------------------------------------------------------
 // Main entry point — called by both triggers
 // ---------------------------------------------------------------------------
 
@@ -112,6 +138,9 @@ function syncToSupabase() {
     return;
   }
 
+  // ── Fetch known event ids for FK validation ──────────────────────────
+  var knownEventIds = fetchKnownEventIds(supabaseUrl, serviceKey);
+
   // ── Process data rows ───────────────────────────────────────────────────
   var dataRows = data.slice(1);
   var rowsRead = dataRows.length;
@@ -121,11 +150,17 @@ function syncToSupabase() {
   dataRows.forEach(function(row, index) {
     var rowNum = index + 2;
     var result = validateRow(row, rowNum, headerMap);
-    if (result.valid) {
-      validRows.push(buildRecord(row, headerMap));
-    } else {
+    if (!result.valid) {
       skippedReasons.push(result.reason);
+      return;
     }
+    // Validate event_id FK if a value is present and validation is enabled
+    var eventIdCell = String(getCell(row, headerMap, 'event_id') || '').trim();
+    if (eventIdCell && knownEventIds !== null && !knownEventIds[eventIdCell]) {
+      skippedReasons.push('Row ' + rowNum + ': event_id "' + eventIdCell + '" not found in events table — sync events first');
+      return;
+    }
+    validRows.push(buildRecord(row, headerMap));
   });
 
   // ── Deduplicate by id ───────────────────────────────────────────────────
@@ -266,6 +301,7 @@ var KNOWN_COLUMNS = [
   'contact',
   'reception_date',
   'opening_time',
+  'event_id',
 ];
 
 // ---------------------------------------------------------------------------
@@ -333,6 +369,14 @@ function buildRecord(row, headerMap) {
         var baseUrl = props.getProperty('SUPABASE_URL');
         record[header] = baseUrl + '/storage/v1/object/public/exhibition-images/' + encodeURIComponent(url);
       }
+      return;
+    }
+
+    // FK column — blank cell must become null, never empty string,
+    // or Postgres rejects with FK violation 23503 (no events row has id="").
+    if (header === 'event_id') {
+      var eid = String(raw || '').trim();
+      record[header] = eid || null;
       return;
     }
 
