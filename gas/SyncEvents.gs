@@ -204,7 +204,15 @@ function buildRecord(row, headerMap) {
   KNOWN_COLUMNS.forEach(function(col) {
     if (!(col in headerMap)) return;
     var raw = getCell(row, headerMap, col);
-    if (raw === '' || raw === null || raw === undefined) return;
+    if (raw === '' || raw === null || raw === undefined) {
+      // Send explicit null so upsert (Prefer: resolution=merge-duplicates)
+      // overwrites the existing value. Omitting the field would leave the
+      // old value untouched. Required-column blanks are caught upstream
+      // by validateRow before buildRecord is called, so any blank we see
+      // here is genuinely an optional column the operator cleared.
+      record[col] = null;
+      return;
+    }
 
     if (col === 'start_date' || col === 'end_date') {
       record[col] = parseDate(raw);
@@ -215,7 +223,6 @@ function buildRecord(row, headerMap) {
       record[col] = (s.charAt(0) === '#') ? s : ('#' + s);
     } else if (col === 'cover_image_url') {
       var url = String(raw || '').trim();
-      if (!url) return;  // omit; null in DB
       if (/^https?:\/\//i.test(url)) {
         record[col] = url;
       } else {
