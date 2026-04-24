@@ -7,6 +7,8 @@ import android.graphics.Path
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.gallr.shared.data.model.ExhibitionMapPin
+import com.gallr.shared.util.parseHexColor
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
@@ -23,15 +25,15 @@ private const val INITIAL_ZOOM = 10.0
 private const val ACCENT_ARGB = 0xFFFF5400.toInt()
 
 /**
- * Creates a simple pin-shaped marker bitmap filled with the exact accent color.
+ * Creates a simple pin-shaped marker bitmap filled with the given color.
  * Pin shape: circle head with a pointed tail at the bottom.
  */
-private fun createAccentMarkerBitmap(): Bitmap {
+private fun createMarkerBitmap(colorArgb: Int): Bitmap {
     val w = 48
     val h = 64
     val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
-    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = ACCENT_ARGB }
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colorArgb }
 
     // Circle head
     val radius = w / 2f
@@ -53,6 +55,14 @@ private fun createAccentMarkerBitmap(): Bitmap {
     return bitmap
 }
 
+/**
+ * Resolves an ARGB int from a pin's hex brandColor, or null if missing/malformed.
+ * parseHexColor returns a Long with 0xFF alpha pre-applied; signed narrowing to Int
+ * preserves the bit pattern for Android's Paint.color consumption.
+ */
+private fun ExhibitionMapPin.brandColorArgb(): Int? =
+    brandColorHex?.let { parseHexColor(it)?.toInt() }
+
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable
 actual fun MapView(
@@ -65,7 +75,7 @@ actual fun MapView(
         position = CameraPosition(SEOUL, INITIAL_ZOOM)
     }
 
-    val markerIcon = remember { OverlayImage.fromBitmap(createAccentMarkerBitmap()) }
+    val iconCache = remember { mutableMapOf<Int, OverlayImage>() }
 
     val properties = remember(enableUserLocation) {
         MapProperties(
@@ -80,10 +90,17 @@ actual fun MapView(
         properties = properties,
     ) {
         locations.forEach { location ->
+            // Mixed-event locations (multiple pins at same coords with different eventIds):
+            // the first pin's color wins. Tap opens the existing bottom sheet which lists
+            // every pin individually, so no information is lost.
+            val pinColorArgb = location.pins.firstOrNull()?.brandColorArgb() ?: ACCENT_ARGB
+            val icon = iconCache.getOrPut(pinColorArgb) {
+                OverlayImage.fromBitmap(createMarkerBitmap(pinColorArgb))
+            }
             Marker(
                 state = MarkerState(position = LatLng(location.latitude, location.longitude)),
                 captionText = location.label,
-                icon = markerIcon,
+                icon = icon,
                 onClick = {
                     onLocationTap(location)
                     true
