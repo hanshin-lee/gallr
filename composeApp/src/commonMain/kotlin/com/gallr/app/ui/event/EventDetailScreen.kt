@@ -108,7 +108,7 @@ fun EventDetailScreen(
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = renderEventName(current.localizedName(lang), accent),
+                            text = current.localizedName(lang),
                             color = Color.White,
                             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
                         )
