@@ -33,8 +33,8 @@ fun EventPromotionCard(
     onTap: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val brand = parseHexColor(event.brandColor)?.let { Color(it.toULong()) } ?: Color.Black
-    val accent = parseHexColor(event.accentColor)?.let { Color(it.toULong()) }
+    val brand = parseHexColor(event.brandColor)?.let { Color(it) } ?: Color.Black
+    val accent = parseHexColor(event.accentColor)?.let { Color(it) }
 
     val name = event.localizedName(lang)
     val lastToken = Event.nameLastToken(name)

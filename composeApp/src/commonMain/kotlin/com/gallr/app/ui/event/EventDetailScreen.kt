@@ -49,8 +49,8 @@ fun EventDetailScreen(
     val venuesKo by viewModel.venuesKo.collectAsState()
     val venuesEn by viewModel.venuesEn.collectAsState()
 
-    val brand = event?.brandColor?.let { parseHexColor(it) }?.let { Color(it.toULong()) } ?: Color.Black
-    val accent = event?.accentColor?.let { parseHexColor(it) }?.let { Color(it.toULong()) }
+    val brand = event?.brandColor?.let { parseHexColor(it) }?.let { Color(it) } ?: Color.Black
+    val accent = event?.accentColor?.let { parseHexColor(it) }?.let { Color(it) }
     val venues = if (lang == AppLanguage.KO) venuesKo else venuesEn
 
     Column(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
