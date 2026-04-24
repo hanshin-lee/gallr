@@ -18,7 +18,22 @@
  *   Required headers: id, name_ko, name_en, location_label_ko,
  *                     location_label_en, start_date, end_date, brand_color
  *   Optional headers: description_ko, description_en, accent_color,
- *                     ticket_url, is_active
+ *                     ticket_url, is_active, cover_image_url
+ *
+ * COVER IMAGE CONVENTION:
+ *   The cover_image_url column accepts either:
+ *     a) A full HTTPS URL (e.g., https://example.com/hero.jpg) — used as-is
+ *     b) A filename only (e.g., loop-lab-busan-hero.jpg) — resolved to:
+ *        {SUPABASE_URL}/storage/v1/object/public/event-images/{filename}
+ *   Upload images to the "event-images" bucket via Supabase dashboard.
+ *
+ * SYNC SEMANTICS (Phase 2a):
+ *   Each run upserts every sheet row (Prefer: resolution=merge-duplicates)
+ *   then diff-deletes Postgres rows whose ids are no longer in the sheet.
+ *   Unchanged ids never trigger ON DELETE SET NULL on linked exhibitions.
+ *   Renaming an event id (effectively delete + re-insert as a new id) WILL
+ *   null exhibitions.event_id for the old id — operator must re-link those
+ *   exhibition rows in the exhibitions sheet.
  */
 
 var REQUIRED_HEADERS = [
@@ -39,6 +54,7 @@ var KNOWN_COLUMNS = [
   'brand_color', 'accent_color',
   'ticket_url',
   'is_active',
+  'cover_image_url',
 ];
 
 function syncEventsToSupabase() {
@@ -112,16 +128,14 @@ function syncEventsToSupabase() {
   }
 
   try {
-    // CAVEAT: deleteAllEvents() fires Postgres ON DELETE SET NULL on every
-    // exhibitions.event_id that references a deleted row, even though we
-    // re-insert the same id milliseconds later. Until the next exhibitions
-    // sync runs (up to 5 minutes), event-linked exhibitions appear orphaned
-    // — Event Detail will show empty Venues/Exhibitions sections in that
-    // window. Acceptable for Phase 1 (single rare event). Phase 2's filter
-    // chip and pin recoloring will need an upsert+diff pattern to avoid
-    // visible flicker.
-    deleteAllEvents(supabaseUrl, serviceKey);
-    insertEvents(uniqueRows, supabaseUrl, serviceKey);
+    // Upsert via Prefer: resolution=merge-duplicates — Postgres updates
+    // existing rows by id and inserts new ones. ON DELETE SET NULL never
+    // fires for unchanged ids, so linked exhibitions stay linked.
+    upsertEvents(uniqueRows, supabaseUrl, serviceKey);
+    // Diff-delete only rows whose ids are no longer in the sheet. FK
+    // fires once per genuinely-removed event (correct).
+    var keepIds = uniqueRows.map(function(r) { return r.id; });
+    diffDeleteEvents(keepIds, supabaseUrl, serviceKey);
     Logger.log(JSON.stringify({
       timestamp: timestamp,
       status: 'SUCCESS',
@@ -199,6 +213,16 @@ function buildRecord(row, headerMap) {
     } else if (col === 'brand_color' || col === 'accent_color') {
       var s = String(raw).trim();
       record[col] = (s.charAt(0) === '#') ? s : ('#' + s);
+    } else if (col === 'cover_image_url') {
+      var url = String(raw || '').trim();
+      if (!url) return;  // omit; null in DB
+      if (/^https?:\/\//i.test(url)) {
+        record[col] = url;
+      } else {
+        var props = PropertiesService.getScriptProperties();
+        var baseUrl = props.getProperty('SUPABASE_URL');
+        record[col] = baseUrl + '/storage/v1/object/public/event-images/' + encodeURIComponent(url);
+      }
     } else {
       record[col] = String(raw).trim();
     }
@@ -224,8 +248,34 @@ function parseDate(v) {
   return y2 + '-' + m2 + '-' + d2;
 }
 
-function deleteAllEvents(supabaseUrl, serviceKey) {
-  var url = supabaseUrl + '/rest/v1/events?id=neq.__never__';
+function upsertEvents(rows, supabaseUrl, serviceKey) {
+  var url = supabaseUrl + '/rest/v1/events';
+  var response = UrlFetchApp.fetch(url, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: {
+      'apikey': serviceKey,
+      'Authorization': 'Bearer ' + serviceKey,
+      'Prefer': 'resolution=merge-duplicates,return=minimal',
+    },
+    payload: JSON.stringify(rows),
+    muteHttpExceptions: true,
+  });
+  var code = response.getResponseCode();
+  if (code !== 201 && code !== 200) {
+    throw new Error('Upsert events failed with code ' + code + ': ' + response.getContentText());
+  }
+}
+
+function diffDeleteEvents(keepIds, supabaseUrl, serviceKey) {
+  if (keepIds.length === 0) return;
+  // PostgREST not.in.() takes comma-separated values inside parens.
+  // Wrap each id in URL-encoded double quotes so commas/parens inside
+  // an id can't break the parser. Safe even for plain kebab-case ids.
+  var idList = keepIds.map(function(id) {
+    return '%22' + encodeURIComponent(id) + '%22';
+  }).join(',');
+  var url = supabaseUrl + '/rest/v1/events?id=not.in.(' + idList + ')';
   var response = UrlFetchApp.fetch(url, {
     method: 'delete',
     headers: {
@@ -237,26 +287,7 @@ function deleteAllEvents(supabaseUrl, serviceKey) {
   });
   var code = response.getResponseCode();
   if (code !== 204 && code !== 200) {
-    throw new Error('Delete events failed with code ' + code + ': ' + response.getContentText());
-  }
-}
-
-function insertEvents(rows, supabaseUrl, serviceKey) {
-  var url = supabaseUrl + '/rest/v1/events';
-  var response = UrlFetchApp.fetch(url, {
-    method: 'post',
-    contentType: 'application/json',
-    headers: {
-      'apikey': serviceKey,
-      'Authorization': 'Bearer ' + serviceKey,
-      'Prefer': 'return=minimal',
-    },
-    payload: JSON.stringify(rows),
-    muteHttpExceptions: true,
-  });
-  var code = response.getResponseCode();
-  if (code !== 201 && code !== 200) {
-    throw new Error('Insert events failed with code ' + code + ': ' + response.getContentText());
+    throw new Error('Diff delete failed with code ' + code + ': ' + response.getContentText());
   }
 }
 
