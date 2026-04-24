@@ -174,7 +174,7 @@ fun ExhibitionCard(
             )
         }
 
-        // ── Layer 2b: Event treatment (Phase 2b) — left edge + corner label ──
+        // ── Layer 2b: Event treatment (Phase 2b) — left edge + top-right corner label ──
         if (eventTreatment != null) {
             Box(
                 modifier = Modifier
@@ -192,7 +192,7 @@ fun ExhibitionCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
-                    .align(Alignment.TopStart)
+                    .align(Alignment.TopEnd)
                     .background(eventTreatment.brandColor)
                     .padding(horizontal = 6.dp, vertical = 2.dp),
             )

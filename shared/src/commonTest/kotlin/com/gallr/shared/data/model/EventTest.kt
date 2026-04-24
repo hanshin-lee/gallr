@@ -17,7 +17,6 @@ class EventTest {
         startDate = LocalDate(2025, 4, 18),
         endDate = LocalDate(2025, 5, 10),
         brandColor = "#0099FF",
-        accentColor = "#FF5C5C",
         ticketUrl = "https://example.com/tickets",
         isActive = true,
     )
@@ -76,14 +75,6 @@ class EventTest {
     }
 
     @Test
-    fun `nameLastToken extracts trailing whitespace-separated word`() {
-        assertEquals("BUSAN", Event.nameLastToken("LOOP LAB BUSAN"))
-        assertEquals("2025", Event.nameLastToken("Loop Lab Busan 2025"))
-        assertEquals("Solo", Event.nameLastToken("Solo"))
-        assertEquals("", Event.nameLastToken(""))
-    }
-
-    @Test
     fun `EventDto toDomain returns null when start_date is malformed`() {
         val dto = com.gallr.shared.data.network.dto.EventDto(
             id = "x",
@@ -111,7 +102,6 @@ class EventTest {
         kotlin.test.assertEquals(LocalDate(2025, 5, 10), event.endDate)
         kotlin.test.assertEquals("", event.descriptionKo)  // default
         kotlin.test.assertEquals(true, event.isActive)     // default
-        kotlin.test.assertEquals(null, event.accentColor)  // optional
         kotlin.test.assertEquals(null, event.coverImageUrl)  // optional default
     }
 }

@@ -6,22 +6,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.gallr.shared.data.model.AppLanguage
@@ -36,26 +31,13 @@ fun EventPromotionCard(
     modifier: Modifier = Modifier,
 ) {
     val brand = parseHexColor(event.brandColor)?.let { Color(it) } ?: Color.Black
-    val accent = parseHexColor(event.accentColor)?.let { Color(it) }
-
     val name = event.localizedName(lang)
-    val lastToken = Event.nameLastToken(name)
-    val nameDisplay = buildAnnotatedString {
-        if (accent != null && lastToken.isNotEmpty() && name.endsWith(lastToken)) {
-            append(name.dropLast(lastToken.length))
-            withStyle(SpanStyle(color = accent)) { append(lastToken) }
-        } else {
-            append(name)
-        }
-    }
-
     val eyebrow = if (lang == AppLanguage.KO) "지금 진행 중 · ART EVENT" else "NOW ON · ART EVENT"
     val meta = "${event.localizedDateRange(lang)} · ${event.localizedLocationLabel(lang)}"
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(140.dp)
             .background(brand)
             .border(1.dp, Color.Black)
             .clickable(onClick = onTap),
@@ -66,14 +48,14 @@ fun EventPromotionCard(
                 model = event.coverImageUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.matchParentSize(),
             )
         }
 
         // Layer 2: bottom-to-top dark scrim for text legibility
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .matchParentSize()
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)),
@@ -81,10 +63,10 @@ fun EventPromotionCard(
                 ),
         )
 
-        // Layer 3: text content anchored bottom-left
+        // Layer 3: text content — fills width and height; Box wraps around this content
         Column(
             modifier = Modifier
-                .align(Alignment.BottomStart)
+                .fillMaxWidth()
                 .padding(14.dp),
         ) {
             Text(
@@ -94,7 +76,7 @@ fun EventPromotionCard(
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                text = nameDisplay,
+                text = name,
                 color = Color.White,
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
             )

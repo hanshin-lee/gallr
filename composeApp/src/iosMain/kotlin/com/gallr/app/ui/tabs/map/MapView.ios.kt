@@ -9,6 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
+import com.gallr.shared.data.model.ExhibitionMapPin
+import com.gallr.shared.util.parseHexColor
 import kotlinx.cinterop.CValue
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
@@ -35,6 +37,20 @@ private const val SEOUL_LAT = 37.5665
 private const val SEOUL_LNG = 126.9780
 private const val INITIAL_ZOOM = 10.0
 
+// Default pin color when no event is linked or the hex is malformed.
+// #FF5400 with alpha 0xFF — matches the Android ACCENT_ARGB.
+private const val ACCENT_ARGB: Int = 0xFFFF5400.toInt()
+
+private fun Int.rgbComponents(): Triple<Double, Double, Double> {
+    val r = ((this shr 16) and 0xFF) / 255.0
+    val g = ((this shr 8) and 0xFF) / 255.0
+    val b = (this and 0xFF) / 255.0
+    return Triple(r, g, b)
+}
+
+private fun ExhibitionMapPin.brandColorArgb(): Int? =
+    brandColorHex?.let { parseHexColor(it)?.toInt() }
+
 @OptIn(ExperimentalForeignApi::class)
 private class NMFMapContainerView @OverrideInit constructor(
     frame: CValue<CGRect>,
@@ -50,21 +66,18 @@ private class NMFMapContainerView @OverrideInit constructor(
     }
 }
 
-/**
- * Creates a pin-shaped UIImage filled with the exact accent color #FF5400.
- */
 @OptIn(ExperimentalForeignApi::class)
-private fun createAccentMarkerImage(): UIImage {
+private fun createMarkerImage(red: Double, green: Double, blue: Double): UIImage {
     val w = 32.0
     val h = 44.0
     val radius = w / 2.0
 
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(w, h), false, UIScreen.mainScreen.scale)
 
-    val accent = UIColor(red = 1.0, green = 0.325, blue = 0.0, alpha = 1.0) // #FF5400
+    val color = UIColor(red = red, green = green, blue = blue, alpha = 1.0)
 
     // Circle head
-    accent.setFill()
+    color.setFill()
     val circle = UIBezierPath.bezierPathWithOvalInRect(CGRectMake(0.0, 0.0, w, w))
     circle.fill()
 
@@ -102,7 +115,7 @@ actual fun MapView(
 ) {
     val activeMarkers = remember { mutableListOf<NMFMarker>() }
     val mapRef = remember { arrayOfNulls<NMFMapView>(1) }
-    val markerImage = remember { NMFOverlayImage.overlayImageWithImage(createAccentMarkerImage()) }
+    val imageCache = remember { mutableMapOf<Int, NMFOverlayImage>() }
 
     Box(modifier = modifier) {
         UIKitView(
@@ -131,10 +144,18 @@ actual fun MapView(
                 activeMarkers.forEach { it.mapView = null }
                 activeMarkers.clear()
                 locations.forEach { location ->
+                    // Mixed-event locations (multiple pins at same coords with different eventIds):
+                    // the first pin's color wins. Tap opens the existing bottom sheet which lists
+                    // every pin individually, so no information is lost.
+                    val pinColorArgb = location.pins.firstOrNull()?.brandColorArgb() ?: ACCENT_ARGB
+                    val image = imageCache.getOrPut(pinColorArgb) {
+                        val (r, g, b) = pinColorArgb.rgbComponents()
+                        NMFOverlayImage.overlayImageWithImage(createMarkerImage(r, g, b))
+                    }
                     val marker = NMFMarker()
                     marker.position = NMGLatLng.latLngWithLat(location.latitude, lng = location.longitude)
                     marker.captionText = location.label
-                    marker.iconImage = markerImage
+                    marker.iconImage = image
                     marker.touchHandler = { _ ->
                         onLocationTap(location)
                         true

@@ -24,7 +24,7 @@ class EventRepositoryTest {
         descriptionKo = "", descriptionEn = "",
         locationLabelKo = "x", locationLabelEn = "x",
         startDate = start, endDate = end,
-        brandColor = "#000000", accentColor = null, ticketUrl = null,
+        brandColor = "#000000", ticketUrl = null,
         isActive = active,
     )
 
