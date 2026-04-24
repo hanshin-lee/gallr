@@ -16,6 +16,7 @@ data class Event(
     val accentColor: String?,
     val ticketUrl: String?,
     val isActive: Boolean,
+    val coverImageUrl: String? = null,
 ) {
     fun localizedName(lang: AppLanguage): String = when (lang) {
         AppLanguage.EN -> nameEn.ifEmpty { nameKo }
