@@ -112,5 +112,6 @@ class EventTest {
         kotlin.test.assertEquals("", event.descriptionKo)  // default
         kotlin.test.assertEquals(true, event.isActive)     // default
         kotlin.test.assertEquals(null, event.accentColor)  // optional
+        kotlin.test.assertEquals(null, event.coverImageUrl)  // optional default
     }
 }
