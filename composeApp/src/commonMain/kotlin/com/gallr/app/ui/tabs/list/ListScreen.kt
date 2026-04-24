@@ -3,7 +3,6 @@ package com.gallr.app.ui.tabs.list
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -553,13 +551,6 @@ private fun GallrEventFilterChip(
     FilterChip(
         selected = selected,
         onClick = onClick,
-        leadingIcon = {
-            Box(
-                Modifier
-                    .size(4.dp)
-                    .background(if (selected) Color.White else brandColor),
-            )
-        },
         label = {
             Text(
                 text = label,
