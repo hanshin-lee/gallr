@@ -262,6 +262,7 @@ fun App(
                             1 -> ListScreen(
                                 viewModel = viewModel,
                                 onExhibitionTap = { selectedExhibition = it },
+                                onEventTap = { id -> selectedEventId = id },
                                 modifier = Modifier.padding(innerPadding),
                             )
                             2 -> MapScreen(
