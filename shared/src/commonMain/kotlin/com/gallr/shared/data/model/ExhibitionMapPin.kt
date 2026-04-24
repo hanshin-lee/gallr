@@ -14,6 +14,8 @@ data class ExhibitionMapPin(
     val longitude: Double,
     val openingDate: LocalDate,
     val closingDate: LocalDate,
+    val eventId: String? = null,         // Phase 2c — carried from Exhibition.eventId
+    val brandColorHex: String? = null,   // Phase 2c — "#RRGGBB" resolved at projection time, or null
 ) {
     fun localizedDateRange(lang: AppLanguage): String = when (lang) {
         AppLanguage.KO -> "${formatKo(openingDate)} – ${formatKo(closingDate)}"
@@ -36,9 +38,13 @@ private fun formatEnRange(from: LocalDate, to: LocalDate): String {
     else "$fm ${from.dayOfMonth}, ${from.year} – $tm ${to.dayOfMonth}, ${to.year}"
 }
 
-fun Exhibition.toMapPin(lang: AppLanguage): ExhibitionMapPin? {
+fun Exhibition.toMapPin(
+    lang: AppLanguage,
+    eventsById: Map<String, Event> = emptyMap(),
+): ExhibitionMapPin? {
     val lat = latitude ?: return null
     val lng = longitude ?: return null
+    val event = eventId?.let { eventsById[it] }
     return ExhibitionMapPin(
         id = id,
         name = localizedName(lang),
@@ -47,5 +53,7 @@ fun Exhibition.toMapPin(lang: AppLanguage): ExhibitionMapPin? {
         longitude = lng,
         openingDate = openingDate,
         closingDate = closingDate,
+        eventId = eventId,
+        brandColorHex = event?.brandColor,
     )
 }
