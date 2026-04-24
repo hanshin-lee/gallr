@@ -13,7 +13,6 @@ data class Event(
     val startDate: LocalDate,
     val endDate: LocalDate,
     val brandColor: String,
-    val accentColor: String?,
     val ticketUrl: String?,
     val isActive: Boolean,
     val coverImageUrl: String? = null,
@@ -35,16 +34,4 @@ data class Event(
 
     fun isActiveOn(today: LocalDate): Boolean =
         isActive && today >= startDate && today <= endDate
-
-    companion object {
-        /**
-         * Returns the last whitespace-separated token of a string.
-         * Used to render the trailing word of an event name in the accent color
-         * (e.g., "Loop Lab BUSAN" — "BUSAN" gets accent color treatment).
-         */
-        fun nameLastToken(name: String): String {
-            if (name.isEmpty()) return ""
-            return name.trim().split(Regex("\\s+")).lastOrNull() ?: ""
-        }
-    }
 }

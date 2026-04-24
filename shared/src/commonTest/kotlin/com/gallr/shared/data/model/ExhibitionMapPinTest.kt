@@ -18,7 +18,6 @@ class ExhibitionMapPinTest {
         startDate = LocalDate(2025, 4, 18),
         endDate = LocalDate(2025, 5, 10),
         brandColor = "#0099FF",
-        accentColor = "#FF5C5C",
         ticketUrl = null,
         isActive = true,
     )

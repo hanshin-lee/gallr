@@ -17,7 +17,7 @@
  *   Data rows from row 2.
  *   Required headers: id, name_ko, name_en, location_label_ko,
  *                     location_label_en, start_date, end_date, brand_color
- *   Optional headers: description_ko, description_en, accent_color,
+ *   Optional headers: description_ko, description_en,
  *                     ticket_url, is_active, cover_image_url
  *
  * COVER IMAGE CONVENTION:
@@ -51,7 +51,7 @@ var KNOWN_COLUMNS = [
   'description_ko', 'description_en',
   'location_label_ko', 'location_label_en',
   'start_date', 'end_date',
-  'brand_color', 'accent_color',
+  'brand_color',
   'ticket_url',
   'is_active',
   'cover_image_url',
@@ -187,10 +187,6 @@ function validateRow(row, rowNum, headerMap) {
   if (!isHexColor(getCell(row, headerMap, 'brand_color'))) {
     return { valid: false, reason: 'Row ' + rowNum + ': brand_color is not a valid hex (#RRGGBB)' };
   }
-  var accent = String(getCell(row, headerMap, 'accent_color') || '').trim();
-  if (accent && !isHexColor(accent)) {
-    return { valid: false, reason: 'Row ' + rowNum + ': accent_color is not a valid hex (#RRGGBB)' };
-  }
   return { valid: true };
 }
 
@@ -205,14 +201,13 @@ function isHexColor(v) {
 // Sending explicit null violates NOT NULL columns. So map blank cells to
 // the schema's actual default per column.
 //   - description_ko/en, is_active: NOT NULL DEFAULT — send the default
-//   - accent_color, ticket_url, cover_image_url: nullable — send null
+//   - ticket_url, cover_image_url: nullable — send null
 //   - required columns (id, name_*, location_label_*, start_date, end_date,
 //     brand_color): can't be blank, validateRow catches that upstream
 var BLANK_DEFAULTS = {
   description_ko: '',
   description_en: '',
   is_active: true,
-  accent_color: null,
   ticket_url: null,
   cover_image_url: null,
 };
@@ -235,7 +230,7 @@ function buildRecord(row, headerMap) {
       record[col] = parseDate(raw);
     } else if (col === 'is_active') {
       record[col] = (String(raw).toLowerCase() === 'true' || raw === true);
-    } else if (col === 'brand_color' || col === 'accent_color') {
+    } else if (col === 'brand_color') {
       var s = String(raw).trim();
       record[col] = (s.charAt(0) === '#') ? s : ('#' + s);
     } else if (col === 'cover_image_url') {

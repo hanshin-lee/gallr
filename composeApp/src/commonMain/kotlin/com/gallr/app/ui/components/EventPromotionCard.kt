@@ -16,10 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.gallr.shared.data.model.AppLanguage
@@ -34,19 +31,7 @@ fun EventPromotionCard(
     modifier: Modifier = Modifier,
 ) {
     val brand = parseHexColor(event.brandColor)?.let { Color(it) } ?: Color.Black
-    val accent = parseHexColor(event.accentColor)?.let { Color(it) }
-
     val name = event.localizedName(lang)
-    val lastToken = Event.nameLastToken(name)
-    val nameDisplay = buildAnnotatedString {
-        if (accent != null && lastToken.isNotEmpty() && name.endsWith(lastToken)) {
-            append(name.dropLast(lastToken.length))
-            withStyle(SpanStyle(color = accent)) { append(lastToken) }
-        } else {
-            append(name)
-        }
-    }
-
     val eyebrow = if (lang == AppLanguage.KO) "지금 진행 중 · ART EVENT" else "NOW ON · ART EVENT"
     val meta = "${event.localizedDateRange(lang)} · ${event.localizedLocationLabel(lang)}"
 
@@ -91,7 +76,7 @@ fun EventPromotionCard(
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                text = nameDisplay,
+                text = name,
                 color = Color.White,
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
             )

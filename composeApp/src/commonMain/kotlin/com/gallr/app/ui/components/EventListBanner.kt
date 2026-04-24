@@ -13,11 +13,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.shared.data.model.AppLanguage
@@ -32,19 +29,7 @@ fun EventListBanner(
     modifier: Modifier = Modifier,
 ) {
     val brand = parseHexColor(event.brandColor)?.let { Color(it) } ?: Color.Black
-    val accent = parseHexColor(event.accentColor)?.let { Color(it) }
-
     val name = event.localizedName(lang)
-    val lastToken = Event.nameLastToken(name)
-    val nameDisplay = buildAnnotatedString {
-        if (accent != null && lastToken.isNotEmpty() && name.endsWith(lastToken)) {
-            append(name.dropLast(lastToken.length))
-            withStyle(SpanStyle(color = accent)) { append(lastToken) }
-        } else {
-            append(name)
-        }
-    }
-
     val nowOn = if (lang == AppLanguage.KO) "지금 진행 중" else "NOW ON"
 
     Box(
@@ -61,7 +46,7 @@ fun EventListBanner(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = nameDisplay,
+                text = name,
                 color = Color.White,
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
                 maxLines = 1,

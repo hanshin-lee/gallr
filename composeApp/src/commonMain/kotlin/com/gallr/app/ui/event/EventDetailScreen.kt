@@ -26,10 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.gallr.app.ui.components.EventTreatment
@@ -57,7 +54,6 @@ fun EventDetailScreen(
     val venuesEn by viewModel.venuesEn.collectAsState()
 
     val brand = event?.brandColor?.let { parseHexColor(it) }?.let { Color(it) } ?: Color.Black
-    val accent = event?.accentColor?.let { parseHexColor(it) }?.let { Color(it) }
     val venues = if (lang == AppLanguage.KO) venuesKo else venuesEn
 
     Column(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -137,7 +133,7 @@ fun EventDetailScreen(
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = renderEventName(current.localizedName(lang), accent),
+                            text = current.localizedName(lang),
                             color = Color.White,
                             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
                         )
@@ -231,16 +227,6 @@ private fun SectionLabel(text: String) {
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
     )
-}
-
-private fun renderEventName(name: String, accent: Color?) = buildAnnotatedString {
-    val lastToken = Event.nameLastToken(name)
-    if (accent != null && lastToken.isNotEmpty() && name.endsWith(lastToken)) {
-        append(name.dropLast(lastToken.length))
-        withStyle(SpanStyle(color = accent)) { append(lastToken) }
-    } else {
-        append(name)
-    }
 }
 
 private fun formatDateRange(event: Event, lang: AppLanguage): String {
