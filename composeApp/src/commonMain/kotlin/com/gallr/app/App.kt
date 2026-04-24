@@ -268,6 +268,7 @@ fun App(
                             2 -> MapScreen(
                                 viewModel = viewModel,
                                 onExhibitionTap = { selectedExhibition = it },
+                                onEventTap = { id -> selectedEventId = id },
                                 modifier = Modifier.padding(innerPadding),
                             )
                             3 -> com.gallr.app.ui.profile.ProfileTab(
