@@ -4,6 +4,8 @@ import android.content.Intent
 import android.os.Bundle
 import kotlinx.coroutines.launch
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.lifecycleScope
+import com.gallr.app.splash.SplashController
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -72,6 +74,7 @@ class MainActivity : ComponentActivity() {
         val thoughtRepository = ThoughtRepositoryImpl(supabaseClient)
         val languageRepository = LanguageRepositoryImpl(dataStore)
         val themeRepository = ThemeRepositoryImpl(dataStore)
+        val splashController = SplashController(scope = lifecycleScope).also { it.start() }
 
         // Handle deeplink from initial launch (cold start from OAuth redirect)
         intent.data?.let { uri ->
@@ -113,6 +116,7 @@ class MainActivity : ComponentActivity() {
                 languageRepository = languageRepository,
                 themeRepository = themeRepository,
                 supabaseClient = supabaseClient,
+                splashController = splashController,
             )
         }
     }

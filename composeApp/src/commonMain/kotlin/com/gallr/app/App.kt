@@ -58,7 +58,10 @@ import com.gallr.shared.repository.ProfileRepository
 import com.gallr.shared.repository.SyncBookmarkRepository
 import com.gallr.shared.repository.ThemeRepository
 import com.gallr.shared.repository.ThoughtRepository
+import com.gallr.app.splash.SplashController
+import com.gallr.app.splash.SplashOverlay
 import io.github.jan.supabase.SupabaseClient
+import kotlinx.coroutines.flow.first
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
@@ -95,6 +98,7 @@ fun App(
     languageRepository: LanguageRepository,
     themeRepository: ThemeRepository,
     supabaseClient: SupabaseClient,
+    splashController: SplashController,
 ) {
     // Auth state drives SyncBookmarkRepository delegation
     val authState by authRepository.observeAuthState()
@@ -136,6 +140,18 @@ fun App(
     )
 
     val currentThemeMode by viewModel.themeMode.collectAsState()
+
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        // First emit from DataStore — by definition the saved value (or default)
+        themeRepository.observeThemeMode().first()
+        splashController.markThemeReady()
+    }
+
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        viewModel.featuredState
+            .first { it !is com.gallr.app.viewmodel.ExhibitionListState.Loading }
+        splashController.markDataReady()
+    }
 
     GallrTheme(themeMode = currentThemeMode) {
         val lang by viewModel.language.collectAsState()
@@ -308,6 +324,7 @@ fun App(
             }
         }
 
+        SplashOverlay(controller = splashController)
         } // Box
         } // CompositionLocalProvider
     }

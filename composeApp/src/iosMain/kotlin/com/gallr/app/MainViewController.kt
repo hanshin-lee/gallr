@@ -15,6 +15,7 @@ import com.gallr.shared.repository.ProfileRepositoryImpl
 import com.gallr.shared.repository.ThemeRepositoryImpl
 import com.gallr.shared.repository.ThoughtRepositoryImpl
 import com.gallr.shared.data.network.handleAuthDeeplink
+import com.gallr.app.splash.SplashController
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -50,6 +51,7 @@ fun MainViewController(supabaseUrl: String, anonKey: String) = ComposeUIViewCont
     val thoughtRepository = ThoughtRepositoryImpl(supabaseClient)
     val languageRepository = LanguageRepositoryImpl(dataStore)
     val themeRepository = ThemeRepositoryImpl(dataStore)
+    val splashController = SplashController(scope = scope).also { it.start() }
 
     App(
         exhibitionRepository = exhibitionRepository,
@@ -62,5 +64,6 @@ fun MainViewController(supabaseUrl: String, anonKey: String) = ComposeUIViewCont
         languageRepository = languageRepository,
         themeRepository = themeRepository,
         supabaseClient = supabaseClient,
+        splashController = splashController,
     )
 }
