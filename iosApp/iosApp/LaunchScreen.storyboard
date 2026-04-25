@@ -16,6 +16,10 @@
                         <subviews>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="SplashLogo" translatesAutoresizingMaskIntoConstraints="NO" id="logo">
                                 <rect key="frame" x="160.5" y="390" width="72" height="72"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="72" id="w"/>
+                                    <constraint firstAttribute="height" constant="72" id="h"/>
+                                </constraints>
                             </imageView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
@@ -23,8 +27,6 @@
                         <constraints>
                             <constraint firstItem="logo" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="cx"/>
                             <constraint firstItem="logo" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="cy"/>
-                            <constraint firstAttribute="width" secondItem="logo" relation="equal" constant="72" id="w"/>
-                            <constraint firstAttribute="height" secondItem="logo" relation="equal" constant="72" id="h"/>
                         </constraints>
                     </view>
                 </viewController>
