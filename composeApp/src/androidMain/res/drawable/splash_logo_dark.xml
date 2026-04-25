@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp"
-    android:height="24dp"
-    android:viewportWidth="100"
-    android:viewportHeight="100">
-    <!-- Arch Pin mark — outer arch -->
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    <!--
+        Arch-pin mark with a true hollow center (evenOdd fill rule).
+        Outer viewport is 200×200 — the actual arch lives in the central
+        100×100 region (offsets 50,50). This gives ~50% transparent padding
+        on every side, shrinking the rendered logo when Android's
+        SplashScreen API scales it to its enforced icon area.
+    -->
     <path
         android:fillColor="@color/splash_logo_tint_dark"
-        android:pathData="M 50 90 C 30 78 14 64 14 48 A 36 36 0 0 1 86 48 C 86 64 70 78 50 90 Z"/>
-    <!-- Inner cutout — matches dark splash background -->
-    <path
-        android:fillColor="@color/splash_background_dark"
-        android:pathData="M 50 82 C 35 71 24 60 24 48 A 26 26 0 0 1 76 48 C 76 60 65 71 50 82 Z"/>
+        android:fillType="evenOdd"
+        android:pathData="M 100 140 C 80 128 64 114 64 98 A 36 36 0 0 1 136 98 C 136 114 120 128 100 140 Z M 100 132 C 85 121 74 110 74 98 A 26 26 0 0 1 126 98 C 126 110 115 121 100 132 Z"/>
 </vector>
