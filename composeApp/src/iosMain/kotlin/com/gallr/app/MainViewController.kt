@@ -51,7 +51,7 @@ fun MainViewController(supabaseUrl: String, anonKey: String) = ComposeUIViewCont
     val thoughtRepository = ThoughtRepositoryImpl(supabaseClient)
     val languageRepository = LanguageRepositoryImpl(dataStore)
     val themeRepository = ThemeRepositoryImpl(dataStore)
-    val splashController = SplashController(scope = scope).also { it.start() }
+    val splashController = SplashController(scope = MainScope()).also { it.start() }
 
     App(
         exhibitionRepository = exhibitionRepository,

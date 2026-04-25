@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
 class SplashControllerTest {
 
     @Test
-    fun `happy path - theme then data ready, min time gates dismissal`() = runTest {
+    fun `happy path - theme then data ready then min time gates dismissal`() = runTest {
         val controller = SplashController(
             minVisibleMs = 1500,
             hardCapMs = 3000,
