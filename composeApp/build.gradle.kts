@@ -97,6 +97,7 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.activity.compose)
+            implementation(libs.androidx.core.splashscreen)
             implementation(libs.datastore.preferences.core)
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.naver.map.sdk)
