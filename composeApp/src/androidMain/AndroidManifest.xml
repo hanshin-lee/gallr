@@ -10,7 +10,7 @@
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="gallr"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:theme="@style/Theme.Gallr.Splash">
         <meta-data
             android:name="com.naver.maps.map.NCP_KEY_ID"
             android:value="dkd2c8bh63" />
