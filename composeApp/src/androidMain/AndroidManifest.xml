@@ -4,6 +4,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="true"
@@ -33,6 +34,11 @@
                 <data android:scheme="com.gallr.app" android:host="login-callback" />
             </intent-filter>
         </activity>
+
+        <receiver
+            android:name="com.gallr.app.notifications.NotificationReceiver"
+            android:exported="false"
+            android:enabled="true" />
     </application>
 
 </manifest>
