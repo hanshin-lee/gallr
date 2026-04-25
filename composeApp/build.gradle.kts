@@ -107,6 +107,10 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.coil.network.ktor)
         }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+        }
     }
 }
 
