@@ -124,9 +124,11 @@ fun App(
 
     var isAdmin by remember { mutableStateOf(false) }
 
+    var bookmarkMutationCount by remember { mutableIntStateOf(0) }
     androidx.compose.runtime.LaunchedEffect(Unit) {
         syncBookmarkRepository.setMutationListener {
-            notificationSyncService.sync()
+            bookmarkMutationCount += 1
+            notificationSyncService.sync(triggeredByMutation = true)
         }
     }
 
@@ -173,17 +175,14 @@ fun App(
     androidx.compose.runtime.LaunchedEffect(Unit) {
         viewModel.featuredState
             .first { it is com.gallr.app.viewmodel.ExhibitionListState.Success }
-        notificationSyncService.sync()
+        notificationSyncService.sync(triggeredByMutation = false)
     }
 
-    var bookmarkMutationCount by remember { mutableIntStateOf(0) }
-    androidx.compose.runtime.LaunchedEffect(Unit) {
-        syncBookmarkRepository.observeBookmarkedIds().collect {
-            bookmarkMutationCount += 1
-        }
-    }
-    val permissionPrompted by notificationPreferences.observePermissionPrompted()
-        .collectAsState(initial = false)
+    // null until DataStore yields its first value — prevents the rationale
+    // dialog from flashing in the brief window before the saved flag arrives.
+    val permissionPromptedState = notificationPreferences.observePermissionPrompted()
+        .collectAsState(initial = null)
+    val permissionPrompted = permissionPromptedState.value
     val notificationCoroutineScope = rememberCoroutineScope()
 
     GallrTheme(themeMode = currentThemeMode) {

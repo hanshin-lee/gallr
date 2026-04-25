@@ -106,6 +106,9 @@ class SyncBookmarkRepository(
             }
         }
         refreshCloudWithRetry()
+        // After migration the bookmark set may have changed substantially —
+        // notify so notifications can reconcile against the new cloud set.
+        mutationListener?.invoke()
     }
 
     /**

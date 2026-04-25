@@ -73,7 +73,6 @@ class IosNotificationScheduler : NotificationScheduler {
 
     override suspend fun scheduledIds(): Set<String> = suspendCancellableCoroutine { cont ->
         center.getPendingNotificationRequestsWithCompletionHandler { requests ->
-            @Suppress("UNCHECKED_CAST")
             val list = requests as? List<*> ?: emptyList<Any>()
             cont.resume(list.filterIsInstance<UNNotificationRequest>().map { it.identifier }.toSet())
         }

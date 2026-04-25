@@ -8,6 +8,7 @@ class FakeNotificationScheduler(
 ) : NotificationScheduler {
 
     val scheduled = mutableMapOf<String, NotificationSpec>()
+    val scheduleCalls = mutableListOf<NotificationSpec>()
     val cancelCalls = mutableListOf<String>()
     val cancelAllCallCount: Int get() = _cancelAllCalls
     private var _cancelAllCalls = 0
@@ -24,6 +25,7 @@ class FakeNotificationScheduler(
     }
 
     override suspend fun schedule(spec: NotificationSpec) {
+        scheduleCalls.add(spec)
         scheduled[spec.id] = spec
     }
 

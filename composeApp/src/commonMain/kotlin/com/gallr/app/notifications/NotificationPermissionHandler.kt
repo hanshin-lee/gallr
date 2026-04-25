@@ -28,16 +28,16 @@ fun NotificationPermissionHandler(
     scheduler: NotificationScheduler,
     syncService: NotificationSyncService,
     bookmarkMutationCount: Int,
-    permissionPrompted: Boolean,
+    permissionPrompted: Boolean?,  // null = DataStore not yet yielded
     onPrompted: () -> Unit,
     language: AppLanguage,
 ) {
     val scope = rememberCoroutineScope()
     var showDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(bookmarkMutationCount) {
+    LaunchedEffect(bookmarkMutationCount, permissionPrompted) {
         if (bookmarkMutationCount == 0) return@LaunchedEffect
-        if (permissionPrompted) return@LaunchedEffect
+        if (permissionPrompted != false) return@LaunchedEffect  // null OR true → don't prompt
         if (scheduler.hasPermission()) return@LaunchedEffect
         showDialog = true
     }
