@@ -38,6 +38,7 @@ class SplashController(
     }
 
     fun markThemeReady() { themeReady.value = true }
+    fun themeReadyValue(): Boolean = themeReady.value
     fun markDataReady() { dataReady.value = true }
     fun skipSplash() { skipped.value = true }
 }

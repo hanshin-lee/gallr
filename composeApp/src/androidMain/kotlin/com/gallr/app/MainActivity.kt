@@ -4,9 +4,10 @@ import android.content.Intent
 import android.os.Bundle
 import kotlinx.coroutines.launch
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.gallr.app.splash.SplashController
-import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -43,6 +44,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
@@ -74,7 +76,10 @@ class MainActivity : ComponentActivity() {
         val thoughtRepository = ThoughtRepositoryImpl(supabaseClient)
         val languageRepository = LanguageRepositoryImpl(dataStore)
         val themeRepository = ThemeRepositoryImpl(dataStore)
-        val splashController = SplashController(scope = lifecycleScope).also { it.start() }
+        val splashController = SplashController(scope = lifecycleScope)
+        splash.setKeepOnScreenCondition { !splashController.themeReadyValue() }
+        splashController.start()
+        if (savedInstanceState != null) splashController.skipSplash()
 
         // Handle deeplink from initial launch (cold start from OAuth redirect)
         intent.data?.let { uri ->
