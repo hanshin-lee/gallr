@@ -221,7 +221,7 @@ No user-facing error UI — all failures degrade silently to Seoul, matching the
 
 ## Testing
 
-### Unit tests — `composeApp/src/commonTest/.../map/KoreaBoundsTest.kt` (new)
+### Unit tests — `shared/src/commonTest/.../util/KoreaBoundsTest.kt` (new)
 
 Per the project's TDD requirement, these are written **before** the bounding-box helper:
 
@@ -257,10 +257,10 @@ No integration tests for the platform actuals — `FusedLocationProviderClient` 
 
 **New:**
 - `composeApp/src/commonMain/kotlin/com/gallr/app/ui/tabs/map/UserLocation.kt` (declares `Coordinates` and `expect rememberLastKnownCoordinates`; may also host `rememberMapReadiness`)
-- `composeApp/src/commonMain/kotlin/com/gallr/app/ui/tabs/map/KoreaBounds.kt`
+- `shared/src/commonMain/kotlin/com/gallr/shared/util/KoreaBounds.kt`
 - `composeApp/src/androidMain/kotlin/com/gallr/app/ui/tabs/map/UserLocation.android.kt`
 - `composeApp/src/iosMain/kotlin/com/gallr/app/ui/tabs/map/UserLocation.ios.kt`
-- `composeApp/src/commonTest/kotlin/com/gallr/app/ui/tabs/map/KoreaBoundsTest.kt`
+- `shared/src/commonTest/kotlin/com/gallr/shared/util/KoreaBoundsTest.kt`
 
 **Modified:**
 - `composeApp/src/commonMain/kotlin/com/gallr/app/ui/tabs/map/MapScreen.kt` — wire `rememberLastKnownCoordinates`, `isInsideKorea`, and 300ms-deferred render
