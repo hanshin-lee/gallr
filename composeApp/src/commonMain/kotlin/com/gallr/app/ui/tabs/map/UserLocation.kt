@@ -41,6 +41,11 @@ expect fun rememberLastKnownCoordinates(enabled: Boolean): Coordinates?
  * Otherwise returns `false` until [timeoutMillis] elapse, after which it returns
  * `true` regardless of whether coords arrived. The Seoul fallback handles the
  * timeout case gracefully.
+ *
+ * Once it has returned `true` once, it stays `true` for the lifetime of the
+ * composition. This prevents `MapView` from being unmounted/remounted (and the
+ * camera re-initialized) when [permissionGranted] flips mid-session — for example,
+ * when the user grants permission after the map has already opened on Seoul.
  */
 @Composable
 fun rememberMapReadiness(
@@ -48,13 +53,15 @@ fun rememberMapReadiness(
     coordsResolved: Boolean,
     timeoutMillis: Long = 300L,
 ): Boolean {
-    if (!permissionGranted || coordsResolved) return true
+    var ready by remember { mutableStateOf(!permissionGranted || coordsResolved) }
 
-    var timedOut by remember { mutableStateOf(false) }
-    LaunchedEffect(permissionGranted) {
-        timedOut = false
-        delay(timeoutMillis)
-        timedOut = true
+    LaunchedEffect(Unit) {
+        if (!ready) {
+            delay(timeoutMillis)
+            ready = true
+        }
     }
-    return timedOut
+    if (coordsResolved) ready = true
+
+    return ready
 }
