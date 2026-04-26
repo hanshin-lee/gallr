@@ -13,6 +13,9 @@ import platform.CoreLocation.CLLocationManager
 @OptIn(ExperimentalForeignApi::class)
 @Composable
 actual fun rememberLastKnownCoordinates(enabled: Boolean): Coordinates? {
+    // Separate from the manager in LocationPermission.ios.kt by design:
+    // CLLocationManager is stateless, so a read-only manager here doesn't fight
+    // with the permission-owning one over delegate / authorization callbacks.
     val manager = remember { CLLocationManager() }
     var coords by remember { mutableStateOf<Coordinates?>(null) }
 
