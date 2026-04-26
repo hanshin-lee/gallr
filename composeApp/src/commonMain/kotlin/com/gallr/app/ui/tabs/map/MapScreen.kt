@@ -1,5 +1,6 @@
 package com.gallr.app.ui.tabs.map
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +43,7 @@ import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.ExhibitionMapPin
 import com.gallr.shared.data.model.MapDisplayMode
 import com.gallr.shared.data.model.exhibitionStatus
+import com.gallr.shared.util.isInsideKorea
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -128,18 +130,41 @@ fun MapScreen(
                 }
             }
 
-            MapView(
-                locations = locations,
-                onLocationTap = { location ->
-                    if (location.count == 1) {
-                        selectedPin = location.pins.first()
-                    } else {
-                        selectedLocation = location
-                    }
-                },
-                modifier = Modifier.weight(1f),
-                enableUserLocation = locationPermission.isGranted,
+            val cachedCoords = rememberLastKnownCoordinates(
+                enabled = locationPermission.isGranted,
             )
+            val initialCenter = cachedCoords?.takeIf {
+                isInsideKorea(it.latitude, it.longitude)
+            }
+            val mapReady = rememberMapReadiness(
+                permissionGranted = locationPermission.isGranted,
+                coordsResolved = cachedCoords != null,
+            )
+
+            if (mapReady) {
+                MapView(
+                    locations = locations,
+                    onLocationTap = { location ->
+                        if (location.count == 1) {
+                            selectedPin = location.pins.first()
+                        } else {
+                            selectedLocation = location
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    enableUserLocation = locationPermission.isGranted,
+                    initialCenter = initialCenter,
+                )
+            } else {
+                // Placeholder matches map background — invisible during the brief
+                // (≤300ms) window while the cached fix resolves.
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background),
+                )
+            }
         }
         activeEvent?.let { event ->
             EventMapFab(
