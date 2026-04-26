@@ -139,17 +139,31 @@ actual fun rememberLastKnownCoordinates(enabled: Boolean): Coordinates? {
     val manager = remember { CLLocationManager() }
     var coords by remember { mutableStateOf<Coordinates?>(null) }
 
-    LaunchedEffect(enabled) {
-        if (!enabled) { coords = null; return@LaunchedEffect }
-        coords = manager.location?.coordinate?.useContents {
-            Coordinates(latitude, longitude)
+    DisposableEffect(enabled) {
+        if (!enabled) {
+            coords = null
+            return@DisposableEffect onDispose { manager.delegate = null }
         }
+        val delegate = object : NSObject(), CLLocationManagerDelegateProtocol {
+            override fun locationManager(manager: CLLocationManager, didUpdateLocations: List<*>) {
+                val location = didUpdateLocations.firstOrNull() as? CLLocation ?: return
+                coords = location.coordinate.useContents { Coordinates(latitude, longitude) }
+            }
+            override fun locationManager(manager: CLLocationManager, didFailWithError: NSError) {
+                // Leave coords null → MapScreen falls back to Seoul.
+            }
+        }
+        manager.delegate = delegate
+        manager.requestLocation()
+        onDispose { manager.delegate = null }
     }
     return coords
 }
 ```
 
-`CLLocationManager.location` is a synchronous property; no new dependencies.
+**Important: Why `requestLocation()` rather than reading `manager.location` directly.** An earlier draft of this spec read the synchronous `CLLocationManager.location` property, expecting it to return the OS's most-recent cached fix. iOS QA proved this assumption wrong: a freshly-created `CLLocationManager` has `.location == nil` until the manager itself has subscribed to location updates (via `requestLocation()` or `startUpdatingLocation()`) — there is no cross-app cached fix the way Android's `FusedLocationProviderClient.lastLocation` provides one. `requestLocation()` returns the OS's cached value immediately when one exists (delivered on the next runloop tick via the delegate, well within the 300ms `rememberMapReadiness` window) and only triggers a fresh GPS query when no cache exists — so for the "permission was granted in a prior session" common case, it behaves like the originally-intended cached read. Fixed in commit `db4d84e`.
+
+No new dependencies.
 
 ### iOS — `MapView.ios.kt` change
 
