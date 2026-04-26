@@ -18,22 +18,23 @@ The MAP tab always opens centered on Seoul (37.5665, 126.9780) even when the use
 
 ## Desired behavior
 
-1. **Permission granted + cached fix inside Korea** → center on user's cached location at `INITIAL_ZOOM`.
-2. **Permission granted + cached fix outside Korea** → fall back to Seoul.
-3. **Permission denied / undetermined / no cached fix** → fall back to Seoul.
+1. **Permission granted + cached fix available** → center on user's cached location at `INITIAL_ZOOM`, regardless of country.
+2. **Permission denied / undetermined / no cached fix** → fall back to Seoul.
 
-Korea bounding box (inclusive):
-- Lat: 33.0 – 38.9
-- Lng: 124.6 – 131.9
+### Why no Korea check?
+
+An earlier draft of this spec gated the user-location centering on a Korea bounding-box check, falling back to Seoul for any fix outside South Korea. That was rejected during iOS QA: the gallr dataset is currently Korea-only but is expected to expand to international galleries, and a user in Tokyo or NYC with the app installed (whether traveling or living abroad) would have a worse experience being teleported back to Seoul than being centered on their actual location, even when no nearby exhibitions exist *yet*. The country check was deleted in commit `d80f233`.
+
+When the international dataset lands, a follow-up can refine the fallback (e.g., center on the exhibition centroid nearest the user, or on the nearest country with exhibition data) — but the *cached fix* path needs no geography filter.
 
 ## Behavior decisions (locked during brainstorm)
 
 | Question | Decision | Rationale |
 |---|---|---|
 | Coordinate freshness | Cached / last-known fix only — no waiting for fresh GPS | Simplest, no animation/jump UX |
-| Korea bounding-box check location | `commonMain` shared helper | Single tested implementation, no duplication |
+| Geographic filter on cached fix | None — trust any cached fix | Country gating breaks future international expansion (see "Why no Korea check?" above) |
 | First-launch UX (permission not yet granted at first MapView composition) | Accept Seoul fallback on first launch; subsequent launches use cached location | Consistent with no-animation rule |
-| Cached-fix recency check | None — accept any cached fix that passes the Korea bounding box | A possibly-stale Korean location is more useful than Seoul |
+| Cached-fix recency check | None — accept any cached fix | A possibly-stale location is more useful than Seoul |
 | Mid-session re-entry into Map tab | Re-center on every Map tab visit | Matches current "first composition decides camera" framing |
 | Deferral while waiting for cached fix | Defer `MapView` composition up to ~300ms while `coords` resolve, else Seoul fallback | Avoids "Seoul → user-location" jump; iOS resolves <1ms, Android typically tens of ms |
 
@@ -50,16 +51,6 @@ expect fun rememberLastKnownCoordinates(enabled: Boolean): Coordinates?
 ```
 
 `enabled` lets the caller pass `locationPermission.isGranted`. Returns `null` for permission denied, no cached fix, platform error, or while the platform call is still pending.
-
-### Korea bounds helper (commonMain, pure, unit-testable)
-
-```kotlin
-// shared/src/commonMain/.../util/KoreaBounds.kt
-fun isInsideKorea(lat: Double, lng: Double): Boolean =
-    lat in 33.0..38.9 && lng in 124.6..131.9
-```
-
-(The helper lives in the `shared` module's `util` package — alongside `HexColor.kt`, `FabLabel.kt`, `Validators.kt` — so it must be `public` for the `composeApp` module's `MapScreen` to call it.)
 
 ### MapView signature change (commonMain)
 
@@ -78,14 +69,12 @@ expect fun MapView(
 Inside `MapScreen`'s existing `Column { ... }` (the same one currently wrapping `TabRow`, `HorizontalDivider`, the empty-state Text, and `MapView`), replace the current `MapView(...)` call with:
 
 ```kotlin
-val cachedCoords = rememberLastKnownCoordinates(enabled = locationPermission.isGranted)
-val initialCenter = cachedCoords?.takeIf { isInsideKorea(it.latitude, it.longitude) }
+val initialCenter = rememberLastKnownCoordinates(enabled = locationPermission.isGranted)
 
 // Defer MapView composition up to 300ms while waiting for cached coords
 val mapReady = rememberMapReadiness(
     permissionGranted = locationPermission.isGranted,
-    coordsResolved = cachedCoords != null,
-    timeoutMillis = 300,
+    coordsResolved = initialCenter != null,
 )
 if (mapReady) {
     MapView(
@@ -97,7 +86,7 @@ if (mapReady) {
     )
 } else {
     // Placeholder matching map background — invisible "loading" region
-    Box(modifier = Modifier.weight(1f).background(MaterialTheme.colorScheme.background))
+    Box(modifier = Modifier.weight(1f).fillMaxWidth().background(MaterialTheme.colorScheme.background))
 }
 ```
 
@@ -209,70 +198,46 @@ The `factory` closure captures `initialCenter` at first composition. Subsequent 
 |---|---|
 | Permission denied | `enabled=false` → `coords=null` → Seoul |
 | Permission granted, no cached fix | Platform returns null → Seoul |
-| Permission granted, cached fix outside Korea | `isInsideKorea` rejects → Seoul |
-| Permission granted, cached fix inside Korea | User's location, `INITIAL_ZOOM=10.0` |
+| Permission granted, cached fix anywhere | User's location, `INITIAL_ZOOM=10.0` |
 | Android `lastLocation` throws `SecurityException` | `runCatching` swallows → Seoul |
 | Android `lastLocation` task takes >300ms | Timeout fires → Seoul |
 | Play Services missing on Android | Task fails → `runCatching` → Seoul |
 | iOS `CLLocationManager.location` returns nil | → Seoul |
 | User enables permission in Settings, returns to app | Existing iOS delegate flips `isGranted`; on next Map tab visit, centered on them |
 
-No user-facing error UI — all failures degrade silently to Seoul, matching the spec's three desired-behavior cases.
+No user-facing error UI — all failures degrade silently to Seoul.
 
 ## Testing
 
-### Unit tests — `shared/src/commonTest/.../util/KoreaBoundsTest.kt` (new)
-
-Per the project's TDD requirement, these are written **before** the bounding-box helper:
-
-```kotlin
-class KoreaBoundsTest {
-    @Test fun seoulIsInsideKorea() = assertTrue(isInsideKorea(37.5665, 126.9780))
-    @Test fun busanIsInsideKorea() = assertTrue(isInsideKorea(35.1796, 129.0756))
-    @Test fun jejuIsInsideKorea() = assertTrue(isInsideKorea(33.4996, 126.5312))
-    @Test fun tokyoIsOutsideKorea() = assertFalse(isInsideKorea(35.6762, 139.6503))
-    @Test fun newYorkIsOutsideKorea() = assertFalse(isInsideKorea(40.7128, -74.0060))
-    @Test fun southOfBoundIsOutside() = assertFalse(isInsideKorea(32.9, 127.0))
-    @Test fun northOfBoundIsOutside() = assertFalse(isInsideKorea(39.0, 127.0))
-    @Test fun westOfBoundIsOutside() = assertFalse(isInsideKorea(35.0, 124.5))
-    @Test fun eastOfBoundIsOutside() = assertFalse(isInsideKorea(35.0, 132.0))
-    @Test fun edgesAreInclusive() {
-        assertTrue(isInsideKorea(33.0, 124.6))
-        assertTrue(isInsideKorea(38.9, 131.9))
-    }
-}
-```
+No new unit tests are required. The pure logic in this feature (a single `?.`-chained expression in `MapScreen`) is too thin to be worth a dedicated test; the platform actuals call OS APIs that are not worth mocking (per the spec's testing philosophy). Coverage is via manual QA on both platforms.
 
 ### Manual QA (Android + iOS)
 
 1. Cold install, deny permission → map opens on Seoul.
-2. Cold install, grant permission, kill app, reopen → map opens on user's location (assuming user is in Korea).
-3. Toggle airplane mode + clear location cache → permission still granted, no cached fix → Seoul.
-4. Pan away from current location, switch to Featured tab, back to Map → re-centers on user's location.
-5. Run app on a device set to a US location (simulator with NYC GPS) → Seoul.
-
-No integration tests for the platform actuals — `FusedLocationProviderClient` and `CLLocationManager` are platform SDKs; mocking adds more friction than value for a UI-only behavior change.
+2. Cold install, grant permission, kill app, reopen → map opens on user's actual location.
+3. Set device to a non-Korean location (e.g., NYC) and reopen → map opens on that location (no Korea-only filter).
+4. Toggle airplane mode + clear location cache → permission still granted, no cached fix → Seoul.
+5. Pan away from current location, switch to Featured tab, back to Map → re-centers on user's location.
 
 ## Affected files
 
 **New:**
-- `composeApp/src/commonMain/kotlin/com/gallr/app/ui/tabs/map/UserLocation.kt` (declares `Coordinates` and `expect rememberLastKnownCoordinates`; may also host `rememberMapReadiness`)
-- `shared/src/commonMain/kotlin/com/gallr/shared/util/KoreaBounds.kt`
+- `composeApp/src/commonMain/kotlin/com/gallr/app/ui/tabs/map/UserLocation.kt` (declares `Coordinates`, `expect rememberLastKnownCoordinates`, and `rememberMapReadiness`)
 - `composeApp/src/androidMain/kotlin/com/gallr/app/ui/tabs/map/UserLocation.android.kt`
 - `composeApp/src/iosMain/kotlin/com/gallr/app/ui/tabs/map/UserLocation.ios.kt`
-- `shared/src/commonTest/kotlin/com/gallr/shared/util/KoreaBoundsTest.kt`
 
 **Modified:**
-- `composeApp/src/commonMain/kotlin/com/gallr/app/ui/tabs/map/MapScreen.kt` — wire `rememberLastKnownCoordinates`, `isInsideKorea`, and 300ms-deferred render
+- `composeApp/src/commonMain/kotlin/com/gallr/app/ui/tabs/map/MapScreen.kt` — wire `rememberLastKnownCoordinates` + 300ms-deferred render
 - `composeApp/src/commonMain/kotlin/com/gallr/app/ui/tabs/map/MapView.kt` — add `initialCenter: Coordinates?` parameter to `expect fun`
 - `composeApp/src/androidMain/kotlin/com/gallr/app/ui/tabs/map/MapView.android.kt` — use `initialCenter` in `rememberCameraPositionState`
 - `composeApp/src/iosMain/kotlin/com/gallr/app/ui/tabs/map/MapView.ios.kt` — use `initialCenter` in `factory` block
-- `composeApp/build.gradle.kts` — verify/add `play-services-location` and `kotlinx-coroutines-play-services`
+- `gradle/libs.versions.toml` + `composeApp/build.gradle.kts` — add `play-services-location` and `kotlinx-coroutines-play-services`
 
 ## Out of scope
 
-- Fresh GPS fix (vs. cached `lastLocation`) — Q1 decision.
-- Camera animation when permission flips mid-session — Q3 decision.
-- Persisting camera position across tab switches — Q5 decision.
-- Recency check on cached fixes — Q4 decision.
-- Recenter-to-me FAB (could be a follow-up p3).
+- Fresh GPS fix (vs. cached `lastLocation`).
+- Camera animation when permission flips mid-session.
+- Persisting camera position across tab switches.
+- Recency check on cached fixes.
+- A "centroid of nearby exhibitions" fallback when there's no cached fix — deferred to international rollout.
+- Recenter-to-me FAB (possible follow-up p3).
