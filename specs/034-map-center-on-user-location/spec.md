@@ -54,10 +54,12 @@ expect fun rememberLastKnownCoordinates(enabled: Boolean): Coordinates?
 ### Korea bounds helper (commonMain, pure, unit-testable)
 
 ```kotlin
-// composeApp/src/commonMain/.../map/KoreaBounds.kt
-internal fun isInsideKorea(lat: Double, lng: Double): Boolean =
+// shared/src/commonMain/.../util/KoreaBounds.kt
+fun isInsideKorea(lat: Double, lng: Double): Boolean =
     lat in 33.0..38.9 && lng in 124.6..131.9
 ```
+
+(The helper lives in the `shared` module's `util` package — alongside `HexColor.kt`, `FabLabel.kt`, `Validators.kt` — so it must be `public` for the `composeApp` module's `MapScreen` to call it.)
 
 ### MapView signature change (commonMain)
 
