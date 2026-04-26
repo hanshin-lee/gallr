@@ -43,7 +43,6 @@ import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.ExhibitionMapPin
 import com.gallr.shared.data.model.MapDisplayMode
 import com.gallr.shared.data.model.exhibitionStatus
-import com.gallr.shared.util.isInsideKorea
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -130,15 +129,12 @@ fun MapScreen(
                 }
             }
 
-            val cachedCoords = rememberLastKnownCoordinates(
+            val initialCenter = rememberLastKnownCoordinates(
                 enabled = locationPermission.isGranted,
             )
-            val initialCenter = cachedCoords?.takeIf {
-                isInsideKorea(it.latitude, it.longitude)
-            }
             val mapReady = rememberMapReadiness(
                 permissionGranted = locationPermission.isGranted,
-                coordsResolved = cachedCoords != null,
+                coordsResolved = initialCenter != null,
             )
 
             if (mapReady) {
