@@ -231,3 +231,39 @@ describe("InMemoryAdminExhibitionRepository media ordering", () => {
     expect(second.media.map((asset) => asset.sortOrder)).toEqual([1, 2]);
   });
 });
+
+describe("InMemoryAdminExhibitionRepository list filters", () => {
+  it("narrows the list to exhibitions without a cover image", async () => {
+    const repository = new InMemoryAdminExhibitionRepository();
+    const everything = await repository.list({ search: "", status: "All" });
+
+    const missingCover = await repository.list({
+      search: "",
+      status: "All",
+      missingCoverOnly: true,
+    });
+
+    expect(everything.some((record) => record.coverImageUrl)).toBe(true);
+    expect(missingCover.length).toBeGreaterThan(0);
+    expect(missingCover.length).toBeLessThan(everything.length);
+    expect(missingCover.every((record) => !record.coverImageUrl)).toBe(true);
+  });
+
+  it("combines the missing-cover filter with the publish-state filter", async () => {
+    const repository = new InMemoryAdminExhibitionRepository();
+
+    const published = await repository.list({
+      search: "",
+      status: "Published",
+      missingCoverOnly: true,
+    });
+
+    expect(published.length).toBeGreaterThan(0);
+    expect(
+      published.every(
+        (record) => record.status === "Published" && !record.coverImageUrl,
+      ),
+    ).toBe(true);
+    expect(published.map((record) => record.nameKo)).not.toContain("빛의 문법");
+  });
+});

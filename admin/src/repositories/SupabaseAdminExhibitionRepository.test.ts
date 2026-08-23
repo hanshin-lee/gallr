@@ -464,6 +464,7 @@ describe("SupabaseAdminExhibitionRepository", () => {
         status: "Published",
         temporalStatus: "running",
         featuredOnly: true,
+        missingCoverOnly: true,
         sort: "published_desc",
       }),
     ).resolves.toEqual([mappedRecord]);
@@ -472,6 +473,7 @@ describe("SupabaseAdminExhibitionRepository", () => {
       p_status: "published",
       p_temporal_status: "running",
       p_featured_only: true,
+      p_missing_cover_only: true,
       p_sort: "published_desc",
     });
   });
@@ -487,6 +489,7 @@ describe("SupabaseAdminExhibitionRepository", () => {
       p_status: null,
       p_temporal_status: null,
       p_featured_only: false,
+      p_missing_cover_only: false,
       p_sort: "updated_desc",
     });
   });
