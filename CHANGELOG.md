@@ -4,6 +4,14 @@ All notable changes to gallr will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **The gallery workspace now says the public page trails approval by a few
+  minutes**, instead of offering a link that answers 404 while the rebuild runs.
+
+### Infrastructure
+- Product-surface CI runs the public-web suite when the root `vercel.json`
+  changes, so the rebuild-trigger guard test covers the file it guards.
+
 ## [1.10.1] - 2026-08-22
 
 ### Added
