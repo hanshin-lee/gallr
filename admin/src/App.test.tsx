@@ -3,7 +3,10 @@ import userEvent from "@testing-library/user-event";
 import App, { AdminWorkspace } from "./App";
 import type { AdminExhibition, AdminMediaAsset } from "./domain";
 import { LocaleProvider } from "./i18n";
-import { RevisionConflictError } from "./repositories/AdminExhibitionRepository";
+import {
+  DraftDeleteBlockedError,
+  RevisionConflictError,
+} from "./repositories/AdminExhibitionRepository";
 import { InMemoryAdminExhibitionRepository } from "./repositories/InMemoryAdminExhibitionRepository";
 
 describe("gallr admin", () => {
@@ -1152,6 +1155,94 @@ describe("gallr admin", () => {
     expect(
       (await screen.findAllByText("Draft permanently deleted.")).length,
     ).toBeGreaterThan(0);
+  });
+
+  it("warns that deleting withdraws a submission still awaiting review", async () => {
+    const user = userEvent.setup();
+    const repository = new InMemoryAdminExhibitionRepository();
+    const listed = await repository.list({
+      search: "",
+      status: "All",
+      temporalStatus: "all",
+      featuredOnly: false,
+      sort: "updated_desc",
+    });
+    const target = listed.find((record) => record.status === "Draft");
+    repository.list = async () =>
+      listed.map((record) =>
+        record.id === target?.id
+          ? { ...record, hasOpenOwnerSubmission: true }
+          : record,
+      );
+    render(<AdminWorkspace repository={repository} staffRole="admin" />);
+
+    await screen.findAllByText("서로 다른 시간");
+    await user.click(
+      screen.getByRole("button", { name: "Delete permanently" }),
+    );
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Delete draft permanently",
+    });
+    expect(
+      within(dialog).getByText(
+        "This draft has a submission awaiting review. Deleting it withdraws that submission from the review queue.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("omits the withdrawal warning when no review round is open", async () => {
+    const user = userEvent.setup();
+    render(
+      <AdminWorkspace
+        repository={new InMemoryAdminExhibitionRepository()}
+        staffRole="admin"
+      />,
+    );
+
+    await screen.findAllByText("서로 다른 시간");
+    await user.click(
+      screen.getByRole("button", { name: "Delete permanently" }),
+    );
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Delete draft permanently",
+    });
+    expect(
+      within(dialog).queryByText(/withdraws that submission/),
+    ).not.toBeInTheDocument();
+  });
+
+  it("names the retained relationship when permanent deletion is refused", async () => {
+    const user = userEvent.setup();
+    const repository = new InMemoryAdminExhibitionRepository();
+    repository.deleteDraft = async () => {
+      throw new DraftDeleteBlockedError("draft_delete_has_launch_kit_reference");
+    };
+    render(<AdminWorkspace repository={repository} staffRole="admin" />);
+
+    await screen.findAllByText("서로 다른 시간");
+    await user.click(
+      screen.getByRole("button", { name: "Delete permanently" }),
+    );
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Delete draft permanently",
+    });
+    await user.type(
+      within(dialog).getByLabelText("Type DELETE to confirm"),
+      "DELETE",
+    );
+    await user.click(
+      within(dialog).getByRole("button", { name: "Delete permanently" }),
+    );
+
+    expect(
+      await screen.findAllByText(
+        "This draft has a Launch Kit. Cancel the Launch Kit before deleting it.",
+      ),
+    ).not.toHaveLength(0);
+    expect(screen.getByRole("row", { name: /서로 다른 시간/ })).toBeVisible();
   });
 
   it("does not offer permanent deletion to publishers", async () => {

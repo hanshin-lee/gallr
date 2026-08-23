@@ -23,6 +23,39 @@ export class RevisionConflictError extends Error {
   }
 }
 
+/**
+ * Reasons `admin_delete_exhibition_draft` refuses a permanent deletion. Each
+ * value is the server-side exception message; the staff notice is chosen from
+ * it so an operator learns which retained relationship blocked the command
+ * instead of a single unactionable failure string.
+ */
+export const DRAFT_DELETE_BLOCKED_REASONS = [
+  "only_never_published_drafts_can_be_deleted",
+  "draft_delete_requires_media_detach",
+  "imported_exhibitions_cannot_be_deleted",
+  "draft_delete_has_submission_reference",
+  "draft_delete_has_curation_reference",
+  "draft_delete_has_launch_kit_reference",
+  "draft_delete_has_promotion_reference",
+  "draft_delete_has_pending_outbox_event",
+] as const;
+
+export type DraftDeleteBlockedReason =
+  (typeof DRAFT_DELETE_BLOCKED_REASONS)[number];
+
+export function isDraftDeleteBlockedReason(
+  value: string,
+): value is DraftDeleteBlockedReason {
+  return (DRAFT_DELETE_BLOCKED_REASONS as readonly string[]).includes(value);
+}
+
+export class DraftDeleteBlockedError extends Error {
+  constructor(readonly reason: DraftDeleteBlockedReason) {
+    super(`Permanent deletion was refused: ${reason}.`);
+    this.name = "DraftDeleteBlockedError";
+  }
+}
+
 export interface AdminExhibitionRepository {
   list(filters: ExhibitionFilters): Promise<AdminExhibition[]>;
   getExhibitionLookups(): Promise<AdminExhibitionLookups>;

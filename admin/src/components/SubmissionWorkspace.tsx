@@ -29,6 +29,7 @@ const statusOptions: Array<{
   { value: "in_review", key: "status.inReview" },
   { value: "accepted", key: "status.accepted" },
   { value: "rejected", key: "status.rejected" },
+  { value: "withdrawn", key: "status.withdrawn" },
 ];
 
 const statusKeys: Record<SubmissionStatus, MessageKey> = {
@@ -36,6 +37,7 @@ const statusKeys: Record<SubmissionStatus, MessageKey> = {
   in_review: "status.inReview",
   accepted: "status.accepted",
   rejected: "status.rejected",
+  withdrawn: "status.withdrawn",
 };
 
 export function submissionSourceLabel(
