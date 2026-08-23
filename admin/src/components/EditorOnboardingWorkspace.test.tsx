@@ -38,6 +38,7 @@ describe("EditorOnboardingWorkspace", () => {
       listEditors: vi.fn().mockResolvedValue([]),
       updateEditor: vi.fn(),
       setAccess: vi.fn(),
+      deleteEditor: vi.fn(),
     }} />);
 
     await user.type(screen.getByLabelText("Invitation email"), "mina@example.com");
@@ -64,6 +65,7 @@ describe("EditorOnboardingWorkspace", () => {
       listEditors: vi.fn().mockResolvedValue([]),
       updateEditor: vi.fn(),
       setAccess: vi.fn(),
+      deleteEditor: vi.fn(),
     }} />);
 
     await user.type(screen.getByLabelText("Invitation email"), "not-an-email");
@@ -83,6 +85,7 @@ describe("EditorOnboardingWorkspace", () => {
       listEditors: vi.fn().mockResolvedValue([]),
       updateEditor: vi.fn(),
       setAccess: vi.fn(),
+      deleteEditor: vi.fn(),
     }} />);
 
     await user.click(screen.getByRole("button", { name: "Invite editor" }));
@@ -286,6 +289,107 @@ describe("EditorOnboardingWorkspace", () => {
     await waitFor(() => expect(setAccess).toHaveBeenLastCalledWith("mina-kim", 4, true));
     expect(await screen.findByText("Workspace active")).toBeInTheDocument();
     expect(screen.getByText("Unpublished profile")).toBeInTheDocument();
+  });
+
+  it("offers deactivation for an editor with no linked workspace account", async () => {
+    const user = userEvent.setup();
+    // Editors mirrored from the legacy catalogue never receive a membership
+    // row, which previously suppressed every access control on the card.
+    const legacyEditor = {
+      ...managedEditor,
+      editorId: "seunghyun-legacy",
+      email: null,
+      nameKo: "최승현",
+      nameEn: "Seunghyun Choi",
+      hasAccess: false,
+      accessActive: false,
+    };
+    const setAccess = vi.fn().mockResolvedValue({
+      ...legacyEditor,
+      isActive: false,
+      revision: 4,
+    });
+    render(<EditorOnboardingWorkspace repository={{
+      invite: vi.fn(),
+      listRequests: vi.fn().mockResolvedValue([]),
+      reviewRequest: vi.fn(),
+      listEditors: vi.fn().mockResolvedValue([legacyEditor]),
+      updateEditor: vi.fn(),
+      setAccess,
+      deleteEditor: vi.fn(),
+    } as never} />);
+
+    expect(await screen.findByText("No linked workspace account"))
+      .toBeInTheDocument();
+    await user.click(screen.getByRole("button", {
+      name: "Deactivate Seunghyun Choi",
+    }));
+    expect(screen.getByRole("alertdialog"))
+      .toHaveTextContent(/no linked workspace account/i);
+    await user.click(screen.getByRole("button", {
+      name: "Confirm deactivate Seunghyun Choi",
+    }));
+    await waitFor(() => expect(setAccess)
+      .toHaveBeenCalledWith("seunghyun-legacy", 3, false));
+    expect(await screen.findByText("Unpublished profile")).toBeInTheDocument();
+  });
+
+  it("removes an editor only after confirmation and reports detached credits", async () => {
+    const user = userEvent.setup();
+    const deleteEditor = vi.fn().mockResolvedValue({
+      editorId: "mina-kim",
+      detachedExhibitions: 2,
+      detachedExhibitionVersions: 3,
+      removedRequests: 0,
+      hadWorkspaceAccount: true,
+    });
+    render(<EditorOnboardingWorkspace repository={{
+      invite: vi.fn(),
+      listRequests: vi.fn().mockResolvedValue([]),
+      reviewRequest: vi.fn(),
+      listEditors: vi.fn().mockResolvedValue([managedEditor]),
+      updateEditor: vi.fn(),
+      setAccess: vi.fn(),
+      deleteEditor,
+    } as never} />);
+
+    await user.click(await screen.findByRole("button", { name: "Remove Mina Kim" }));
+    expect(screen.getByRole("alertdialog")).toHaveTextContent(/cannot be undone/i);
+    expect(deleteEditor).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Confirm remove Mina Kim" }));
+    await waitFor(() => expect(deleteEditor).toHaveBeenCalledWith("mina-kim", 3));
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "2 exhibitions no longer carry an editor credit",
+    );
+    expect(screen.queryByRole("button", { name: "Remove Mina Kim" }))
+      .not.toBeInTheDocument();
+  });
+
+  it("never offers removal for the seeded gallr Editors identity", async () => {
+    const houseEditor = {
+      ...managedEditor,
+      editorId: "gallr-editors",
+      email: null,
+      nameKo: "gallr 에디터즈",
+      nameEn: "gallr Editors",
+      hasAccess: false,
+      accessActive: false,
+    };
+    render(<EditorOnboardingWorkspace repository={{
+      invite: vi.fn(),
+      listRequests: vi.fn().mockResolvedValue([]),
+      reviewRequest: vi.fn(),
+      listEditors: vi.fn().mockResolvedValue([houseEditor]),
+      updateEditor: vi.fn(),
+      setAccess: vi.fn(),
+      deleteEditor: vi.fn(),
+    } as never} />);
+
+    expect(await screen.findByRole("button", { name: "Edit gallr Editors" }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Remove gallr Editors" }))
+      .not.toBeInTheDocument();
   });
 
   it("reloads the directory after an edit revision conflict", async () => {
