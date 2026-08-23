@@ -99,3 +99,14 @@ Add a visited-exhibition history or collection section to the Profile tab. The M
 Expand basic 3-event logging to a proper analytics solution (Mixpanel, Amplitude, or Supabase dashboard).
 - Effort: M (CC: ~1 day)
 - Depends on: Basic analytics events being in place first.
+
+### Debounce public-site rebuilds triggered by the outbox
+`outbox-delivery` POSTs the Vercel deploy hook once per `exhibition.published`,
+`exhibition.archived`, and `exhibition.restored` event. Now that those builds
+actually run, a heavy staff editing session queues one full Eleventy build plus
+Supabase fetch per event. Steady state is fine; bursts are wasteful.
+- Effort: S (CC: ~1h)
+- Options: coalesce events in the function over a short window, or move the hook
+  POST behind a scheduled drain instead of a per-event fire.
+- Noticed on: shin/gallr-gallery-publish-error-464c65 while investigating the
+  cancelled rebuild that made newly published exhibitions 404 (fixed in #228).

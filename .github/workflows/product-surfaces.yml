@@ -14,6 +14,7 @@ on:
       - "supabase/config.toml"
       - "supabase/functions/**"
       - "scripts/product-surfaces/**"
+      - "vercel.json"
       - "shared/**"
       - "composeApp/**"
       - "iosApp/**"
@@ -97,7 +98,9 @@ jobs:
 
           admin = run_all or node_global or under("admin")
           gallery = run_all or node_global or under("gallery")
-          public_web = run_all or node_global or under("web")
+          public_web = (
+              run_all or node_global or under("web") or "vercel.json" in changed
+          )
           edge_functions = (
               run_all
               or ".tool-versions" in changed

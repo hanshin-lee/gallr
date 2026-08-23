@@ -296,6 +296,50 @@ describe("gallery exhibition workspace", () => {
     expect(screen.getByText("Public page loads, not unique visitors.")).toBeInTheDocument();
   });
 
+  it("warns that the public page trails publication by a few minutes", async () => {
+    const user = userEvent.setup();
+    const repository = repositoryWith([{ ...draft, ownerStatus: "published" as const }]);
+    render(
+      <ExhibitionWorkspace
+        membershipStatus="active"
+        repository={repository}
+        onSignOut={vi.fn()}
+      />,
+    );
+
+    await user.click(await screen.findByText("Notes from a Small Room"));
+
+    // The public site is a static rebuild, so the link is reachable only after
+    // the deploy that publication triggers. Say so instead of handing the owner
+    // a link that answers 404 for the first couple of minutes.
+    const link = screen.getByRole("link", { name: "View public page" });
+    expect(link).toHaveAttribute(
+      "href",
+      "https://gallrmap.com/exhibitions/notes-from-a-small-room-exhi/",
+    );
+    expect(screen.getByText(
+      "The public page is rebuilt after approval and goes live within a few minutes.",
+    )).toBeInTheDocument();
+  });
+
+  it("keeps the rebuild notice out of an editor that has nothing public yet", async () => {
+    const user = userEvent.setup();
+    render(
+      <ExhibitionWorkspace
+        membershipStatus="active"
+        repository={repositoryWith([draft])}
+        onSignOut={vi.fn()}
+      />,
+    );
+
+    await user.click(await screen.findByText("Notes from a Small Room"));
+
+    expect(screen.queryByRole("link", { name: "View public page" })).not.toBeInTheDocument();
+    expect(screen.queryByText(
+      "The public page is rebuilt after approval and goes live within a few minutes.",
+    )).not.toBeInTheDocument();
+  });
+
   it("keeps the deferred free Launch Kit CTA informative without activating it", async () => {
     const user = userEvent.setup();
     const repository = repositoryWith([{ ...draft, ownerStatus: "published" as const }]);

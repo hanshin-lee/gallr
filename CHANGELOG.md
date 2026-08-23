@@ -11,6 +11,14 @@ All notable changes to gallr will be documented in this file.
   recognisable at a glance instead of every listing looking archival.
 
 ### Fixed
+- **A newly published exhibition now reaches the public site within minutes
+  instead of returning 404.** Publishing already POSTed the Vercel deploy hook,
+  but the Ignored Build Step cancelled every one of those rebuilds: a deploy hook
+  builds an unchanged git HEAD, so the path diff exited 0 and Vercel skipped the
+  build. The public catalogue had been frozen at the last commit that touched
+  `web/`.
+- **The gallery workspace now says the public page trails approval by a few
+  minutes**, instead of offering a link that answers 404 while the rebuild runs.
 - **Accidental drafts can be permanently deleted again.** Deletion previously
   refused any exhibition that had ever emitted a background event, and nothing
   purges delivered events, so one owner submission — or a single
@@ -24,6 +32,10 @@ All notable changes to gallr will be documented in this file.
   the blocking relationship rather than showing one generic failure notice.
   The delete confirmation dialog warns before the fact when a draft has a
   submission still awaiting review.
+
+### Infrastructure
+- Product-surface CI runs the public-web suite when the root `vercel.json`
+  changes, so the rebuild-trigger guard test covers the file it guards.
 
 ## [1.10.1] - 2026-08-22
 
