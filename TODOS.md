@@ -1,6 +1,6 @@
 # TODOS
 
-Last updated: 2026-08-22. Revalidate external service and release status before
+Last updated: 2026-08-23. Revalidate external service and release status before
 acting on older operational entries.
 
 ## P1 — Post-Launch
@@ -99,3 +99,15 @@ Add a visited-exhibition history or collection section to the Profile tab. The M
 Expand basic 3-event logging to a proper analytics solution (Mixpanel, Amplitude, or Supabase dashboard).
 - Effort: M (CC: ~1 day)
 - Depends on: Basic analytics events being in place first.
+
+### Admin list reconciliation races
+Two pre-existing Admin Exhibitions-list races surfaced during the missing-cover
+filter review (`admin/src/App.tsx`): a list reload whose server snapshot
+predates an in-flight autosave can overwrite the optimistic merge with an older
+revision (`loadRecords` guards only against newer loads), and a failed filter
+request leaves the previous rows on screen under the new filter controls.
+Fix by tagging list responses with a snapshot revision (or re-merging the
+latest saved record after `setRecords(next)`) and by clearing or marking the
+table when a list request fails.
+- Effort: S (CC: ~1 hour)
+- Depends on: nothing; both self-heal on the next reload today.

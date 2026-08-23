@@ -2,8 +2,8 @@
 
 The admin application is the editorial replacement for the exhibition Google
 Sheet. It provides an invite-only staff login, exhibition search plus publish-state,
-date-state, homepage-placement, and chronological list controls, draft creation,
-bilingual autosave, immutable published versions,
+date-state, homepage-placement, missing-cover, and chronological list controls,
+draft creation, bilingual autosave, immutable published versions,
 preview, publish, archive, and restore behind a typed repository boundary.
 Its Media workspace adds direct signed uploads, cover replacement, ordered
 galleries, version-scoped alt/credit/rights metadata, processing status, and
