@@ -22,8 +22,8 @@ import {
   submissionFixtures,
 } from "../data/fixtures";
 import {
-  exhibitionTemporalStatus,
   isPublishReady,
+  matchesExhibitionFilters,
   seoulCalendarDate,
   sortAdminExhibitions,
 } from "../domain";
@@ -101,31 +101,10 @@ export class InMemoryAdminExhibitionRepository
   >();
 
   async list(filters: ExhibitionFilters): Promise<AdminExhibition[]> {
-    const query = filters.search.trim().toLocaleLowerCase();
     const today = seoulCalendarDate();
-    const records = this.records.filter((record) => {
-      const matchesStatus =
-        filters.status === "All" || record.status === filters.status;
-      const matchesTemporal =
-        !filters.temporalStatus ||
-        filters.temporalStatus === "all" ||
-        exhibitionTemporalStatus(record.openingDate, record.closingDate, today) ===
-          filters.temporalStatus;
-      const matchesFeatured =
-        !filters.featuredOnly || record.isHomepageFeatured;
-      const matchesSearch =
-        query.length === 0 ||
-        [
-          record.id,
-          record.nameKo,
-          record.nameEn,
-          record.venueNameKo,
-          record.venueNameEn,
-        ].some((value) => value.toLocaleLowerCase().includes(query));
-      return (
-        matchesStatus && matchesTemporal && matchesFeatured && matchesSearch
-      );
-    });
+    const records = this.records.filter((record) =>
+      matchesExhibitionFilters(record, filters, today),
+    );
     return copy(sortAdminExhibitions(records, filters.sort));
   }
 

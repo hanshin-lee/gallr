@@ -24,7 +24,7 @@ select is(
       )
       and not procedure.prosecdef
   ),
-  9,
+  10,
   'all public admin RPC overloads are SECURITY INVOKER'
 );
 
@@ -46,7 +46,7 @@ select is(
       )
       and procedure.proconfig @> array['search_path=""']::text[]
   ),
-  9,
+  10,
   'all public admin RPCs pin an empty search_path'
 );
 
@@ -58,6 +58,7 @@ select is(
         ('public.admin_current_staff()'),
         ('public.admin_list_exhibitions(text,text)'),
         ('public.admin_list_exhibitions(text,text,text,boolean,text)'),
+        ('public.admin_list_exhibitions(text,text,text,boolean,boolean,text)'),
         ('public.admin_get_exhibition(text)'),
         ('public.admin_create_exhibition_draft()'),
         ('public.admin_save_exhibition_draft(text,uuid,integer,jsonb)'),
@@ -67,7 +68,7 @@ select is(
     ) as signature(value)
     where has_function_privilege('authenticated', signature.value, 'EXECUTE')
   ),
-  9,
+  10,
   'authenticated has execute on every public admin RPC'
 );
 
@@ -79,6 +80,7 @@ select is(
         ('public.admin_current_staff()'),
         ('public.admin_list_exhibitions(text,text)'),
         ('public.admin_list_exhibitions(text,text,text,boolean,text)'),
+        ('public.admin_list_exhibitions(text,text,text,boolean,boolean,text)'),
         ('public.admin_get_exhibition(text)'),
         ('public.admin_create_exhibition_draft()'),
         ('public.admin_save_exhibition_draft(text,uuid,integer,jsonb)'),
@@ -100,6 +102,7 @@ select is(
         ('public.admin_current_staff()'),
         ('public.admin_list_exhibitions(text,text)'),
         ('public.admin_list_exhibitions(text,text,text,boolean,text)'),
+        ('public.admin_list_exhibitions(text,text,text,boolean,boolean,text)'),
         ('public.admin_get_exhibition(text)'),
         ('public.admin_create_exhibition_draft()'),
         ('public.admin_save_exhibition_draft(text,uuid,integer,jsonb)'),

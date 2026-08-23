@@ -331,6 +331,7 @@ export const exhibitionFixtures: AdminExhibition[] = [
     descriptionEn: "An inquiry into how light reads space and objects.",
     isFeatured: true,
     isHomepageFeatured: true,
+    coverImageUrl: "https://images.example.test/grammar-of-light/cover.webp",
     publishedAt: "2026-07-20T10:18:00+09:00",
     status: "Published",
     revision: 3,

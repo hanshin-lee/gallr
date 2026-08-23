@@ -400,6 +400,7 @@ export interface ExhibitionFilters {
   status: "All" | ExhibitionStatus;
   temporalStatus?: "all" | "running" | "upcoming" | "ended";
   featuredOnly?: boolean;
+  missingCoverOnly?: boolean;
   sort?:
     | "updated_desc"
     | "published_desc"
@@ -414,6 +415,16 @@ export type ExhibitionTemporalStatus = Exclude<
 >;
 
 export type ExhibitionSort = NonNullable<ExhibitionFilters["sort"]>;
+
+/**
+ * A cover counts as missing when the delivery URL is null or blank, matching the
+ * `cover_image_url` contract of the staff list RPC.
+ */
+export function hasCoverImage(
+  exhibition: Pick<AdminExhibition, "coverImageUrl">,
+): boolean {
+  return (exhibition.coverImageUrl ?? "").trim().length > 0;
+}
 
 const seoulDateFormatter = new Intl.DateTimeFormat("en", {
   timeZone: "Asia/Seoul",
@@ -488,6 +499,51 @@ export function shouldPreserveCoordinatesForAddressChange(
   const previousSearchable = searchableKoreanAddress(previous);
   const nextSearchable = searchableKoreanAddress(next);
   return previousSearchable !== null && previousSearchable === nextSearchable;
+}
+
+/**
+ * Client-side counterpart of the staff list RPC filters, used wherever a record
+ * is merged into an already-loaded list without a round trip. Publish state,
+ * date state, placement, and cover presence match the RPC exactly; search is an
+ * approximation (per-field substring match), so the next list load is
+ * authoritative for search results.
+ */
+export function matchesExhibitionFilters(
+  exhibition: AdminExhibition,
+  filters: ExhibitionFilters,
+  today: string,
+): boolean {
+  const query = filters.search.trim().toLocaleLowerCase();
+  const matchesStatus =
+    filters.status === "All" || exhibition.status === filters.status;
+  const temporalStatus = filters.temporalStatus ?? "all";
+  const matchesTemporalStatus =
+    temporalStatus === "all" ||
+    exhibitionTemporalStatus(
+      exhibition.openingDate,
+      exhibition.closingDate,
+      today,
+    ) === temporalStatus;
+  const matchesHomepagePlacement =
+    !filters.featuredOnly || exhibition.isHomepageFeatured;
+  const matchesCover =
+    !filters.missingCoverOnly || !hasCoverImage(exhibition);
+  const matchesSearch =
+    query.length === 0 ||
+    [
+      exhibition.id,
+      exhibition.nameKo,
+      exhibition.nameEn,
+      exhibition.venueNameKo,
+      exhibition.venueNameEn,
+    ].some((value) => value.toLocaleLowerCase().includes(query));
+  return (
+    matchesStatus &&
+    matchesTemporalStatus &&
+    matchesHomepagePlacement &&
+    matchesCover &&
+    matchesSearch
+  );
 }
 
 export function exhibitionTemporalStatus(

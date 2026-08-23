@@ -1064,6 +1064,7 @@ export class SupabaseAdminExhibitionRepository
           ? null
           : filters.temporalStatus,
       p_featured_only: filters.featuredOnly ?? false,
+      p_missing_cover_only: filters.missingCoverOnly ?? false,
       p_sort: filters.sort ?? "updated_desc",
     });
     if (error !== null) throwRpcError(rpcName, error);

@@ -4,6 +4,12 @@ All notable changes to gallr will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Admin can list exhibitions that still need a cover image.** A
+  "Missing cover image only" checkbox on the Exhibitions page combines with the
+  existing search, publish-state, date-state, homepage-placement, and sort
+  controls so staff can revisit cards created before images were available.
+
 ### Changed
 - **Exhibition artwork on the web now shows in colour.** Cards and detail pages
   render their cover image in full colour, and hovering a card lifts its image.
@@ -11,6 +17,10 @@ All notable changes to gallr will be documented in this file.
   recognisable at a glance instead of every listing looking archival.
 
 ### Fixed
+- **Private gallery-owner drafts no longer appear in the staff Exhibitions
+  list.** The extended list RPC had lost the owner-visibility guard that the
+  original list and `admin_get_exhibition` apply; the new cover-aware overload
+  restores it and the five-argument overload now delegates to it.
 - **A newly published exhibition now reaches the public site within minutes
   instead of returning 404.** Publishing already POSTed the Vercel deploy hook,
   but the Ignored Build Step cancelled every one of those rebuilds: a deploy hook
@@ -34,6 +44,12 @@ All notable changes to gallr will be documented in this file.
   submission still awaiting review.
 
 ### Infrastructure
+- Migration `20260823071500_admin_list_missing_cover_filter` adds the
+  six-argument `admin_list_exhibitions` overload with `p_missing_cover_only`
+  while keeping the two- and five-argument overloads for deployed clients.
+  Apply it to an environment before promoting the matching Admin deployment:
+  the new client always calls the six-argument overload, so an older database
+  would reject every list request, while rolling the Admin back remains safe.
 - Product-surface CI runs the public-web suite when the root `vercel.json`
   changes, so the rebuild-trigger guard test covers the file it guards.
 

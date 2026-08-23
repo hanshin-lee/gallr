@@ -1290,6 +1290,7 @@ label:has(input[type="file"]:focus-visible) {
 
 .exhibition-list-options {
   display: flex;
+  flex-wrap: wrap;
   min-height: 60px;
   align-items: flex-end;
   padding: 8px 0 16px;
@@ -1297,7 +1298,7 @@ label:has(input[type="file"]:focus-visible) {
   gap: 16px;
 }
 
-.exhibition-list-options > label:not(.homepage-featured-filter) {
+.exhibition-list-options > label:not(.list-toggle-filter) {
   display: grid;
   min-width: 184px;
   gap: 4px;
@@ -1318,18 +1319,20 @@ label:has(input[type="file"]:focus-visible) {
   text-transform: none;
 }
 
-.homepage-featured-filter {
+.list-toggle-filter {
   display: flex;
   min-height: 44px;
   align-items: center;
   gap: 8px;
   font-size: 13px;
+  white-space: nowrap;
 }
 
-.homepage-featured-filter input {
+.list-toggle-filter input {
   width: 18px;
   height: 18px;
   border-radius: 0;
+  accent-color: var(--color-text);
 }
 
 @media (min-width: 1241px) and (max-width: 1500px) {
@@ -3049,7 +3052,7 @@ label:has(input[type="file"]:focus-visible) {
     gap: 8px;
   }
 
-  .exhibition-list-options > label:not(.homepage-featured-filter) {
+  .exhibition-list-options > label:not(.list-toggle-filter) {
     width: 100%;
   }
 
