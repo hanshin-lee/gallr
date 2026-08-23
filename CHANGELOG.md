@@ -4,6 +4,12 @@ All notable changes to gallr will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- **Exhibition artwork on the web now shows in colour.** Cards and detail pages
+  render their cover image in full colour, and hovering a card lifts its image.
+  Monochrome is now reserved for exhibitions that have ended, so a closed run is
+  recognisable at a glance instead of every listing looking archival.
+
 ### Fixed
 - **Accidental drafts can be permanently deleted again.** Deletion previously
   refused any exhibition that had ever emitted a background event, and nothing
