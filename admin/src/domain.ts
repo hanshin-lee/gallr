@@ -6,7 +6,8 @@ export type SubmissionStatus =
   | "submitted"
   | "in_review"
   | "accepted"
-  | "rejected";
+  | "rejected"
+  | "withdrawn";
 
 export interface AdminSubmissionMedia {
   assetId: string;
@@ -216,6 +217,12 @@ export interface AdminExhibition {
   imageCredit: string;
   isFeatured: boolean;
   isHomepageFeatured: boolean;
+  /**
+   * A gallery-owner submission round for this draft is still awaiting a staff
+   * decision. Permanent deletion withdraws it, so the confirmation dialog has
+   * to say so before the item disappears from the review queue.
+   */
+  hasOpenOwnerSubmission: boolean;
   status: ExhibitionStatus;
   revision: number;
   createdAt: string;
@@ -379,6 +386,7 @@ export type ExhibitionPatch = Omit<
   | "coverAltKo"
   | "coverAltEn"
   | "imageCredit"
+  | "hasOpenOwnerSubmission"
   | "status"
   | "revision"
   | "createdAt"

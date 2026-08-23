@@ -23,6 +23,7 @@ export const staffEnglishMessages = {
   "status.inReview": "In review",
   "status.accepted": "Accepted",
   "status.rejected": "Rejected",
+  "status.withdrawn": "Withdrawn",
   "status.pending": "Pending",
   "status.active": "Active",
   "status.suspended": "Suspended",
@@ -90,6 +91,22 @@ export const staffEnglishMessages = {
   "notice.lifecycleFailed": "The exhibition lifecycle command failed.",
   "notice.deleted": "Draft permanently deleted.",
   "notice.deleteFailed": "Draft could not be permanently deleted.",
+  "notice.deleteBlocked.published":
+    "This exhibition has entered the publication lifecycle. Archive it instead of deleting it.",
+  "notice.deleteBlocked.media":
+    "Detach the remaining images before deleting this draft permanently.",
+  "notice.deleteBlocked.imported":
+    "Imported exhibitions cannot be deleted. Archive it instead.",
+  "notice.deleteBlocked.submission":
+    "An accepted submission still references this draft, so it cannot be deleted.",
+  "notice.deleteBlocked.curation":
+    "This draft is used by a curation placement. Remove the placement first.",
+  "notice.deleteBlocked.launchKit":
+    "This draft has a Launch Kit. Cancel the Launch Kit before deleting it.",
+  "notice.deleteBlocked.promotion":
+    "This draft has a local promotion. Remove the promotion before deleting it.",
+  "notice.deleteBlocked.pendingOutbox":
+    "Background work for this draft is still in progress. Try again in a moment.",
   "notice.discarded": "Draft changes discarded. The last published version was restored.",
   "notice.discardFailed": "Draft changes could not be discarded.",
   "notice.serverNoResponse": "The server did not respond.",
@@ -145,6 +162,7 @@ export const staffEnglishMessages = {
   "dialog.deleteAction": "Delete permanently",
   "dialog.deleteBody": "This permanently deletes this never-published draft. It cannot be restored. Published and archived exhibitions cannot be deleted here.",
   "dialog.removeImages": "Remove every attached image before deleting this draft.",
+  "dialog.deleteWithdrawsSubmission": "This draft has a submission awaiting review. Deleting it withdraws that submission from the review queue.",
   "dialog.typeDelete": "Type DELETE to confirm",
   "inspector.label": "Exhibition editor",
   "inspector.basics": "Basics",
@@ -402,6 +420,7 @@ export const staffKoreanMessages: Record<keyof typeof staffEnglishMessages, stri
   "status.inReview": "검토 중",
   "status.accepted": "초안 전환 완료",
   "status.rejected": "반려됨",
+  "status.withdrawn": "철회됨",
   "status.pending": "대기 중",
   "status.active": "활성",
   "status.suspended": "일시 중지됨",
@@ -469,6 +488,22 @@ export const staffKoreanMessages: Record<keyof typeof staffEnglishMessages, stri
   "notice.lifecycleFailed": "전시 상태를 변경하지 못했습니다.",
   "notice.deleted": "초안을 영구 삭제했습니다.",
   "notice.deleteFailed": "초안을 영구 삭제하지 못했습니다.",
+  "notice.deleteBlocked.published":
+    "게시 이력이 있는 전시입니다. 삭제 대신 보관하세요.",
+  "notice.deleteBlocked.media":
+    "남아 있는 이미지를 먼저 분리한 뒤 초안을 영구 삭제하세요.",
+  "notice.deleteBlocked.imported":
+    "가져온 전시는 삭제할 수 없습니다. 대신 보관하세요.",
+  "notice.deleteBlocked.submission":
+    "승인된 제출이 이 초안을 참조하고 있어 삭제할 수 없습니다.",
+  "notice.deleteBlocked.curation":
+    "큐레이션 배치에 사용 중인 초안입니다. 배치를 먼저 삭제하세요.",
+  "notice.deleteBlocked.launchKit":
+    "런치 키트가 연결된 초안입니다. 런치 키트를 취소한 뒤 삭제하세요.",
+  "notice.deleteBlocked.promotion":
+    "지역 프로모션이 연결된 초안입니다. 프로모션을 삭제한 뒤 진행하세요.",
+  "notice.deleteBlocked.pendingOutbox":
+    "이 초안의 백그라운드 작업이 아직 진행 중입니다. 잠시 후 다시 시도하세요.",
   "notice.discarded": "초안 변경 사항을 폐기하고 마지막 게시 버전을 복원했습니다.",
   "notice.discardFailed": "초안 변경 사항을 폐기하지 못했습니다.",
   "notice.serverNoResponse": "서버가 응답하지 않았습니다.",
@@ -524,6 +559,7 @@ export const staffKoreanMessages: Record<keyof typeof staffEnglishMessages, stri
   "dialog.deleteAction": "영구 삭제",
   "dialog.deleteBody": "게시된 적 없는 이 초안을 영구 삭제합니다. 복원할 수 없습니다. 게시되었거나 보관된 전시는 여기에서 삭제할 수 없습니다.",
   "dialog.removeImages": "이 초안을 삭제하기 전에 연결된 이미지를 모두 제거하세요.",
+  "dialog.deleteWithdrawsSubmission": "이 초안에는 검토 대기 중인 제출이 있습니다. 삭제하면 해당 제출이 검토 대기열에서 철회됩니다.",
   "dialog.typeDelete": "확인하려면 DELETE를 입력하세요",
   "inspector.label": "전시 편집기",
   "inspector.basics": "기본 정보",

@@ -10,11 +10,38 @@ All notable changes to gallr will be documented in this file.
   existing search, publish-state, date-state, homepage-placement, and sort
   controls so staff can revisit cards created before images were available.
 
+### Changed
+- **Exhibition artwork on the web now shows in colour.** Cards and detail pages
+  render their cover image in full colour, and hovering a card lifts its image.
+  Monochrome is now reserved for exhibitions that have ended, so a closed run is
+  recognisable at a glance instead of every listing looking archival.
+
 ### Fixed
 - **Private gallery-owner drafts no longer appear in the staff Exhibitions
   list.** The extended list RPC had lost the owner-visibility guard that the
   original list and `admin_get_exhibition` apply; the new cover-aware overload
   restores it and the five-argument overload now delegates to it.
+- **A newly published exhibition now reaches the public site within minutes
+  instead of returning 404.** Publishing already POSTed the Vercel deploy hook,
+  but the Ignored Build Step cancelled every one of those rebuilds: a deploy hook
+  builds an unchanged git HEAD, so the path diff exited 0 and Vercel skipped the
+  build. The public catalogue had been frozen at the last commit that touched
+  `web/`.
+- **The gallery workspace now says the public page trails approval by a few
+  minutes**, instead of offering a link that answers 404 while the rebuild runs.
+- **Accidental drafts can be permanently deleted again.** Deletion previously
+  refused any exhibition that had ever emitted a background event, and nothing
+  purges delivered events, so one owner submission — or a single
+  archive/restore round trip — stranded a draft forever. Only work still queued
+  for delivery blocks deletion now.
+- **Deleting an owner draft withdraws its open review round.** A submission
+  still sitting in the staff queue is marked withdrawn instead of leaving a
+  reviewer holding a record that no longer exists; a round that already reached
+  a decision keeps that decision. Launch Kit and local-promotion references now
+  refuse with named reasons instead of a raw database error, and Admin names
+  the blocking relationship rather than showing one generic failure notice.
+  The delete confirmation dialog warns before the fact when a draft has a
+  submission still awaiting review.
 
 ### Infrastructure
 - Migration `20260823071500_admin_list_missing_cover_filter` adds the
@@ -23,6 +50,8 @@ All notable changes to gallr will be documented in this file.
   Apply it to an environment before promoting the matching Admin deployment:
   the new client always calls the six-argument overload, so an older database
   would reject every list request, while rolling the Admin back remains safe.
+- Product-surface CI runs the public-web suite when the root `vercel.json`
+  changes, so the rebuild-trigger guard test covers the file it guards.
 
 ## [1.10.1] - 2026-08-22
 

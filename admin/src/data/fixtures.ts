@@ -149,6 +149,7 @@ const shared: Pick<
   | "coverAltEn"
   | "imageCredit"
   | "isHomepageFeatured"
+  | "hasOpenOwnerSubmission"
   | "createdAt"
   | "publishedAt"
 > = {
@@ -176,6 +177,7 @@ const shared: Pick<
   coverAltEn: "Installation view",
   imageCredit: "Courtesy of the artist and gallery",
   isHomepageFeatured: false,
+  hasOpenOwnerSubmission: false,
   createdAt: "2026-07-01T09:00:00+09:00",
   publishedAt: null,
 };

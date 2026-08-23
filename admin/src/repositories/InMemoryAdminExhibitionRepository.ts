@@ -152,6 +152,7 @@ export class InMemoryAdminExhibitionRepository
       imageCredit: "",
       isFeatured: false,
       isHomepageFeatured: true,
+      hasOpenOwnerSubmission: false,
       status: "Draft",
       revision: 1,
       createdAt: now,

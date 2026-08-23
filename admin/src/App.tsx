@@ -57,6 +57,8 @@ import { InMemoryAdminEditorRepository } from "./repositories/InMemoryAdminEdito
 import { SupabaseAdminEditorRepository } from "./repositories/SupabaseAdminEditorRepository";
 import {
   type AdminExhibitionRepository,
+  DraftDeleteBlockedError,
+  type DraftDeleteBlockedReason,
   RevisionConflictError,
 } from "./repositories/AdminExhibitionRepository";
 import { supabase } from "./lib/supabase";
@@ -101,6 +103,20 @@ const statusKeys: Record<ExhibitionFilters["status"], MessageKey> = {
   Draft: "status.draft",
   Published: "status.published",
   Archived: "status.archived",
+};
+
+// Permanent deletion is refused for eight distinct retained relationships. Name
+// the blocking one so an operator knows what to clear instead of retrying a
+// command that cannot succeed.
+const draftDeleteBlockedMessageKey: Record<DraftDeleteBlockedReason, MessageKey> = {
+  only_never_published_drafts_can_be_deleted: "notice.deleteBlocked.published",
+  draft_delete_requires_media_detach: "notice.deleteBlocked.media",
+  imported_exhibitions_cannot_be_deleted: "notice.deleteBlocked.imported",
+  draft_delete_has_submission_reference: "notice.deleteBlocked.submission",
+  draft_delete_has_curation_reference: "notice.deleteBlocked.curation",
+  draft_delete_has_launch_kit_reference: "notice.deleteBlocked.launchKit",
+  draft_delete_has_promotion_reference: "notice.deleteBlocked.promotion",
+  draft_delete_has_pending_outbox_event: "notice.deleteBlocked.pendingOutbox",
 };
 
 const defaultExhibitionFilters: ExhibitionFilters = {
@@ -878,6 +894,8 @@ export function AdminWorkspace({
         lifecycleRequest.current = null;
         enterRevisionConflict(error);
         setNotice(interfaceMessage("notice.newerRevision", { revision: error.serverRevision }));
+      } else if (error instanceof DraftDeleteBlockedError) {
+        setNotice(interfaceMessage(draftDeleteBlockedMessageKey[error.reason]));
       } else {
         setNotice(uiErrorMessage(error, "notice.deleteFailed"));
       }

@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(17);
+select plan(30);
 
 select has_function(
   'public',
@@ -360,6 +360,394 @@ select is(
   ),
   1::bigint,
   'a rejected published deletion leaves the identity intact'
+);
+
+-- Delivered and dead-lettered outbox history is terminal and must not strand a
+-- never-published draft. An existence check made every submitted, archived, or
+-- restored identity permanently undeletable because nothing purges the outbox.
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-000000000602","role":"authenticated"}',
+  true
+);
+insert into pg_temp.delete_test_state (key, payload)
+values ('settled_outbox_draft', public.admin_create_exhibition_draft());
+
+reset role;
+insert into content.outbox_events (
+  aggregate_type,
+  aggregate_id,
+  event_type,
+  payload,
+  deduplication_key,
+  status,
+  delivered_at
+)
+select
+  'exhibition',
+  payload ->> 'id',
+  'owner_exhibition.submitted',
+  '{}'::jsonb,
+  'delete-test:settled:delivered',
+  'delivered'::content.outbox_status,
+  now()
+from pg_temp.delete_test_state
+where key = 'settled_outbox_draft';
+insert into content.outbox_events (
+  aggregate_type,
+  aggregate_id,
+  event_type,
+  payload,
+  deduplication_key,
+  status,
+  dead_lettered_at
+)
+select
+  'exhibition',
+  payload ->> 'id',
+  'exhibition.archived',
+  '{}'::jsonb,
+  'delete-test:settled:dead-lettered',
+  'failed'::content.outbox_status,
+  now()
+from pg_temp.delete_test_state
+where key = 'settled_outbox_draft';
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-000000000602","role":"authenticated"}',
+  true
+);
+select is(
+  (
+    select public.admin_delete_exhibition_draft(
+      payload ->> 'id',
+      (payload ->> 'working_version_id')::uuid,
+      1,
+      '60000000-0000-0000-0000-000000000006'::uuid
+    ) ->> 'status'
+    from pg_temp.delete_test_state
+    where key = 'settled_outbox_draft'
+  ),
+  'deleted',
+  'delivered and dead-lettered outbox history does not block deletion'
+);
+select is(
+  (
+    select count(*)
+    from content.exhibitions
+    where id = (
+      select payload ->> 'id'
+      from pg_temp.delete_test_state
+      where key = 'settled_outbox_draft'
+    )
+  ),
+  0::bigint,
+  'the identity with settled outbox history is removed'
+);
+
+-- Work the outbox worker will still attempt is the only outbox state that
+-- blocks deletion.
+insert into pg_temp.delete_test_state (key, payload)
+values ('pending_outbox_draft', public.admin_create_exhibition_draft());
+
+reset role;
+insert into content.outbox_events (
+  aggregate_type,
+  aggregate_id,
+  event_type,
+  payload,
+  deduplication_key
+)
+select
+  'exhibition',
+  payload ->> 'id',
+  'owner_exhibition.submitted',
+  '{}'::jsonb,
+  'delete-test:pending:queued'
+from pg_temp.delete_test_state
+where key = 'pending_outbox_draft';
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-000000000602","role":"authenticated"}',
+  true
+);
+select throws_ok(
+  format(
+    'select public.admin_delete_exhibition_draft(%L, %L::uuid, 1, %L::uuid)',
+    (select payload ->> 'id' from pg_temp.delete_test_state where key = 'pending_outbox_draft'),
+    (select payload ->> 'working_version_id' from pg_temp.delete_test_state where key = 'pending_outbox_draft'),
+    '60000000-0000-0000-0000-000000000007'
+  ),
+  '23503',
+  'draft_delete_has_pending_outbox_event',
+  'an undelivered outbox event blocks deletion'
+);
+select is(
+  (
+    select count(*)
+    from content.exhibitions
+    where id = (
+      select payload ->> 'id'
+      from pg_temp.delete_test_state
+      where key = 'pending_outbox_draft'
+    )
+  ),
+  1::bigint,
+  'a rejected pending-outbox deletion leaves the identity intact'
+);
+
+-- An owner round still open in the staff queue is withdrawn with the draft.
+insert into pg_temp.delete_test_state (key, payload)
+values ('open_round_draft', public.admin_create_exhibition_draft());
+
+reset role;
+insert into content.galleries (id, name_ko)
+values ('60000000-0000-0000-0000-000000000301'::uuid, '삭제 테스트 갤러리');
+insert into content.media_assets (id, bucket_id, object_path, uploaded_by)
+values (
+  '60000000-0000-0000-0000-000000000102'::uuid,
+  'exhibition-media',
+  'tests/delete-draft-open-round.jpg',
+  '00000000-0000-0000-0000-000000000602'::uuid
+);
+insert into content.exhibition_version_media (
+  version_id,
+  media_id,
+  role,
+  sort_order,
+  created_by
+)
+select
+  (payload ->> 'working_version_id')::uuid,
+  '60000000-0000-0000-0000-000000000102'::uuid,
+  'cover'::content.media_role,
+  0,
+  '00000000-0000-0000-0000-000000000602'::uuid
+from pg_temp.delete_test_state
+where key = 'open_round_draft';
+insert into content.exhibition_submissions (
+  id,
+  status,
+  submitter_email,
+  payload,
+  source,
+  owner_exhibition_id,
+  submitted_at
+)
+select
+  '60000000-0000-0000-0000-000000000401'::uuid,
+  'in_review'::content.submission_status,
+  'owner@example.invalid',
+  jsonb_build_object('version_id', payload ->> 'working_version_id'),
+  'owner_workspace',
+  payload ->> 'id',
+  now()
+from pg_temp.delete_test_state
+where key = 'open_round_draft';
+-- The round keeps its own media snapshot. Detaching the draft's attachments is
+-- the production shape of this case: deletion still requires a clean version.
+delete from content.exhibition_version_media
+where media_id = '60000000-0000-0000-0000-000000000102'::uuid;
+
+select is(
+  (
+    select content_private.admin_exhibition_json(
+      payload ->> 'id',
+      (payload ->> 'working_version_id')::uuid
+    ) -> 'has_open_owner_submission'
+    from pg_temp.delete_test_state
+    where key = 'open_round_draft'
+  ),
+  'true'::jsonb,
+  'the exhibition projection warns that an open owner round exists'
+);
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-000000000602","role":"authenticated"}',
+  true
+);
+select is(
+  (
+    select public.admin_delete_exhibition_draft(
+      payload ->> 'id',
+      (payload ->> 'working_version_id')::uuid,
+      1,
+      '60000000-0000-0000-0000-000000000008'::uuid
+    ) -> 'withdrawn_submission_ids'
+    from pg_temp.delete_test_state
+    where key = 'open_round_draft'
+  ),
+  '["60000000-0000-0000-0000-000000000401"]'::jsonb,
+  'the response reports the withdrawn open owner round'
+);
+select is(
+  (
+    select submission.status::text || ':' ||
+           coalesce(submission.owner_exhibition_id, 'null')
+    from content.exhibition_submissions as submission
+    where submission.id = '60000000-0000-0000-0000-000000000401'::uuid
+  ),
+  'withdrawn:null',
+  'an open owner round is withdrawn and detached from the deleted draft'
+);
+select is(
+  (
+    select count(*)
+    from content.exhibitions
+    where id = (
+      select payload ->> 'id'
+      from pg_temp.delete_test_state
+      where key = 'open_round_draft'
+    )
+  ),
+  0::bigint,
+  'the draft behind an open owner round is removed'
+);
+
+-- A round that already reached a decision keeps it and only loses the pointer.
+insert into pg_temp.delete_test_state (key, payload)
+values ('decided_round_draft', public.admin_create_exhibition_draft());
+
+reset role;
+insert into content.media_assets (id, bucket_id, object_path, uploaded_by)
+values (
+  '60000000-0000-0000-0000-000000000103'::uuid,
+  'exhibition-media',
+  'tests/delete-draft-decided-round.jpg',
+  '00000000-0000-0000-0000-000000000602'::uuid
+);
+insert into content.exhibition_version_media (
+  version_id,
+  media_id,
+  role,
+  sort_order,
+  created_by
+)
+select
+  (payload ->> 'working_version_id')::uuid,
+  '60000000-0000-0000-0000-000000000103'::uuid,
+  'cover'::content.media_role,
+  0,
+  '00000000-0000-0000-0000-000000000602'::uuid
+from pg_temp.delete_test_state
+where key = 'decided_round_draft';
+insert into content.exhibition_submissions (
+  id,
+  status,
+  submitter_email,
+  payload,
+  source,
+  owner_exhibition_id,
+  submitted_at,
+  reviewed_at
+)
+select
+  '60000000-0000-0000-0000-000000000402'::uuid,
+  'rejected'::content.submission_status,
+  'owner@example.invalid',
+  jsonb_build_object('version_id', payload ->> 'working_version_id'),
+  'owner_workspace',
+  payload ->> 'id',
+  now(),
+  now()
+from pg_temp.delete_test_state
+where key = 'decided_round_draft';
+delete from content.exhibition_version_media
+where media_id = '60000000-0000-0000-0000-000000000103'::uuid;
+
+select is(
+  (
+    select content_private.admin_exhibition_json(
+      payload ->> 'id',
+      (payload ->> 'working_version_id')::uuid
+    ) -> 'has_open_owner_submission'
+    from pg_temp.delete_test_state
+    where key = 'decided_round_draft'
+  ),
+  'false'::jsonb,
+  'a decided owner round raises no deletion warning'
+);
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-000000000602","role":"authenticated"}',
+  true
+);
+select is(
+  (
+    select public.admin_delete_exhibition_draft(
+      payload ->> 'id',
+      (payload ->> 'working_version_id')::uuid,
+      1,
+      '60000000-0000-0000-0000-000000000009'::uuid
+    ) -> 'withdrawn_submission_ids'
+    from pg_temp.delete_test_state
+    where key = 'decided_round_draft'
+  ),
+  '[]'::jsonb,
+  'a decided owner round is not reported as withdrawn'
+);
+select is(
+  (
+    select submission.status::text || ':' ||
+           coalesce(submission.owner_exhibition_id, 'null')
+    from content.exhibition_submissions as submission
+    where submission.id = '60000000-0000-0000-0000-000000000402'::uuid
+  ),
+  'rejected:null',
+  'a decided owner round keeps its decision and loses the deleted pointer'
+);
+
+-- launch_kits is ON DELETE RESTRICT and now refuses with a named reason
+-- instead of a raw foreign key violation.
+insert into pg_temp.delete_test_state (key, payload)
+values ('launch_kit_draft', public.admin_create_exhibition_draft());
+
+reset role;
+insert into content.launch_kits (exhibition_id, gallery_id)
+select
+  payload ->> 'id',
+  '60000000-0000-0000-0000-000000000301'::uuid
+from pg_temp.delete_test_state
+where key = 'launch_kit_draft';
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-000000000602","role":"authenticated"}',
+  true
+);
+select throws_ok(
+  format(
+    'select public.admin_delete_exhibition_draft(%L, %L::uuid, 1, %L::uuid)',
+    (select payload ->> 'id' from pg_temp.delete_test_state where key = 'launch_kit_draft'),
+    (select payload ->> 'working_version_id' from pg_temp.delete_test_state where key = 'launch_kit_draft'),
+    '60000000-0000-0000-0000-00000000000a'
+  ),
+  '23503',
+  'draft_delete_has_launch_kit_reference',
+  'a draft with a launch kit cannot be deleted'
+);
+select is(
+  (
+    select count(*)
+    from content.exhibitions
+    where id = (
+      select payload ->> 'id'
+      from pg_temp.delete_test_state
+      where key = 'launch_kit_draft'
+    )
+  ),
+  1::bigint,
+  'a rejected launch-kit deletion leaves the identity intact'
 );
 
 select * from finish();
