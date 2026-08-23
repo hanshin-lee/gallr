@@ -4,7 +4,19 @@ All notable changes to gallr will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- **Exhibition artwork on the web now shows in colour.** Cards and detail pages
+  render their cover image in full colour, and hovering a card lifts its image.
+  Monochrome is now reserved for exhibitions that have ended, so a closed run is
+  recognisable at a glance instead of every listing looking archival.
+
 ### Fixed
+- **A newly published exhibition now reaches the public site within minutes
+  instead of returning 404.** Publishing already POSTed the Vercel deploy hook,
+  but the Ignored Build Step cancelled every one of those rebuilds: a deploy hook
+  builds an unchanged git HEAD, so the path diff exited 0 and Vercel skipped the
+  build. The public catalogue had been frozen at the last commit that touched
+  `web/`.
 - **The gallery workspace now says the public page trails approval by a few
   minutes**, instead of offering a link that answers 404 while the rebuild runs.
 

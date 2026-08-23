@@ -6,9 +6,15 @@ import type {
   AdminEditorRequest,
   EditorOnboardingInput,
 } from "../repositories/AdminEditorRepository";
-import { EditorRevisionConflictError } from "../repositories/AdminEditorRepository";
+import {
+  EditorRevisionConflictError,
+  ProtectedEditorIdentityError,
+} from "../repositories/AdminEditorRepository";
 import { useI18n, type MessageKey } from "../i18n";
 import { DialogFrame } from "./Dialogs";
+
+/** The seeded house identity is resolved by shipped clients and never removable. */
+const protectedEditorId = "gallr-editors";
 
 type Translate = ReturnType<typeof useI18n>["t"];
 type LocalizedText = ReturnType<typeof useI18n>["localized"];
@@ -154,6 +160,8 @@ export function EditorOnboardingWorkspace({
   const [editForm, setEditForm] = useState<AdminEditorUpdateInput | null>(null);
   const [confirmDeactivate, setConfirmDeactivate] =
     useState<AdminManagedEditor | null>(null);
+  const [confirmRemove, setConfirmRemove] =
+    useState<AdminManagedEditor | null>(null);
   const validationFieldRefs = useRef<
     Partial<Record<EditorValidationField, HTMLInputElement | HTMLTextAreaElement>>
   >({});
@@ -286,6 +294,7 @@ export function EditorOnboardingWorkspace({
     setEditingEditor(editor);
     setEditForm(editorUpdateInput(editor));
     setConfirmDeactivate(null);
+    setConfirmRemove(null);
     setManagementError(null);
     setManagementSuccess(null);
   };
@@ -370,6 +379,52 @@ export function EditorOnboardingWorkspace({
         setManagementError(active
           ? interfaceNotice("editorAdmin.error.restore")
           : interfaceNotice("editorAdmin.error.deactivate"));
+      }
+    } finally {
+      setEditorBusy(null);
+    }
+  };
+
+  const removeEditor = async (editor: AdminManagedEditor) => {
+    setEditorBusy(editor.editorId);
+    setManagementError(null);
+    setManagementSuccess(null);
+    try {
+      const removal = await repository.deleteEditor(
+        editor.editorId,
+        editor.revision,
+      );
+      const name = editorDisplayName(editor, localized);
+      setEditors((current) => current.filter(
+        (item) => item.editorId !== editor.editorId,
+      ));
+      if (editingEditor?.editorId === editor.editorId) {
+        setEditingEditor(null);
+        setEditForm(null);
+      }
+      setConfirmRemove(null);
+      setManagementSuccess(
+        removal.detachedExhibitions > 0
+          ? interfaceNotice("editorAdmin.success.removedDetached", {
+            name,
+            count: formatNumber(removal.detachedExhibitions),
+          })
+          : interfaceNotice("editorAdmin.success.removed", { name }),
+      );
+    } catch (caught) {
+      if (caught instanceof EditorRevisionConflictError) {
+        setConfirmRemove(null);
+        await loadEditors();
+        setManagementError(interfaceNotice("editorAdmin.conflict.access", {
+          revision: caught.serverRevision,
+        }));
+      } else if (caught instanceof ProtectedEditorIdentityError) {
+        setConfirmRemove(null);
+        setManagementError(
+          interfaceNotice("editorAdmin.error.removeProtected"),
+        );
+      } else {
+        setManagementError(interfaceNotice("editorAdmin.error.remove"));
       }
     } finally {
       setEditorBusy(null);
@@ -470,11 +525,17 @@ export function EditorOnboardingWorkspace({
                   </div>
                   <div className="managed-editor-actions">
                     <button className="outlined-button" type="button" disabled={editorBusy !== null} aria-label={t("editorAdmin.aria.edit", { name: displayName })} onClick={() => startEditing(editor)}>{t("editorAdmin.actions.edit")}</button>
-                    {editor.hasAccess ? editor.accessActive ? (
-                      <button className="text-button" type="button" disabled={editorBusy !== null} aria-label={t("editorAdmin.aria.deactivate", { name: displayName })} onClick={() => setConfirmDeactivate(editor)}>{t("editorAdmin.actions.deactivate")}</button>
-                    ) : (
+                    {editor.hasAccess && !editor.accessActive ? (
                       <button className="black-button" type="button" disabled={editorBusy !== null} aria-label={t("editorAdmin.aria.restore", { name: displayName })} onClick={() => void changeAccess(editor, true)}>{editorBusy === editor.editorId ? t("editorAdmin.actions.restoring") : t("editorAdmin.actions.restore")}</button>
-                    ) : null}
+                    ) : (
+                      // An editor with no linked workspace account still has a
+                      // public profile to withdraw, so deactivation is offered
+                      // whether or not a membership exists.
+                      <button className="text-button" type="button" disabled={editorBusy !== null || (!editor.hasAccess && !editor.isActive)} aria-label={t("editorAdmin.aria.deactivate", { name: displayName })} onClick={() => setConfirmDeactivate(editor)}>{t("editorAdmin.actions.deactivate")}</button>
+                    )}
+                    {editor.editorId === protectedEditorId ? null : (
+                      <button className="text-button" type="button" disabled={editorBusy !== null} aria-label={t("editorAdmin.aria.remove", { name: displayName })} onClick={() => setConfirmRemove(editor)}>{t("editorAdmin.actions.remove")}</button>
+                    )}
                   </div>
                 </article>
               );
@@ -497,7 +558,27 @@ export function EditorOnboardingWorkspace({
             </>
           }
         >
-          <p>{t("editorAdmin.dialog.deactivateBody")}</p>
+          <p>{t(confirmDeactivate.hasAccess
+            ? "editorAdmin.dialog.deactivateBody"
+            : "editorAdmin.dialog.deactivateBodyNoAccount")}</p>
+        </DialogFrame>
+      ) : null}
+
+      {confirmRemove ? (
+        <DialogFrame
+          title={t("editorAdmin.dialog.removeTitle", {
+            name: editorDisplayName(confirmRemove, localized),
+          })}
+          role="alertdialog"
+          onClose={() => setConfirmRemove(null)}
+          footer={
+            <>
+              <button className="outlined-button" type="button" disabled={editorBusy !== null} onClick={() => setConfirmRemove(null)}>{t("editorAdmin.actions.cancel")}</button>
+              <button className="black-button" type="button" disabled={editorBusy !== null} aria-label={t("editorAdmin.aria.confirmRemove", { name: editorDisplayName(confirmRemove, localized) })} onClick={() => void removeEditor(confirmRemove)}>{editorBusy ? t("editorAdmin.actions.removing") : t("editorAdmin.actions.removeEditor")}</button>
+            </>
+          }
+        >
+          <p>{t("editorAdmin.dialog.removeBody")}</p>
         </DialogFrame>
       ) : null}
 
