@@ -856,6 +856,7 @@ function Editor({
               <>
                 <p>{messages.exhibitions.statuses.published}</p>
                 <a href={publicExhibitionUrl(record, publicSiteUrl)}>{messages.exhibitions.editor.viewPublic}</a>
+                <p className="submission-help">{messages.exhibitions.editor.publicPageDelay}</p>
                 <h2 className="impact-heading">{messages.exhibitions.editor.publicImpact}</h2>
                 <ImpactSummary exhibition={record} />
                 <button className="primary-button launch-button" type="button" disabled={Boolean(busy)} onClick={() => void launch()}>
