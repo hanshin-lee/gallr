@@ -1202,11 +1202,19 @@ button:focus-visible {
   background: var(--color-paper-alt);
   border-bottom: var(--border-ink);
 }
+/* Exhibition imagery carries the artwork, so it stays in colour and lifts on
+   hover the way the homepage grid tiles do. Monochrome is reserved as the
+   signal that a run has ended. */
 .exhibition-card__image {
   width: 100%; height: 100%; object-fit: cover;
-  filter: grayscale(1); transition: filter var(--duration-med) var(--ease-gallery);
+  transition: transform var(--duration-med) var(--ease-gallery),
+              filter var(--duration-med) var(--ease-gallery);
 }
-.exhibition-card:hover .exhibition-card__image { filter: grayscale(0); }
+.exhibition-card:hover .exhibition-card__image { transform: scale(1.03); }
+.exhibition-card[data-status="closed"] .exhibition-card__image { filter: grayscale(1); }
+@media (prefers-reduced-motion: reduce) {
+  .exhibition-card:hover .exhibition-card__image { transform: none; }
+}
 .exhibition-card__image-fallback {
   position: absolute; inset: 0;
   display: none; flex-direction: column; align-items: center; justify-content: center;
@@ -1326,9 +1334,8 @@ button:focus-visible {
 }
 .detail-page__hero-image {
   width: 100%; height: 100%; object-fit: cover;
-  filter: grayscale(1); transition: filter var(--duration-med) var(--ease-gallery);
 }
-.detail-page__hero:hover .detail-page__hero-image { filter: grayscale(0); }
+.detail-page__hero[data-status="closed"] .detail-page__hero-image { filter: grayscale(1); }
 .detail-page__hero--missing .detail-page__hero-image { visibility: hidden; }
 .detail-page__hero--missing::after {
   content: attr(data-fallback-title);

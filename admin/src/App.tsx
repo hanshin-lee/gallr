@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type {
   AdminExhibition,
   AdminExhibitionLookups,
@@ -14,9 +21,9 @@ import type {
   InspectorSection,
 } from "./domain";
 import {
-  exhibitionTemporalStatus,
   getAdminExhibitionValidation,
   getPublishReadiness,
+  matchesExhibitionFilters,
   seoulCalendarDate,
   shouldPreserveCoordinatesForAddressChange,
   sortAdminExhibitions,
@@ -50,6 +57,8 @@ import { InMemoryAdminEditorRepository } from "./repositories/InMemoryAdminEdito
 import { SupabaseAdminEditorRepository } from "./repositories/SupabaseAdminEditorRepository";
 import {
   type AdminExhibitionRepository,
+  DraftDeleteBlockedError,
+  type DraftDeleteBlockedReason,
   RevisionConflictError,
 } from "./repositories/AdminExhibitionRepository";
 import { supabase } from "./lib/supabase";
@@ -96,11 +105,26 @@ const statusKeys: Record<ExhibitionFilters["status"], MessageKey> = {
   Archived: "status.archived",
 };
 
+// Permanent deletion is refused for eight distinct retained relationships. Name
+// the blocking one so an operator knows what to clear instead of retrying a
+// command that cannot succeed.
+const draftDeleteBlockedMessageKey: Record<DraftDeleteBlockedReason, MessageKey> = {
+  only_never_published_drafts_can_be_deleted: "notice.deleteBlocked.published",
+  draft_delete_requires_media_detach: "notice.deleteBlocked.media",
+  imported_exhibitions_cannot_be_deleted: "notice.deleteBlocked.imported",
+  draft_delete_has_submission_reference: "notice.deleteBlocked.submission",
+  draft_delete_has_curation_reference: "notice.deleteBlocked.curation",
+  draft_delete_has_launch_kit_reference: "notice.deleteBlocked.launchKit",
+  draft_delete_has_promotion_reference: "notice.deleteBlocked.promotion",
+  draft_delete_has_pending_outbox_event: "notice.deleteBlocked.pendingOutbox",
+};
+
 const defaultExhibitionFilters: ExhibitionFilters = {
   search: "",
   status: "All",
   temporalStatus: "all",
   featuredOnly: false,
+  missingCoverOnly: false,
   sort: "updated_desc",
 };
 
@@ -153,40 +177,6 @@ const fixtureAdminAllowed =
   (import.meta.env.MODE === "test" ||
     (import.meta.env.DEV && fixtureAdminRequested));
 
-function matchesFilters(
-  exhibition: AdminExhibition,
-  filters: ExhibitionFilters,
-): boolean {
-  const query = filters.search.trim().toLocaleLowerCase();
-  const matchesStatus =
-    filters.status === "All" || exhibition.status === filters.status;
-  const temporalStatus = filters.temporalStatus ?? "all";
-  const matchesTemporalStatus =
-    temporalStatus === "all" ||
-    exhibitionTemporalStatus(
-      exhibition.openingDate,
-      exhibition.closingDate,
-      seoulCalendarDate(),
-    ) === temporalStatus;
-  const matchesHomepagePlacement =
-    !filters.featuredOnly || exhibition.isHomepageFeatured;
-  const matchesSearch =
-    query.length === 0 ||
-    [
-      exhibition.id,
-      exhibition.nameKo,
-      exhibition.nameEn,
-      exhibition.venueNameKo,
-      exhibition.venueNameEn,
-    ].some((value) => value.toLocaleLowerCase().includes(query));
-  return (
-    matchesStatus &&
-    matchesTemporalStatus &&
-    matchesHomepagePlacement &&
-    matchesSearch
-  );
-}
-
 export function AdminWorkspace({
   repository,
   geocodingService = fixtureGeocodingService,
@@ -202,6 +192,24 @@ export function AdminWorkspace({
     useState<AdminSection>("Exhibitions");
   const [filters, setFilters] =
     useState<ExhibitionFilters>(defaultExhibitionFilters);
+  // Optimistic list merges resolve after async work; they must apply the
+  // filters current at completion, not the ones captured when the work began.
+  // A layout effect keeps the ref fresh before any promise continuation runs.
+  const filtersRef = useRef(filters);
+  useLayoutEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
+  const mergeVisibleRecord = useCallback(
+    (current: AdminExhibition[], record: AdminExhibition) => {
+      const activeFilters = filtersRef.current;
+      const withoutRecord = current.filter((item) => item.id !== record.id);
+      if (!matchesExhibitionFilters(record, activeFilters, seoulCalendarDate())) {
+        return withoutRecord;
+      }
+      return sortAdminExhibitions([...withoutRecord, record], activeFilters.sort);
+    },
+    [],
+  );
   const [records, setRecords] = useState<AdminExhibition[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<AdminExhibition | null>(null);
@@ -451,18 +459,7 @@ export function AdminWorkspace({
             setDraft(saved);
             setSaveState("saved");
             setSaveError(null);
-            setRecords((current) => {
-              const existingIndex = current.findIndex(
-                (record) => record.id === saved.id,
-              );
-              const withoutRecord = current.filter(
-                (record) => record.id !== saved.id,
-              );
-              if (!matchesFilters(saved, filters)) return withoutRecord;
-              const next = [...withoutRecord];
-              next.splice(existingIndex < 0 ? 0 : existingIndex, 0, saved);
-              return sortAdminExhibitions(next, filters.sort);
-            });
+            setRecords((current) => mergeVisibleRecord(current, saved));
             return;
           }
 
@@ -490,7 +487,7 @@ export function AdminWorkspace({
       }
     }, 600);
     return () => window.clearTimeout(timer);
-  }, [draft, filters, mediaBusy, saveDraftOnce, saveState]);
+  }, [draft, mediaBusy, mergeVisibleRecord, saveDraftOnce, saveState]);
 
   const handleSelect = (exhibition: AdminExhibition) => {
     if (saveState !== "saved" || mediaBusyRef.current) {
@@ -572,12 +569,7 @@ export function AdminWorkspace({
 
   const replaceVisibleRecord = useCallback(
     (record: AdminExhibition) => {
-      setRecords((current) => {
-        const withoutRecord = current.filter((item) => item.id !== record.id);
-        return matchesFilters(record, filters)
-          ? sortAdminExhibitions([record, ...withoutRecord], filters.sort)
-          : withoutRecord;
-      });
+      setRecords((current) => mergeVisibleRecord(current, record));
       saveGeneration.current += 1;
       latestDraftRef.current = record;
       setSelected(record);
@@ -585,7 +577,7 @@ export function AdminWorkspace({
       setSaveError(null);
       lifecycleRequest.current = null;
     },
-    [filters],
+    [mergeVisibleRecord],
   );
 
   const handleManageMedia = async () => {
@@ -902,6 +894,8 @@ export function AdminWorkspace({
         lifecycleRequest.current = null;
         enterRevisionConflict(error);
         setNotice(interfaceMessage("notice.newerRevision", { revision: error.serverRevision }));
+      } else if (error instanceof DraftDeleteBlockedError) {
+        setNotice(interfaceMessage(draftDeleteBlockedMessageKey[error.reason]));
       } else {
         setNotice(uiErrorMessage(error, "notice.deleteFailed"));
       }
@@ -996,6 +990,27 @@ export function AdminWorkspace({
           return;
         }
         setMedia(next);
+        const publishedCoverUrl =
+          next.find((asset) => asset.role === "cover")?.publicUrl ?? null;
+        if (publishedCoverUrl !== null) {
+          // The list row must follow the server's cover_image_url once the
+          // worker publishes the cover, so cover-based filters stay accurate
+          // without a reload. Only the list changes; the draft is left alone.
+          setRecords((current) => {
+            const record = current.find((item) => item.id === exhibitionId);
+            if (
+              !record ||
+              record.workingVersionId !== versionId ||
+              record.coverImageUrl === publishedCoverUrl
+            ) {
+              return current;
+            }
+            return mergeVisibleRecord(current, {
+              ...record,
+              coverImageUrl: publishedCoverUrl,
+            });
+          });
+        }
         setMediaError((current) =>
           current?.kind === "interface" &&
           (current.key === "notice.mediaRefreshFailed" ||
@@ -1039,6 +1054,7 @@ export function AdminWorkspace({
     mediaIsLoading,
     mediaRecoveryEpoch,
     mediaStatusPollIntervalMs,
+    mergeVisibleRecord,
     processingMediaKey,
     repository,
   ]);
@@ -1318,10 +1334,9 @@ export function AdminWorkspace({
                 <option value="created_desc">{t("workspace.dateCreated")}</option>
               </select>
             </label>
-            <label className="homepage-featured-filter">
+            <label className="list-toggle-filter">
               <input
                 type="checkbox"
-                aria-label={t("workspace.homepageOnly")}
                 checked={filters.featuredOnly ?? false}
                 onChange={(event) =>
                   setFilters((current) => ({
@@ -1331,6 +1346,19 @@ export function AdminWorkspace({
                 }
               />
               {t("workspace.homepageOnly")}
+            </label>
+            <label className="list-toggle-filter">
+              <input
+                type="checkbox"
+                checked={filters.missingCoverOnly ?? false}
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    missingCoverOnly: event.target.checked,
+                  }))
+                }
+              />
+              {t("workspace.missingCoverOnly")}
             </label>
           </div>
           {notice && (

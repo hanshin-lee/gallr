@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AdminExhibition, ExhibitionPatch } from "../domain";
-import { RevisionConflictError } from "./AdminExhibitionRepository";
+import {
+  DraftDeleteBlockedError,
+  RevisionConflictError,
+} from "./AdminExhibitionRepository";
 import {
   MalformedAdminExhibitionPayloadError,
   SupabaseAdminExhibitionRepository,
@@ -54,6 +57,7 @@ const rawRecord = {
   image_credit: "Courtesy of the artist",
   is_featured: true,
   is_homepage_featured: false,
+  has_open_owner_submission: false,
   created_at: "2026-07-01T09:00:00.000Z",
   published_at: "2026-07-02T09:00:00.000Z",
   status: "published",
@@ -100,6 +104,7 @@ const mappedRecord: AdminExhibition = {
   imageCredit: "Courtesy of the artist",
   isFeatured: true,
   isHomepageFeatured: false,
+  hasOpenOwnerSubmission: false,
   createdAt: "2026-07-01T09:00:00.000Z",
   publishedAt: "2026-07-02T09:00:00.000Z",
   status: "Published",
@@ -464,6 +469,7 @@ describe("SupabaseAdminExhibitionRepository", () => {
         status: "Published",
         temporalStatus: "running",
         featuredOnly: true,
+        missingCoverOnly: true,
         sort: "published_desc",
       }),
     ).resolves.toEqual([mappedRecord]);
@@ -472,6 +478,7 @@ describe("SupabaseAdminExhibitionRepository", () => {
       p_status: "published",
       p_temporal_status: "running",
       p_featured_only: true,
+      p_missing_cover_only: true,
       p_sort: "published_desc",
     });
   });
@@ -487,6 +494,7 @@ describe("SupabaseAdminExhibitionRepository", () => {
       p_status: null,
       p_temporal_status: null,
       p_featured_only: false,
+      p_missing_cover_only: false,
       p_sort: "updated_desc",
     });
   });
@@ -1215,6 +1223,55 @@ describe("SupabaseAdminExhibitionRepository", () => {
       p_expected_revision: mappedRecord.revision,
       p_request_id: "20000000-0000-0000-0000-000000000004",
     });
+  });
+
+  it.each([
+    "only_never_published_drafts_can_be_deleted",
+    "draft_delete_requires_media_detach",
+    "imported_exhibitions_cannot_be_deleted",
+    "draft_delete_has_submission_reference",
+    "draft_delete_has_curation_reference",
+    "draft_delete_has_launch_kit_reference",
+    "draft_delete_has_promotion_reference",
+    "draft_delete_has_pending_outbox_event",
+  ])("reports %s as a typed deletion refusal", async (reason) => {
+    const { client } = mockedClient({
+      data: null,
+      error: { code: "23503", message: reason },
+    });
+    const repository = new SupabaseAdminExhibitionRepository(client);
+
+    const error = await repository
+      .deleteDraft(
+        mappedRecord.id,
+        mappedRecord.workingVersionId,
+        mappedRecord.revision,
+        "20000000-0000-0000-0000-000000000010",
+      )
+      .catch((thrown: unknown) => thrown);
+
+    expect(error).toBeInstanceOf(DraftDeleteBlockedError);
+    expect((error as DraftDeleteBlockedError).reason).toBe(reason);
+  });
+
+  it("leaves an unrecognized deletion failure as a generic error", async () => {
+    const { client } = mockedClient({
+      data: null,
+      error: { code: "P0002", message: "exhibition_not_found" },
+    });
+    const repository = new SupabaseAdminExhibitionRepository(client);
+
+    const error = await repository
+      .deleteDraft(
+        mappedRecord.id,
+        mappedRecord.workingVersionId,
+        mappedRecord.revision,
+        "20000000-0000-0000-0000-000000000011",
+      )
+      .catch((thrown: unknown) => thrown);
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error).not.toBeInstanceOf(DraftDeleteBlockedError);
   });
 
   it("maps the promotion queue and sends only the staff schedule command", async () => {

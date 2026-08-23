@@ -386,6 +386,13 @@ export function DeleteDraftDialog({
           {t("dialog.removeImages")}
         </p>
       )}
+      {exhibition.hasOpenOwnerSubmission && (
+        // A consequence of confirming, not a blocker: role="status" keeps it
+        // out of the assertive queue that the media error owns.
+        <p className="field-error" role="status">
+          {t("dialog.deleteWithdrawsSubmission")}
+        </p>
+      )}
       <label className="field">
         <span>{t("dialog.typeDelete")}</span>
         <input

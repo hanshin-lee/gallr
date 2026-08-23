@@ -3,7 +3,10 @@ import userEvent from "@testing-library/user-event";
 import App, { AdminWorkspace } from "./App";
 import type { AdminExhibition, AdminMediaAsset } from "./domain";
 import { LocaleProvider } from "./i18n";
-import { RevisionConflictError } from "./repositories/AdminExhibitionRepository";
+import {
+  DraftDeleteBlockedError,
+  RevisionConflictError,
+} from "./repositories/AdminExhibitionRepository";
 import { InMemoryAdminExhibitionRepository } from "./repositories/InMemoryAdminExhibitionRepository";
 
 describe("gallr admin", () => {
@@ -22,6 +25,7 @@ describe("gallr admin", () => {
     expect(screen.getByLabelText("전시 검색")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "새 전시" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "게시됨" })).toBeInTheDocument();
+    expect(screen.getByLabelText("커버 이미지 없는 전시만")).not.toBeChecked();
   });
 
   it("reviews a gallery submission and accepts it as an unpublished draft", async () => {
@@ -95,7 +99,7 @@ describe("gallr admin", () => {
     expect(createDraft).not.toHaveBeenCalled();
   });
 
-  it("filters exhibitions by search, publish state, date state, and homepage placement", async () => {
+  it("filters exhibitions by search, publish state, date state, placement, and cover", async () => {
     const user = userEvent.setup();
     render(<App />);
 
@@ -116,6 +120,22 @@ describe("gallr admin", () => {
     expect(screen.getByLabelText("Exhibition date status")).toHaveValue("ended");
     expect(screen.getByLabelText("Featured on homepage only")).toBeChecked();
     expect(screen.getByLabelText("Sort exhibitions")).toHaveValue("opening_asc");
+
+    await user.click(screen.getByRole("button", { name: "All" }));
+    await user.selectOptions(screen.getByLabelText("Exhibition date status"), "all");
+    await user.click(screen.getByLabelText("Featured on homepage only"));
+    expect((await screen.findAllByText("빛의 문법")).length).toBeGreaterThan(0);
+
+    await user.click(screen.getByLabelText("Missing cover image only"));
+    expect(screen.getByLabelText("Missing cover image only")).toBeChecked();
+    await waitFor(() =>
+      expect(screen.queryByText("빛의 문법")).not.toBeInTheDocument(),
+    );
+    expect(screen.getAllByText("서로 다른 시간").length).toBeGreaterThan(0);
+
+    await user.click(screen.getByLabelText("Missing cover image only"));
+    expect(screen.getByLabelText("Missing cover image only")).not.toBeChecked();
+    expect((await screen.findAllByText("빛의 문법")).length).toBeGreaterThan(0);
   });
 
   it("ignores a stale exhibition response after the filters change", async () => {
@@ -158,6 +178,46 @@ describe("gallr admin", () => {
     });
     expect(within(table).getByText("낯선 정원")).toBeInTheDocument();
     expect(within(table).queryByText("빛의 문법")).not.toBeInTheDocument();
+  });
+
+  it("merges an in-flight save against the filters current when it resolves", async () => {
+    const user = userEvent.setup();
+    const repository = new InMemoryAdminExhibitionRepository();
+    const [first] = await repository.list({ search: "", status: "All" });
+    let resolveSave: (record: AdminExhibition) => void = () => undefined;
+    const saveDraft = vi.spyOn(repository, "saveDraft").mockImplementation(
+      () =>
+        new Promise<AdminExhibition>((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    render(<AdminWorkspace repository={repository} staffRole="admin" />);
+
+    const table = await screen.findByRole("table", { name: "Exhibitions" });
+    expect(within(table).getByText(first.nameKo)).toBeInTheDocument();
+    await user.type(screen.getByLabelText("Exhibition name (Korean) *"), "!");
+    await waitFor(() => expect(saveDraft).toHaveBeenCalled(), { timeout: 2500 });
+
+    await user.click(screen.getByLabelText("Missing cover image only"));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Missing cover image only")).toBeChecked(),
+    );
+
+    await act(async () => {
+      resolveSave({
+        ...first,
+        nameKo: `${first.nameKo}!`,
+        revision: first.revision + 1,
+        coverImageUrl: "https://images.example.test/just-uploaded.webp",
+      });
+    });
+
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole("table", { name: "Exhibitions" }))
+          .queryByText(`${first.nameKo}!`),
+      ).not.toBeInTheDocument(),
+    );
   });
 
   it("creates and autosaves a new exhibition draft", async () => {
@@ -1154,6 +1214,94 @@ describe("gallr admin", () => {
     ).toBeGreaterThan(0);
   });
 
+  it("warns that deleting withdraws a submission still awaiting review", async () => {
+    const user = userEvent.setup();
+    const repository = new InMemoryAdminExhibitionRepository();
+    const listed = await repository.list({
+      search: "",
+      status: "All",
+      temporalStatus: "all",
+      featuredOnly: false,
+      sort: "updated_desc",
+    });
+    const target = listed.find((record) => record.status === "Draft");
+    repository.list = async () =>
+      listed.map((record) =>
+        record.id === target?.id
+          ? { ...record, hasOpenOwnerSubmission: true }
+          : record,
+      );
+    render(<AdminWorkspace repository={repository} staffRole="admin" />);
+
+    await screen.findAllByText("서로 다른 시간");
+    await user.click(
+      screen.getByRole("button", { name: "Delete permanently" }),
+    );
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Delete draft permanently",
+    });
+    expect(
+      within(dialog).getByText(
+        "This draft has a submission awaiting review. Deleting it withdraws that submission from the review queue.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("omits the withdrawal warning when no review round is open", async () => {
+    const user = userEvent.setup();
+    render(
+      <AdminWorkspace
+        repository={new InMemoryAdminExhibitionRepository()}
+        staffRole="admin"
+      />,
+    );
+
+    await screen.findAllByText("서로 다른 시간");
+    await user.click(
+      screen.getByRole("button", { name: "Delete permanently" }),
+    );
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Delete draft permanently",
+    });
+    expect(
+      within(dialog).queryByText(/withdraws that submission/),
+    ).not.toBeInTheDocument();
+  });
+
+  it("names the retained relationship when permanent deletion is refused", async () => {
+    const user = userEvent.setup();
+    const repository = new InMemoryAdminExhibitionRepository();
+    repository.deleteDraft = async () => {
+      throw new DraftDeleteBlockedError("draft_delete_has_launch_kit_reference");
+    };
+    render(<AdminWorkspace repository={repository} staffRole="admin" />);
+
+    await screen.findAllByText("서로 다른 시간");
+    await user.click(
+      screen.getByRole("button", { name: "Delete permanently" }),
+    );
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Delete draft permanently",
+    });
+    await user.type(
+      within(dialog).getByLabelText("Type DELETE to confirm"),
+      "DELETE",
+    );
+    await user.click(
+      within(dialog).getByRole("button", { name: "Delete permanently" }),
+    );
+
+    expect(
+      await screen.findAllByText(
+        "This draft has a Launch Kit. Cancel the Launch Kit before deleting it.",
+      ),
+    ).not.toHaveLength(0);
+    expect(screen.getByRole("row", { name: /서로 다른 시간/ })).toBeVisible();
+  });
+
   it("does not offer permanent deletion to publishers", async () => {
     render(
       <AdminWorkspace
@@ -1282,6 +1430,78 @@ describe("gallr admin", () => {
     );
     expect(repository.listMedia).toHaveBeenCalledTimes(2);
     expect(screen.getByRole("button", { name: "Publish" })).toBeEnabled();
+  });
+
+  it("drops a row from the missing-cover list once its cover is published", async () => {
+    const user = userEvent.setup();
+    const repository = new InMemoryAdminExhibitionRepository();
+    let mediaReads = 0;
+    repository.listMedia = vi.fn(async (
+      _exhibitionId: string,
+      versionId: string,
+    ): Promise<AdminMediaAsset[]> => {
+      mediaReads += 1;
+      const status: AdminMediaAsset["status"] =
+        mediaReads === 1 ? "ready" : "published";
+      return [
+        {
+          assetId: "worker-cover",
+          versionId,
+          role: "cover",
+          sortOrder: 0,
+          status,
+          bucketId: "exhibition-media",
+          objectPath: "worker/cover.jpg",
+          mimeType: "image/jpeg",
+          byteSize: 1024,
+          width: 1600,
+          height: 1067,
+          checksumSha256: null,
+          publicUrl:
+            status === "published"
+              ? "https://images.example.test/worker-cover.jpg"
+              : null,
+          altKo: "",
+          altEn: "Worker cover",
+          credit: "",
+          rightsUrl: "",
+          originalFilename: "worker-cover.jpg",
+          createdAt: "2026-07-21T12:00:00.000Z",
+          updatedAt: "2026-07-21T12:00:00.000Z",
+          previewUrl: "https://images.example.test/worker-cover.jpg",
+        },
+      ];
+    });
+    render(
+      <AdminWorkspace
+        repository={repository}
+        staffRole="admin"
+        mediaStatusPollIntervalMs={40}
+      />,
+    );
+
+    const table = await screen.findByRole("table", { name: "Exhibitions" });
+    expect(within(table).getByText("서로 다른 시간")).toBeInTheDocument();
+    await user.click(screen.getByLabelText("Missing cover image only"));
+    await waitFor(() =>
+      expect(within(table).queryByText("빛의 문법")).not.toBeInTheDocument(),
+    );
+    expect(within(table).getByText("서로 다른 시간")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Media" }));
+    const filename = await screen.findByText("worker-cover.jpg");
+    const asset = filename.closest("article");
+    await waitFor(() =>
+      expect(within(asset as HTMLElement).getByText("Published"))
+        .toBeInTheDocument(),
+    );
+
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole("table", { name: "Exhibitions" }))
+          .queryByText("서로 다른 시간"),
+      ).not.toBeInTheDocument(),
+    );
   });
 
   it("locks exhibition fields while a media mutation is in flight", async () => {

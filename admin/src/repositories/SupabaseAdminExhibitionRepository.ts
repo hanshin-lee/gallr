@@ -24,6 +24,8 @@ import type {
 } from "../domain";
 import {
   type AdminExhibitionRepository,
+  DraftDeleteBlockedError,
+  isDraftDeleteBlockedReason,
   RevisionConflictError,
 } from "./AdminExhibitionRepository";
 import {
@@ -327,6 +329,12 @@ function mapExhibition(
     isHomepageFeatured: readBoolean(
       record,
       "is_homepage_featured",
+      rpcName,
+      path,
+    ),
+    hasOpenOwnerSubmission: readBoolean(
+      record,
+      "has_open_owner_submission",
       rpcName,
       path,
     ),
@@ -766,7 +774,8 @@ function readSubmissionStatus(
     value === "submitted" ||
     value === "in_review" ||
     value === "accepted" ||
-    value === "rejected"
+    value === "rejected" ||
+    value === "withdrawn"
   ) {
     return value;
   }
@@ -1055,6 +1064,7 @@ export class SupabaseAdminExhibitionRepository
           ? null
           : filters.temporalStatus,
       p_featured_only: filters.featuredOnly ?? false,
+      p_missing_cover_only: filters.missingCoverOnly ?? false,
       p_sort: filters.sort ?? "updated_desc",
     });
     if (error !== null) throwRpcError(rpcName, error);
@@ -1167,7 +1177,13 @@ export class SupabaseAdminExhibitionRepository
       p_expected_revision: expectedRevision,
       p_request_id: requestId,
     });
-    if (error !== null) throwRpcError(rpcName, error);
+    if (error !== null) {
+      const reason = readErrorText(error.message);
+      if (reason !== null && isDraftDeleteBlockedReason(reason)) {
+        throw new DraftDeleteBlockedError(reason);
+      }
+      throwRpcError(rpcName, error);
+    }
 
     const record = readRecord(data, rpcName, "$");
     if (
