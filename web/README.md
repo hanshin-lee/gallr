@@ -113,7 +113,25 @@ Runs:
 
 Vercel auto-deploys on push to `develop` (preview) and `main` (production). The build command is `npm run build`; output directory is `dist/`. Configure once in Vercel → Project Settings.
 
-Fresh-data rebuilds are also triggered daily at **09:00 KST** by `.github/workflows/rebuild-web.yml`, which POSTs to a Vercel Deploy Hook. Configure the private hook URL as the GitHub Actions secret `VERCEL_DEPLOY_HOOK_URL`.
+Fresh-data rebuilds are also triggered daily at **09:00 KST** by `.github/workflows/rebuild-web.yml`, which POSTs to a Vercel Deploy Hook. Configure the private hook URL as the GitHub Actions secret `VERCEL_DEPLOY_HOOK_URL`. The same hook is called by the `outbox-delivery` Edge Function on `exhibition.published`, so an approved exhibition reaches `gallrmap.com` without waiting for the daily cron.
+
+### Do not add an `ignoreCommand` to this project
+
+This site bakes Supabase catalogue data into static pages at build time, so the
+two rebuild triggers that matter most — the publish Deploy Hook and the daily
+cron — carry **no source change at all**. A path-diff ignore command
+(`git diff --quiet HEAD^ HEAD -- .`) exits `0` for exactly those triggers, and on
+Vercel `0` means *skip the build*. The result is a silent failure: an owner
+publishes, admin approves, the hook fires, no build runs, and the new exhibition
+detail page is never generated — so the gallery portal's "view public page" link
+serves a Vercel `404: NOT_FOUND`. Vercel exposes no environment variable that
+identifies a Deploy Hook deployment, so the ignore command cannot special-case it.
+
+`web/tests/rebuild-trigger-config.test.js` enforces this. The asymmetry is
+deliberate: a redundant rebuild costs one cheap Eleventy build, while a wrongly
+skipped rebuild is a customer-visible 404 on a published exhibition. The
+`admin/` and `gallery/` portals have no build-time catalogue data and correctly
+keep their path-diff ignore commands.
 
 ## Layout
 
