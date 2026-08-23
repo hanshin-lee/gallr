@@ -19,6 +19,19 @@ All notable changes to gallr will be documented in this file.
   `web/`.
 - **The gallery workspace now says the public page trails approval by a few
   minutes**, instead of offering a link that answers 404 while the rebuild runs.
+- **Accidental drafts can be permanently deleted again.** Deletion previously
+  refused any exhibition that had ever emitted a background event, and nothing
+  purges delivered events, so one owner submission — or a single
+  archive/restore round trip — stranded a draft forever. Only work still queued
+  for delivery blocks deletion now.
+- **Deleting an owner draft withdraws its open review round.** A submission
+  still sitting in the staff queue is marked withdrawn instead of leaving a
+  reviewer holding a record that no longer exists; a round that already reached
+  a decision keeps that decision. Launch Kit and local-promotion references now
+  refuse with named reasons instead of a raw database error, and Admin names
+  the blocking relationship rather than showing one generic failure notice.
+  The delete confirmation dialog warns before the fact when a draft has a
+  submission still awaiting review.
 
 ### Infrastructure
 - Product-surface CI runs the public-web suite when the root `vercel.json`
