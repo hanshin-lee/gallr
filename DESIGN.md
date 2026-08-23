@@ -208,3 +208,4 @@ Not cramped, not spacious. Gallery-like breathing room without wasting space on 
 | 2026-04-08 | Avatar: letter initial + camera icon overlay | Clear edit affordance, personal before upload |
 | 2026-06-08 | Sanction functional motion (crossfade, progress cues, auto-cycling event surfaces, gated by reduced-motion) | Communicates liveness for multi-event promotion; aligns the doc with shipped patterns |
 | 2026-08-10 | Orange saved-exhibition map pins | Makes personal saves identifiable in All while preserving black for the general catalogue |
+| 2026-08-23 | Web exhibition imagery in full colour; monochrome only once a run has ended | The artwork is the subject, and desaturation reads as a status signal rather than decoration |
