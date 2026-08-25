@@ -75,6 +75,12 @@ One accent color. Everything else is black, white, or gray. Color is rare and me
 
 **Accent rules:** NEVER use #FF5400 for backgrounds, large surfaces, decoration, text on small targets, or any purpose not listed above. On the Map tab it identifies saved exhibitions consistently in All and My Exhibitions. The accent is a signal, not a theme.
 
+**Artwork-derived export exception:** A downloaded exhibition QR may use a small palette sampled
+from that exhibition's published poster. This is generated exhibition content, not portal chrome:
+the surrounding UI stays monochrome, the QR keeps a white four-module quiet zone, and every dark
+module color must maintain at least 7:1 contrast against white. Scanner-critical function modules
+remain square and use the darkest sampled tone.
+
 ## Spacing
 
 ### 8pt Grid System
@@ -209,3 +215,4 @@ Not cramped, not spacious. Gallery-like breathing room without wasting space on 
 | 2026-06-08 | Sanction functional motion (crossfade, progress cues, auto-cycling event surfaces, gated by reduced-motion) | Communicates liveness for multi-event promotion; aligns the doc with shipped patterns |
 | 2026-08-10 | Orange saved-exhibition map pins | Makes personal saves identifiable in All while preserving black for the general catalogue |
 | 2026-08-23 | Web exhibition imagery in full colour; monochrome only once a run has ended | The artwork is the subject, and desaturation reads as a status signal rather than decoration |
+| 2026-08-25 | Published exhibition QR exports may inherit a scan-safe poster palette | Makes each gallery's physical QR feel native to its exhibition while keeping portal UI monochrome and the code reliably scannable |

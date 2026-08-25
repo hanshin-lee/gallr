@@ -20,7 +20,7 @@ Configure `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and
 `VITE_PUBLIC_SITE_URL` through process values injected from the matching 1Password item.
 `.env.example` is a variable-name reference, not persistent credential storage. Only the
 publishable browser key belongs in the client. `VITE_PUBLIC_SITE_URL` keeps owner-facing public
-links and downloadable RSVP QR codes on the matching visitor deployment during rehearsals. Keep
+links and downloadable exhibition and RSVP QR codes on the matching visitor deployment during rehearsals. Keep
 `VITE_LAUNCH_KIT_ENABLED=false` until the free Launch Kit beta is separately approved. Keep
 `VITE_OWNER_PROMOTION_ENABLED=false` until the paid-entitlement promotion workflow is approved;
 enabling the free beta does not expose or query promotion controls. Missing Supabase configuration
@@ -30,6 +30,13 @@ An active Launch Kit can copy its environment-matched RSVP URL and download a mo
 code. QR rendering happens on demand in the browser; the URL or generated asset is not sent to a QR
 service or persisted by Gallery. Replacing the RSVP link immediately invalidates previously
 downloaded QR codes.
+
+A published exhibition can also preview and download a square SVG QR for its current public page.
+Gallery samples up to five colors from the stable public poster in the browser, darkens every tone
+to scanner-safe contrast, keeps function modules square, and uses ECC H with a four-module white
+quiet zone. The poster, URL, and generated SVG are not sent to a third-party service or persisted.
+If the public poster cannot be read, Gallery still produces a monochrome QR. Regenerate the QR after
+changing a published exhibition title because the current public-page path includes that title.
 
 Owners can authenticate with either an emailed one-time sign-in code or Google
 OAuth. Both methods may create the shared consumer identity when one does not

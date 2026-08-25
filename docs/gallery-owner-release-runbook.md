@@ -543,7 +543,10 @@ Use one owner, one non-owner, one staff user, and two galleries:
    rebuild, and the public link works; unpublished and archived records do not
    appear. In production, verify the hook-created Vercel deployment reports
    Git ref `main` and target `production`; a READY preview deployment does not
-   pass this step.
+   pass this step. In the published owner editor, verify the exhibition QR uses
+   dark tones sampled from the public poster, retains a white quiet zone, and
+   decodes to that exact environment-matched public page. Exercise the
+   monochrome fallback once, and regenerate after a published title change.
 6. One public detail load records impact without exposing a write RPC or raw
    visitor identity. The owner sees updated aggregate counts.
 7. An active owner explicitly activates one `free_beta` Launch Kit without a

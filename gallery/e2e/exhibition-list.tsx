@@ -4,6 +4,16 @@ import type { OwnerExhibition } from "../src/domain";
 import { LocaleProvider } from "../src/i18n";
 import "../src/styles.css";
 
+const visualPosterUrl = "https://gallery-visual.test/published-poster.svg";
+const localPosterUrl = new URL("./exhibition-poster.svg", window.location.href).toString();
+const nativeFetch = window.fetch.bind(window);
+window.fetch = (input, init) => {
+  const requestUrl = input instanceof Request ? input.url : input.toString();
+  return requestUrl === visualPosterUrl
+    ? nativeFetch(localPosterUrl, init)
+    : nativeFetch(input, init);
+};
+
 const base: OwnerExhibition = {
   id: "visual-published",
   workingVersionId: "visual-version",
@@ -35,7 +45,17 @@ const base: OwnerExhibition = {
   updatedAt: "2026-08-05T12:00:00Z",
   pageLoads30d: 42,
   pageLoadsAllTime: 210,
-  cover: null,
+  cover: {
+    assetId: "visual-cover",
+    status: "published",
+    bucketId: "exhibition-images",
+    objectPath: "visual/published-poster.svg",
+    publicUrl: visualPosterUrl,
+    mimeType: "image/svg+xml",
+    byteSize: 2048,
+    originalFilename: "published-poster.svg",
+    previewUrl: localPosterUrl,
+  },
 };
 
 const newDraft: OwnerExhibition = {
