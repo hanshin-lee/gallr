@@ -5,6 +5,11 @@ All notable changes to gallr will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Gallery owners can download a poster-toned QR for every published
+  exhibition.** Gallery samples a scan-safe palette from the stable public
+  cover in the browser, previews the QR beside the public-page link, and
+  downloads a self-contained SVG with a monochrome fallback when the poster
+  cannot be read. Private signed preview URLs never enter the QR pipeline.
 - **Admin can list exhibitions that still need a cover image.** A
   "Missing cover image only" checkbox on the Exhibitions page combines with the
   existing search, publish-state, date-state, homepage-placement, and sort
