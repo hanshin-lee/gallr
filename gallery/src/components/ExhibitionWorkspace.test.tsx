@@ -4,6 +4,15 @@ import { ExhibitionWorkspace } from "./ExhibitionWorkspace";
 import type { GalleryGeocodeCandidate, OwnerExhibition } from "../domain";
 import { LocaleProvider } from "../i18n";
 
+const exhibitionQrCard = vi.hoisted(() => vi.fn());
+
+vi.mock("./ExhibitionQrCard", () => ({
+  ExhibitionQrCard: (props: unknown) => {
+    exhibitionQrCard(props);
+    return <section aria-label="Exhibition QR card" />;
+  },
+}));
+
 const draft: OwnerExhibition = {
   id: "exhibition-one",
   workingVersionId: "version-one",
@@ -115,6 +124,10 @@ function repositoryWith(records: OwnerExhibition[] = [draft]) {
 }
 
 describe("gallery exhibition workspace", () => {
+  beforeEach(() => {
+    exhibitionQrCard.mockClear();
+  });
+
   it("localizes the exhibition dashboard, status, dates, and preferred read label", async () => {
     const published = {
       ...draft,
@@ -294,6 +307,35 @@ describe("gallery exhibition workspace", () => {
     expect(screen.getByText("1,234")).toBeInTheDocument();
     expect(screen.getByText("5,678")).toBeInTheDocument();
     expect(screen.getByText("Public page loads, not unique visitors.")).toBeInTheDocument();
+  });
+
+  it("uses only the stable public poster when preparing a published exhibition QR", async () => {
+    const user = userEvent.setup();
+    const published = {
+      ...draftWithCover,
+      ownerStatus: "published" as const,
+      cover: {
+        ...draftWithCover.cover!,
+        status: "published" as const,
+        publicUrl: "https://cdn.example.test/published-poster.jpg",
+        previewUrl: "https://signed.example.test/private-preview?token=secret",
+      },
+    };
+    render(
+      <ExhibitionWorkspace
+        membershipStatus="active"
+        repository={repositoryWith([published])}
+        onSignOut={vi.fn()}
+      />,
+    );
+
+    await user.click(await screen.findByText("Notes from a Small Room"));
+
+    expect(screen.getByLabelText("Exhibition QR card")).toBeInTheDocument();
+    expect(exhibitionQrCard).toHaveBeenCalledWith(expect.objectContaining({
+      posterUrl: "https://cdn.example.test/published-poster.jpg",
+    }));
+    expect(JSON.stringify(exhibitionQrCard.mock.calls)).not.toContain("token=secret");
   });
 
   it("warns that the public page trails publication by a few minutes", async () => {

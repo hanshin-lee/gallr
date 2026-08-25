@@ -362,6 +362,27 @@ button:disabled { cursor: not-allowed; opacity: 0.42; }
 .submission-panel h2 { margin-bottom: 16px; }
 .submission-panel p { color: #000000; }
 .submission-panel a { display: inline-block; color: #000000; margin-bottom: 16px; }
+.exhibition-qr-card {
+  border-top: 1px solid #e5e5e5;
+  margin-top: 24px;
+  padding-top: 24px;
+}
+.exhibition-qr-card > h2 { margin-bottom: 8px; }
+.exhibition-qr-card > p { font-size: 12px; line-height: 18px; }
+.exhibition-qr-preview,
+.exhibition-qr-placeholder {
+  display: grid;
+  width: 100%;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid #000000;
+  background: #ffffff;
+}
+.exhibition-qr-placeholder { color: #525252; font-size: 12px; }
+.exhibition-qr-download { width: 100%; margin-top: 16px; }
+.exhibition-qr-status { margin: 8px 0 0; color: #000000; font-size: 12px; line-height: 18px; }
+.exhibition-qr-recovery .field-error { margin-bottom: 12px; }
+.exhibition-qr-recovery .outlined-button { width: 100%; }
 .submission-panel .impact-heading { border-top: 1px solid #e5e5e5; margin: 8px 0 16px; padding-top: 24px; }
 .submission-panel .impact-summary { margin-bottom: 24px; }
 .submit-button { width: 100%; min-width: 0; }
