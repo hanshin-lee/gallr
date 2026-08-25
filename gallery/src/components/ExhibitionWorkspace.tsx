@@ -19,6 +19,7 @@ import {
 } from "../i18n";
 import { OwnerShell } from "./OwnerShell";
 import { publicExhibitionUrl } from "../publicExhibitionUrl";
+import { ExhibitionQrCard } from "./ExhibitionQrCard";
 
 type ExhibitionRepository = Pick<
   OwnerRepository,
@@ -857,6 +858,15 @@ function Editor({
                 <p>{messages.exhibitions.statuses.published}</p>
                 <a href={publicExhibitionUrl(record, publicSiteUrl)}>{messages.exhibitions.editor.viewPublic}</a>
                 <p className="submission-help">{messages.exhibitions.editor.publicPageDelay}</p>
+                <ExhibitionQrCard
+                  exhibition={{
+                    id: record.id,
+                    nameKo: record.nameKo,
+                    nameEn: record.nameEn,
+                  }}
+                  posterUrl={record.cover?.status === "published" ? record.cover.publicUrl : null}
+                  publicSiteUrl={publicSiteUrl}
+                />
                 <h2 className="impact-heading">{messages.exhibitions.editor.publicImpact}</h2>
                 <ImpactSummary exhibition={record} />
                 <button className="primary-button launch-button" type="button" disabled={Boolean(busy)} onClick={() => void launch()}>
