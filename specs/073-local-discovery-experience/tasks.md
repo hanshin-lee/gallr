@@ -16,4 +16,4 @@
   prove that no local profile, origin, coordinates, or stop identity is emitted.
 - [x] T008 Run shared/Compose/Android/iOS verification plus bilingual runtime,
   accessibility, release-gate, and no-paid-dependency checks.
-- [ ] T009 Open a stacked PR, complete independent review, and reach green CI.
+- [x] T009 Open a stacked PR, complete independent review, and reach green CI.
