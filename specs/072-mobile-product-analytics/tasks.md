@@ -2,7 +2,7 @@
 
 - [x] T001 Remove raw OAuth URL and catalogue-cache exception-message logging;
   add redaction regressions.
-- [ ] T002 Add and observe failing closed-event serialization, forbidden-field,
+- [x] T002 Add and observe failing closed-event serialization, forbidden-field,
   no-op, queue-cap, TTL, retry, and opt-out tests.
 - [ ] T003 Implement typed shared events, recorder contract, bounded queue, and
   Ktor batch client.
