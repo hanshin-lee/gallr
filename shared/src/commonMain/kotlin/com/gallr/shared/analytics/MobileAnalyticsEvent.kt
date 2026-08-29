@@ -221,6 +221,7 @@ data class MobileAnalyticsEvent private constructor(
     @SerialName("exhibition_id") val exhibitionId: String? = null,
     @SerialName("discovery_kind") val discoveryKind: DiscoveryKind? = null,
     @SerialName("position_bucket") val positionBucket: PositionBucket? = null,
+    @SerialName("result_count") val resultCount: Int? = null,
     val action: AnalyticsIntentAction? = null,
     @SerialName("route_mode") val routeMode: AnalyticsRouteMode? = null,
     @SerialName("stop_count") val stopCount: Int? = null,
@@ -237,27 +238,77 @@ data class MobileAnalyticsEvent private constructor(
     private fun validShape(): Boolean =
         when (eventName) {
             MobileAnalyticsEventName.SURFACE_VIEWED -> {
-                surface != null && entryPoint != null && exhibitionId == null && routeMode == null
+                surface != null &&
+                    entryPoint != null &&
+                    exhibitionId == null &&
+                    discoveryKind == null &&
+                    positionBucket == null &&
+                    resultCount == null &&
+                    action == null &&
+                    routeMode == null &&
+                    stopCount == null &&
+                    distanceBand == null &&
+                    durationBand == null
             }
 
             MobileAnalyticsEventName.EXHIBITION_OPENED,
             MobileAnalyticsEventName.EXHIBITION_IMPRESSION,
             -> {
-                exhibitionId != null && surface != null && discoveryKind != null && positionBucket != null
+                exhibitionId != null &&
+                    surface != null &&
+                    discoveryKind != null &&
+                    positionBucket != null &&
+                    entryPoint == null &&
+                    resultCount == null &&
+                    action == null &&
+                    routeMode == null &&
+                    stopCount == null &&
+                    distanceBand == null &&
+                    durationBand == null
             }
 
             MobileAnalyticsEventName.EXHIBITION_INTENT -> {
-                exhibitionId != null && surface != null && action != null
+                exhibitionId != null &&
+                    surface != null &&
+                    action != null &&
+                    entryPoint == null &&
+                    discoveryKind == null &&
+                    positionBucket == null &&
+                    resultCount == null &&
+                    routeMode == null &&
+                    stopCount == null &&
+                    distanceBand == null &&
+                    durationBand == null
             }
 
             MobileAnalyticsEventName.RECOMMENDATIONS_SHOWN -> {
-                surface != null && discoveryKind == DiscoveryKind.RECOMMENDATION && positionBucket != null
+                surface != null &&
+                    discoveryKind == DiscoveryKind.RECOMMENDATION &&
+                    positionBucket != null &&
+                    resultCount in 0..20 &&
+                    entryPoint == null &&
+                    exhibitionId == null &&
+                    action == null &&
+                    routeMode == null &&
+                    stopCount == null &&
+                    distanceBand == null &&
+                    durationBand == null
             }
 
             MobileAnalyticsEventName.ROUTE_CREATED,
             MobileAnalyticsEventName.ROUTE_STARTED,
             -> {
-                routeMode != null && stopCount in 2..5 && distanceBand != null && durationBand != null
+                routeMode != null &&
+                    stopCount in 2..5 &&
+                    distanceBand != null &&
+                    durationBand != null &&
+                    surface == null &&
+                    entryPoint == null &&
+                    exhibitionId == null &&
+                    discoveryKind == null &&
+                    positionBucket == null &&
+                    resultCount == null &&
+                    action == null
             }
         }
 
@@ -300,6 +351,66 @@ data class MobileAnalyticsEvent private constructor(
             positionBucket = positionBucket,
         )
 
+        fun exhibitionImpression(
+            eventId: String,
+            occurredOn: LocalDate,
+            platform: AnalyticsPlatform,
+            appMajor: Int,
+            exhibitionId: String,
+            surface: AnalyticsSurface,
+            discoveryKind: DiscoveryKind,
+            positionBucket: PositionBucket,
+        ) = MobileAnalyticsEvent(
+            eventId = eventId,
+            occurredOn = occurredOn,
+            platform = platform,
+            appMajor = appMajor,
+            eventName = MobileAnalyticsEventName.EXHIBITION_IMPRESSION,
+            surface = surface,
+            exhibitionId = exhibitionId,
+            discoveryKind = discoveryKind,
+            positionBucket = positionBucket,
+        )
+
+        fun exhibitionIntent(
+            eventId: String,
+            occurredOn: LocalDate,
+            platform: AnalyticsPlatform,
+            appMajor: Int,
+            exhibitionId: String,
+            surface: AnalyticsSurface,
+            action: AnalyticsIntentAction,
+        ) = MobileAnalyticsEvent(
+            eventId = eventId,
+            occurredOn = occurredOn,
+            platform = platform,
+            appMajor = appMajor,
+            eventName = MobileAnalyticsEventName.EXHIBITION_INTENT,
+            surface = surface,
+            exhibitionId = exhibitionId,
+            action = action,
+        )
+
+        fun recommendationsShown(
+            eventId: String,
+            occurredOn: LocalDate,
+            platform: AnalyticsPlatform,
+            appMajor: Int,
+            surface: AnalyticsSurface,
+            positionBucket: PositionBucket,
+            resultCount: Int,
+        ) = MobileAnalyticsEvent(
+            eventId = eventId,
+            occurredOn = occurredOn,
+            platform = platform,
+            appMajor = appMajor,
+            eventName = MobileAnalyticsEventName.RECOMMENDATIONS_SHOWN,
+            surface = surface,
+            discoveryKind = DiscoveryKind.RECOMMENDATION,
+            positionBucket = positionBucket,
+            resultCount = resultCount,
+        )
+
         fun routeCreated(
             eventId: String,
             occurredOn: LocalDate,
@@ -315,6 +426,27 @@ data class MobileAnalyticsEvent private constructor(
             platform = platform,
             appMajor = appMajor,
             eventName = MobileAnalyticsEventName.ROUTE_CREATED,
+            routeMode = mode,
+            stopCount = stopCount,
+            distanceBand = distanceBand,
+            durationBand = durationBand,
+        )
+
+        fun routeStarted(
+            eventId: String,
+            occurredOn: LocalDate,
+            platform: AnalyticsPlatform,
+            appMajor: Int,
+            mode: AnalyticsRouteMode,
+            stopCount: Int,
+            distanceBand: DistanceBand,
+            durationBand: DurationBand,
+        ) = MobileAnalyticsEvent(
+            eventId = eventId,
+            occurredOn = occurredOn,
+            platform = platform,
+            appMajor = appMajor,
+            eventName = MobileAnalyticsEventName.ROUTE_STARTED,
             routeMode = mode,
             stopCount = stopCount,
             distanceBand = distanceBand,
@@ -358,7 +490,7 @@ fun normalizeAnalyticsQueue(
 }
 
 private fun validIdentifier(value: String): Boolean =
-    value.length in 1..128 && value == value.trim() && value.none { it.code < 32 || it.code == 127 }
+    value.length in 1..128 && value.all { it.isLetterOrDigit() || it == '_' || it == '-' }
 
 private val UUID_PATTERN =
     Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", RegexOption.IGNORE_CASE)

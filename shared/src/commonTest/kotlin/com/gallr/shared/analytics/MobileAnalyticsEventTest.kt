@@ -72,6 +72,63 @@ class MobileAnalyticsEventTest {
     }
 
     @Test
+    fun `every closed event kind has a typed factory`() {
+        val occurredOn = LocalDate(2026, 8, 30)
+        val events =
+            listOf(
+                MobileAnalyticsEvent.exhibitionImpression(
+                    eventId = "a1000000-0000-4000-8000-000000000010",
+                    occurredOn = occurredOn,
+                    platform = AnalyticsPlatform.ANDROID,
+                    appMajor = 1,
+                    exhibitionId = "exhibition-one",
+                    surface = AnalyticsSurface.FEATURED,
+                    discoveryKind = DiscoveryKind.RECOMMENDATION,
+                    positionBucket = PositionBucket.TOP_THREE,
+                ),
+                MobileAnalyticsEvent.exhibitionIntent(
+                    eventId = "a1000000-0000-4000-8000-000000000011",
+                    occurredOn = occurredOn,
+                    platform = AnalyticsPlatform.IOS,
+                    appMajor = 1,
+                    exhibitionId = "exhibition-one",
+                    surface = AnalyticsSurface.EXHIBITION_DETAIL,
+                    action = AnalyticsIntentAction.BOOKMARK_ADD,
+                ),
+                MobileAnalyticsEvent.recommendationsShown(
+                    eventId = "a1000000-0000-4000-8000-000000000012",
+                    occurredOn = occurredOn,
+                    platform = AnalyticsPlatform.ANDROID,
+                    appMajor = 1,
+                    surface = AnalyticsSurface.FEATURED,
+                    positionBucket = PositionBucket.TOP_THREE,
+                    resultCount = 0,
+                ),
+                MobileAnalyticsEvent.routeStarted(
+                    eventId = "a1000000-0000-4000-8000-000000000013",
+                    occurredOn = occurredOn,
+                    platform = AnalyticsPlatform.IOS,
+                    appMajor = 1,
+                    mode = AnalyticsRouteMode.NEIGHBORHOOD,
+                    stopCount = 3,
+                    distanceBand = DistanceBand.UNDER_TWO_KM,
+                    durationBand = DurationBand.TWO_TO_FOUR_HOURS,
+                ),
+            )
+
+        assertEquals(
+            listOf(
+                MobileAnalyticsEventName.EXHIBITION_IMPRESSION,
+                MobileAnalyticsEventName.EXHIBITION_INTENT,
+                MobileAnalyticsEventName.RECOMMENDATIONS_SHOWN,
+                MobileAnalyticsEventName.ROUTE_STARTED,
+            ),
+            events.map(MobileAnalyticsEvent::eventName),
+        )
+        assertTrue("\"result_count\":0" in Json.encodeToString(events[2]))
+    }
+
+    @Test
     fun `event factories reject malformed identifiers and invalid dimensions`() {
         assertFailsWith<IllegalArgumentException> {
             MobileAnalyticsEvent.exhibitionOpened(
@@ -86,8 +143,20 @@ class MobileAnalyticsEventTest {
             )
         }
         assertFailsWith<IllegalArgumentException> {
-            MobileAnalyticsEvent.routeCreated(
+            MobileAnalyticsEvent.exhibitionOpened(
                 eventId = "a1000000-0000-4000-8000-000000000003",
+                occurredOn = LocalDate(2026, 8, 30),
+                platform = AnalyticsPlatform.ANDROID,
+                appMajor = 1,
+                exhibitionId = "person@example.com",
+                surface = AnalyticsSurface.LIST,
+                discoveryKind = DiscoveryKind.ORGANIC,
+                positionBucket = PositionBucket.TOP_THREE,
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            MobileAnalyticsEvent.routeCreated(
+                eventId = "a1000000-0000-4000-8000-000000000004",
                 occurredOn = LocalDate(2026, 8, 30),
                 platform = AnalyticsPlatform.ANDROID,
                 appMajor = 0,

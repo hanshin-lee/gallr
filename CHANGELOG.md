@@ -64,9 +64,10 @@ All notable changes to gallr will be documented in this file.
 
 ### Infrastructure
 - Mobile analytics now has a closed shared event contract, disabled/no-op gate,
-  bounded batch validation, and deterministic seven-day/200-event queue
-  normalization. No collection endpoint or production analytics activation is
-  included in this foundation.
+  typed factories for all seven events, bounded batch/result validation, a
+  privacy-safe exhibition identifier grammar, and deterministic seven-day/
+  200-event queue normalization. No collection endpoint or production
+  analytics activation is included in this foundation.
 - Migration `20260823071500_admin_list_missing_cover_filter` adds the
   six-argument `admin_list_exhibitions` overload with `p_missing_cover_only`
   while keeping the two- and five-argument overloads for deployed clients.
