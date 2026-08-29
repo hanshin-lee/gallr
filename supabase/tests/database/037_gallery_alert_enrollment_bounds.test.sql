@@ -410,7 +410,7 @@ select ok(
         'content_private.claim_gallery_alert_delivery_jobs_impl('
           || 'uuid,text,integer,integer)'
       )
-    ) like '%gallery-alert-fanout:%pg_advisory_xact_lock%'
+    ) like '%pg_advisory_xact_lock%gallery-alert-fanout:%'
   ),
   'delivery fan-out materialization serializes on the publication event'
 );
