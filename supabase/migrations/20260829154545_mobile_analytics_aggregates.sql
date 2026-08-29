@@ -47,7 +47,7 @@ create table content.mobile_analytics_daily (
     'nearby', 'saved', 'notification', 'recommendation', 'route'
   )),
   constraint mobile_analytics_position_bucket check (position_bucket in (
-    'none', 'top_three', 'four_to_ten', 'after_ten'
+    'none', 'unranked', 'top_three', 'four_to_ten', 'after_ten'
   )),
   constraint mobile_analytics_result_count check (
     result_count = 0 or result_count between 1 and 20
@@ -119,7 +119,8 @@ as $function$
     'project_hourly', 10000,
     'batch_size', 20,
     'receipt_days', 7,
-    'quota_hours', 24
+    'quota_hours', 24,
+    'aggregate_months', 24
   );
 $function$;
 
@@ -133,6 +134,7 @@ as $function$
 declare
   v_receipts_deleted integer;
   v_quotas_deleted integer;
+  v_aggregates_deleted integer;
 begin
   delete from content_private.mobile_analytics_receipts
   where received_at < now() - make_interval(
@@ -143,16 +145,25 @@ begin
   get diagnostics v_receipts_deleted = row_count;
 
   delete from content_private.mobile_analytics_quotas
-  where window_start < date_trunc('hour', now()) - make_interval(
+  where window_start <= date_trunc('hour', now()) - make_interval(
     hours => (
       content_private.mobile_analytics_limits() ->> 'quota_hours'
     )::integer
   );
   get diagnostics v_quotas_deleted = row_count;
 
+  delete from content.mobile_analytics_daily
+  where occurred_on < current_date - make_interval(
+    months => (
+      content_private.mobile_analytics_limits() ->> 'aggregate_months'
+    )::integer
+  );
+  get diagnostics v_aggregates_deleted = row_count;
+
   return jsonb_build_object(
     'receipts', v_receipts_deleted,
-    'quotas', v_quotas_deleted
+    'quotas', v_quotas_deleted,
+    'aggregates', v_aggregates_deleted
   );
 end;
 $function$;
@@ -344,14 +355,12 @@ begin
     ) or (
       v_event_name = 'recommendations_shown'
       and not (
-        v_event ?& array[
-          'surface', 'discovery_kind', 'position_bucket', 'result_count'
-        ]
+        v_event ?& array['surface', 'discovery_kind', 'result_count']
         and v_discovery_kind = 'recommendation'
         and v_result_count between 0 and 20
         and not (v_event ?| array[
-          'entry_point', 'exhibition_id', 'action', 'route_mode',
-          'stop_count', 'distance_band', 'duration_band'
+          'entry_point', 'exhibition_id', 'position_bucket', 'action',
+          'route_mode', 'stop_count', 'distance_band', 'duration_band'
         ])
       )
     ) or (
@@ -425,8 +434,14 @@ comment on table content.mobile_analytics_daily is
 comment on table content_private.mobile_analytics_receipts is
   'Seven-day event UUID receipts used only to make ambiguous mobile analytics retries idempotent.';
 comment on function content_private.prune_mobile_analytics_state() is
-  'Removes expired retry receipts and short-lived source quota digests; invoked once per active hour.';
+  'Removes expired retry receipts, source quota digests, and identity-free daily aggregates.';
 comment on function public.service_record_mobile_analytics(jsonb, text) is
   'Service-only strict mobile analytics recorder. Stores receipts plus allowlisted daily aggregates.';
+
+select cron.schedule(
+  'gallr-mobile-analytics-prune-v1',
+  '17 * * * *',
+  'select content_private.prune_mobile_analytics_state();'
+);
 
 commit;

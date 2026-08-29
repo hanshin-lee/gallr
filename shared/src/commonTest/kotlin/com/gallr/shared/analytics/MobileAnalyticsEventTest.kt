@@ -50,6 +50,23 @@ class MobileAnalyticsEventTest {
     }
 
     @Test
+    fun `unranked opens remain honest for map and direct entry points`() {
+        val event =
+            MobileAnalyticsEvent.exhibitionOpened(
+                eventId = "a1000000-0000-4000-8000-000000000014",
+                occurredOn = LocalDate(2026, 8, 30),
+                platform = AnalyticsPlatform.IOS,
+                appMajor = 1,
+                exhibitionId = "exhibition-one",
+                surface = AnalyticsSurface.MAP,
+                discoveryKind = DiscoveryKind.NEARBY,
+                positionBucket = PositionBucket.UNRANKED,
+            )
+
+        assertTrue("\"position_bucket\":\"unranked\"" in Json.encodeToString(event))
+    }
+
+    @Test
     fun `route event contains only coarse bands`() {
         val event =
             MobileAnalyticsEvent.routeCreated(
@@ -101,7 +118,6 @@ class MobileAnalyticsEventTest {
                     platform = AnalyticsPlatform.ANDROID,
                     appMajor = 1,
                     surface = AnalyticsSurface.FEATURED,
-                    positionBucket = PositionBucket.TOP_THREE,
                     resultCount = 0,
                 ),
                 MobileAnalyticsEvent.routeStarted(

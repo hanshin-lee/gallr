@@ -55,7 +55,12 @@ const DISCOVERY_KINDS = new Set([
   "recommendation",
   "route",
 ]);
-const POSITION_BUCKETS = new Set(["top_three", "four_to_ten", "after_ten"]);
+const POSITION_BUCKETS = new Set([
+  "unranked",
+  "top_three",
+  "four_to_ten",
+  "after_ten",
+]);
 const INTENT_ACTIONS = new Set([
   "bookmark_add",
   "bookmark_remove",
@@ -202,12 +207,10 @@ function validateEvent(
       return hasExactKeys(value, [
           "surface",
           "discovery_kind",
-          "position_bucket",
           "result_count",
         ]) &&
           stringIn(value.surface, SURFACES) &&
           value.discovery_kind === "recommendation" &&
-          stringIn(value.position_bucket, POSITION_BUCKETS) &&
           typeof value.result_count === "number" &&
           Number.isInteger(value.result_count) &&
           value.result_count >= 0 && value.result_count <= 20

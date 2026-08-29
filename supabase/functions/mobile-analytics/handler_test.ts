@@ -196,7 +196,6 @@ Deno.test("rejects unknown fields malformed identifiers and mismatched shapes", 
     (await run(post([event({
       event_name: "recommendations_shown",
       discovery_kind: "recommendation",
-      position_bucket: "top_three",
       surface: "featured",
       entry_point: undefined,
     })]))).status,
@@ -210,7 +209,6 @@ Deno.test("records a bounded recommendation result count", async () => {
   const response = await handler(recorded)(post([event({
     event_name: "recommendations_shown",
     discovery_kind: "recommendation",
-    position_bucket: "top_three",
     result_count: 6,
     surface: "featured",
     entry_point: undefined,
@@ -224,7 +222,6 @@ Deno.test("records a bounded recommendation result count", async () => {
     app_major: 1,
     event_name: "recommendations_shown",
     discovery_kind: "recommendation",
-    position_bucket: "top_three",
     result_count: 6,
     surface: "featured",
   }]);
@@ -233,12 +230,26 @@ Deno.test("records a bounded recommendation result count", async () => {
     event_id: "a1000000-0000-4000-8000-000000000009",
     event_name: "recommendations_shown",
     discovery_kind: "recommendation",
-    position_bucket: "top_three",
     result_count: 0,
     surface: "featured",
     entry_point: undefined,
   })]));
   assertEquals(emptyResponse.status, 204);
+});
+
+Deno.test("accepts an honest unranked map open", async () => {
+  const recorded: RecordedBatch[] = [];
+  const response = await handler(recorded)(post([event({
+    event_name: "exhibition_opened",
+    surface: "map",
+    exhibition_id: "exhibition-one",
+    discovery_kind: "nearby",
+    position_bucket: "unranked",
+    entry_point: undefined,
+  })]));
+
+  assertEquals(response.status, 204);
+  assertEquals(recorded.length, 1);
 });
 
 Deno.test("rejects malformed and out-of-window calendar dates before storage", async () => {

@@ -26,8 +26,9 @@ event shapes, a 0–20 recommendation result count, calendar/range validation, a
 a canonical letter/digit/underscore/hyphen exhibition-ID grammar that cannot
 carry URLs, email addresses, coordinates, or search text. It also enforces
 server/database quotas, event-ID dedupe, and sanitized responses. The database
-prunes seven-day retry receipts and expired source-quota digests on the first
-accepted batch of each active hour.
+prunes seven-day retry receipts and expired source-quota digests both hourly and
+on the first accepted batch of each active hour. Identity-free daily aggregate
+counters expire after 24 months.
 
 This anonymous endpoint cannot prove that every accepted event came from an
 untampered app. Treat aggregate reporting as directional, monitor for anomalies,

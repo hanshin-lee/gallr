@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(31);
+select plan(34);
 
 select has_table('content', 'mobile_analytics_daily', 'daily mobile aggregates exist');
 select has_table('content_private', 'mobile_analytics_receipts', 'idempotency receipts are private');
@@ -138,6 +138,25 @@ select is(
 
 select is(
   public.service_record_mobile_analytics(
+    jsonb_build_array(jsonb_build_object(
+      'event_id', 'a1000000-0000-4000-8000-000000000010',
+      'occurred_on', current_date::text,
+      'platform', 'ios',
+      'app_major', 1,
+      'event_name', 'exhibition_opened',
+      'surface', 'map',
+      'exhibition_id', 'exhibition-one',
+      'discovery_kind', 'nearby',
+      'position_bucket', 'unranked'
+    )),
+    repeat('b', 64)
+  ) ->> 'accepted',
+  '1',
+  'unranked map open is accepted without a fabricated position'
+);
+
+select is(
+  public.service_record_mobile_analytics(
     jsonb_build_array(
       jsonb_build_object(
         'event_id', 'a1000000-0000-4000-8000-000000000001',
@@ -210,7 +229,6 @@ select is(
         'event_name', 'recommendations_shown',
         'surface', 'featured',
         'discovery_kind', 'recommendation',
-        'position_bucket', 'top_three',
         'result_count', 6
       )
     ),
@@ -242,7 +260,6 @@ select is(
         'event_name', 'recommendations_shown',
         'surface', 'featured',
         'discovery_kind', 'recommendation',
-        'position_bucket', 'top_three',
         'result_count', 0
       )
     ),
@@ -282,8 +299,7 @@ select throws_ok(
       'app_major', 1,
       'event_name', 'recommendations_shown',
       'surface', 'featured',
-      'discovery_kind', 'recommendation',
-      'position_bucket', 'top_three'
+      'discovery_kind', 'recommendation'
     ))
   ),
   '22023',
@@ -359,10 +375,21 @@ insert into content_private.mobile_analytics_quotas (
   'source', repeat('9', 64), date_trunc('hour', now()) - interval '25 hours', 1
 );
 
+insert into content.mobile_analytics_daily (
+  occurred_on, platform, app_major, event_name, surface, entry_point
+) values (
+  (current_date - interval '25 months')::date,
+  'android',
+  1,
+  'surface_viewed',
+  'featured',
+  'tab'
+);
+
 select is(
   content_private.prune_mobile_analytics_state(),
-  jsonb_build_object('receipts', 1, 'quotas', 1),
-  'state pruning removes expired retry identities and source quota digests'
+  jsonb_build_object('receipts', 1, 'quotas', 1, 'aggregates', 1),
+  'state pruning enforces receipt, source-digest, and aggregate retention'
 );
 
 select is(
@@ -383,6 +410,28 @@ select is(
   ),
   0,
   'expired source quota digest no longer exists'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from content.mobile_analytics_daily
+    where occurred_on = (current_date - interval '25 months')::date
+  ),
+  0,
+  'identity-free aggregates older than 24 months no longer exist'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from cron.job
+    where jobname = 'gallr-mobile-analytics-prune-v1'
+      and schedule = '17 * * * *'
+      and command = 'select content_private.prune_mobile_analytics_state();'
+  ),
+  1,
+  'hourly retention cleanup is scheduled independently of analytics traffic'
 );
 
 select throws_ok(

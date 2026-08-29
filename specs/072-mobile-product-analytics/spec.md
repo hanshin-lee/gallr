@@ -29,8 +29,9 @@ exhibition opens and meaningful actions without identifying individual users.
    - `route_started`
 2. Every dimension is an enum or bounded validated identifier. Free-form
    property maps are forbidden.
-3. Recommendation analytics include result-count and rank buckets, never local
-   scores, reason vectors, input history, or profile features.
+3. Recommendation analytics include a result count; per-result impressions and
+   opens use rank buckets. They never include local scores, reason vectors,
+   input history, or profile features.
 4. Route analytics include curation mode, stop-count, and coarse distance/time
    bands, never origin, coordinates, geometry, venue sequence, or route ID.
 5. `open_maps` is recorded only after platform handoff succeeds. Bookmark and
