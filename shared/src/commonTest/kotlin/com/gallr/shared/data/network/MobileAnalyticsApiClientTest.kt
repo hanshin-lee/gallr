@@ -5,6 +5,7 @@ import com.gallr.shared.analytics.AnalyticsPlatform
 import com.gallr.shared.analytics.AnalyticsSurface
 import com.gallr.shared.analytics.MobileAnalyticsBatch
 import com.gallr.shared.analytics.MobileAnalyticsEvent
+import com.gallr.shared.analytics.MobileAnalyticsSink
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -23,6 +24,22 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MobileAnalyticsApiClientTest {
+    @Test
+    fun `lazy sink does not construct its client until first delivery`() =
+        runTest {
+            var constructions = 0
+            val sink =
+                lazyMobileAnalyticsSink {
+                    constructions += 1
+                    MobileAnalyticsSink { }
+                }
+
+            assertEquals(0, constructions)
+            sink.deliver(MobileAnalyticsBatch(listOf(event())))
+            sink.deliver(MobileAnalyticsBatch(listOf(event())))
+            assertEquals(1, constructions)
+        }
+
     @Test
     fun `delivery uses anonymous closed batch contract`() =
         runTest {

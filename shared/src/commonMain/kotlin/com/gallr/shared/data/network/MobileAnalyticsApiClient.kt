@@ -35,4 +35,12 @@ class MobileAnalyticsApiClient internal constructor(
 fun createMobileAnalyticsApiClient(
     clients: GallrNetworkClients,
     supabaseUrl: String,
-): MobileAnalyticsSink = MobileAnalyticsApiClient(clients.anonymousClient, supabaseUrl)
+): MobileAnalyticsSink {
+    val createDelegate = { MobileAnalyticsApiClient(clients.anonymousClient, supabaseUrl) }
+    return lazyMobileAnalyticsSink(createDelegate)
+}
+
+internal fun lazyMobileAnalyticsSink(createDelegate: () -> MobileAnalyticsSink): MobileAnalyticsSink {
+    val delegate = lazy(createDelegate)
+    return MobileAnalyticsSink { batch -> delegate.value.deliver(batch) }
+}
