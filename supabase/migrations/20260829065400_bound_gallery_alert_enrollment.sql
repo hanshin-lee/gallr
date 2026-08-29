@@ -9,9 +9,9 @@ begin;
 --
 -- Enrollment is metered in two tiers. The `gallery-alert-enrollment` Edge
 -- Function verifies the request, derives a pseudonymous source key the caller
--- cannot choose, and spends the trusted budget. Installed 1.9.x clients still
--- call the public RPCs directly and spend a separate legacy budget, so abuse on
--- the legacy path cannot starve the trusted path. Subscriptions per
+-- cannot choose, and spends the trusted budget. Released clients through
+-- 1.10.1 still call the public RPCs directly and spend a separate legacy
+-- budget, so abuse on the legacy path cannot starve the trusted path. Subscriptions per
 -- installation and delivery jobs per publication carry their own ceilings.
 
 create table if not exists content_private.gallery_alert_enrollment_quotas (
@@ -608,7 +608,7 @@ $function$;
 
 
 -- Recreated so no cached plan can still reference the dropped implementation.
--- The signature and grants are unchanged, so installed 1.9.x clients keep
+-- The signature and grants are unchanged, so released clients through 1.10.1 keep
 -- working; their traffic is now metered against the legacy budget.
 create or replace function public.register_gallery_alert_installation(
   p_installation_id uuid,

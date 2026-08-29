@@ -66,9 +66,9 @@ limited or subscription ceiling reached, `503` unavailable or unconfigured.
 Ceilings live in `content_private.gallery_alert_enrollment_limits()` as one
 constant, and only the creation of a durable installation is metered — a
 returning device refreshing itself is never rate limited. Trusted traffic
-through this function and legacy traffic from installed 1.9.x clients calling
-the RPCs directly spend separate project budgets, so abuse on the legacy path
-cannot starve this one.
+through this function and legacy traffic from released clients through 1.10.1
+calling the RPCs directly spend separate project budgets, so abuse on the legacy
+path cannot starve this one.
 
 The installation secret is a bearer credential. Do not include it, the request
 source, or the derived source key in logs or screenshots.
