@@ -8,6 +8,11 @@ from pathlib import Path
 
 EXPECTED_VERIFY_JWT = {
     "delete-account": True,
+    # Signed-out devices must be able to enrol for gallery alerts, so the
+    # gateway cannot demand a JWT. The function verifies any supplied bearer
+    # token itself and treats a missing, unverifiable, or anonymous session as
+    # no account.
+    "gallery-alert-enrollment": False,
     "geocode-address": True,
     "invite-editor": True,
     "launch-rsvp": False,
