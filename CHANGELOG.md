@@ -5,6 +5,12 @@ All notable changes to gallr will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Exhibition details now open directly in the platform map app.** Valid
+  coordinates produce a bilingual, full-width action backed by thin Android
+  and iOS adapters; malformed or missing coordinates never reach the platform.
+- **Featured and gallr Editors picks are visible at a glance.** Shared cards and
+  exhibition details show square, monochrome curation badges without turning
+  editorial state into promotional colour.
 - **Gallery owners can download a poster-toned QR for every published
   exhibition.** Gallery samples a scan-safe palette from the stable public
   cover in the browser, previews the QR beside the public-page link, and

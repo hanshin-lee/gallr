@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.gallr.app.ui.components.BookmarkButton
+import com.gallr.app.ui.components.ExhibitionCurationBadges
 import com.gallr.app.ui.theme.GallrAccent
 import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.app.viewmodel.ExhibitionThoughtsViewModel
@@ -55,6 +56,7 @@ import com.gallr.app.viewmodel.shouldOfferVisitPrompt
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.AuthState
 import com.gallr.shared.data.model.Exhibition
+import com.gallr.shared.data.model.curationBadges
 import com.gallr.shared.data.model.exhibitionStatus
 import com.gallr.shared.data.model.receptionDateLabel
 import com.gallr.shared.data.network.nativeSupabaseImageUrl
@@ -79,6 +81,7 @@ fun ExhibitionDetailScreen(
     onBookmarkToggle: () -> Unit,
     onShare: suspend () -> Unit = {},
     onGalleryTap: () -> Unit = {},
+    onOpenMap: (() -> Unit)? = null,
     isVisited: Boolean = false,
     isVisitSaving: Boolean = false,
     visitSaveFailed: Boolean = false,
@@ -190,6 +193,13 @@ fun ExhibitionDetailScreen(
                     color = MaterialTheme.colorScheme.onBackground,
                 )
 
+                ExhibitionCurationBadges(
+                    badges = exhibition.curationBadges(),
+                    language = lang,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(top = GallrSpacing.sm),
+                )
+
                 Spacer(Modifier.height(GallrSpacing.sm))
 
                 // ── Venue ──────────────────────────────────────────────────
@@ -218,6 +228,20 @@ fun ExhibitionDetailScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+
+                if (onOpenMap != null) {
+                    Spacer(Modifier.height(GallrSpacing.md))
+                    OutlinedButton(
+                        onClick = onOpenMap,
+                        shape = RectangleShape,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 44.dp),
+                    ) {
+                        Text(if (lang == AppLanguage.KO) "지도에서 열기" else "OPEN IN MAPS")
+                    }
                 }
 
                 Spacer(Modifier.height(GallrSpacing.md))

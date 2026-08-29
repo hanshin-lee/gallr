@@ -76,23 +76,6 @@ Weekly "N new exhibitions near you" push via FCM (Android) + APNs (iOS). Primary
 - Effort: M (human) → S (CC: ~1 day)
 - Context: Design doc identifies retention as key initiative. Without a trigger, users forget to open the app.
 
-## P2 — Quality of Life
-
-### Open in Maps
-Button on ExhibitionDetailScreen to open the platform map app with exhibition coordinates. Completes the discover → save → navigate → visit loop.
-- Effort: S (CC: ~30 min)
-- Context: Latitude/longitude already in data model but unused on detail screen.
-
-### Featured/Editor's Pick Badges
-Show visual badges on detail screen and cards for featured / editor's pick exhibitions.
-- Effort: S (CC: ~30 min)
-- Context: `isFeatured` and `isEditorsPick` fields exist in data model.
-
-### Move Visited Exhibitions into Profile
-Add a visited-exhibition history or collection section to the Profile tab. The Map tab should remain focused on discovery and bookmarks; visit history belongs with the user's identity and activity.
-- Effort: M (CC: ~2 hours)
-- Context: `PersonalMapMode.VISITED` and visited aggregate data already exist and can be reused once the Profile presentation and navigation are designed.
-
 ## P3 — Technical Debt
 
 ### Full Analytics Dashboard

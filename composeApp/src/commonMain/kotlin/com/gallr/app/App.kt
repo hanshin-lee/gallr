@@ -71,6 +71,7 @@ import com.gallr.shared.data.model.AuthState
 import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.FollowedGallery
 import com.gallr.shared.data.network.MyGallrAccountCommandSource
+import com.gallr.shared.map.toExternalMapDestination
 import com.gallr.shared.notifications.DeepLink
 import com.gallr.shared.notifications.NotificationScheduler
 import com.gallr.shared.notifications.NotificationSyncService
@@ -137,6 +138,7 @@ fun App(
     notificationScheduler: NotificationScheduler,
     notificationSyncService: NotificationSyncService,
     notificationPreferences: NotificationPreferences,
+    externalMapLauncher: ExternalMapLauncher,
 ) {
     // Auth state drives SyncBookmarkRepository delegation
     val authState by authRepository
@@ -378,6 +380,7 @@ fun App(
                     when (destination) {
                         is AppDestination.ExhibitionDetail -> {
                             val exhibition = destination.exhibition
+                            val mapDestination = exhibition.toExternalMapDestination(lang)
                             var isVisitSaving by remember(exhibition.id) { mutableStateOf(false) }
                             var visitSaveFailed by remember(exhibition.id) { mutableStateOf(false) }
                             PlatformBackHandler(navigation::showTabs)
@@ -388,6 +391,18 @@ fun App(
                                 onBookmarkToggle = { viewModel.toggleBookmark(exhibition.id) },
                                 onShare = { shareHandler.shareExhibition(exhibition, lang) },
                                 onGalleryTap = { navigation.showGallery(exhibition) },
+                                onOpenMap =
+                                    if (mapDestination == null) {
+                                        null
+                                    } else {
+                                        {
+                                            openExhibitionInMap(
+                                                exhibition = exhibition,
+                                                language = lang,
+                                                launcher = externalMapLauncher,
+                                            )?.onFailure { error -> appLog.warn("open_exhibition_map", error) }
+                                        }
+                                    },
                                 isVisited = visits.any { it.exhibitionId == exhibition.id },
                                 isVisitSaving = isVisitSaving,
                                 visitSaveFailed = visitSaveFailed,

@@ -269,6 +269,7 @@ class MainActivity : ComponentActivity() {
                 notificationScheduler = notificationScheduler,
                 notificationSyncService = notificationSyncService,
                 notificationPreferences = notificationPreferences,
+                externalMapLauncher = AndroidExternalMapLauncher(applicationContext),
             )
         }
     }
