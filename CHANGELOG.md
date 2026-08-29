@@ -28,6 +28,10 @@ All notable changes to gallr will be documented in this file.
   recognisable at a glance instead of every listing looking archival.
 
 ### Fixed
+- **Admin exhibition filters no longer show stale rows.** A list response cannot
+  overwrite a record saved at a newer revision while that response was in
+  flight, and a failed filter request clears the prior filter's table instead
+  of presenting those rows under controls they do not match.
 - **Private gallery-owner drafts no longer appear in the staff Exhibitions
   list.** The extended list RPC had lost the owner-visibility guard that the
   original list and `admin_get_exhibition` apply; the new cover-aware overload
