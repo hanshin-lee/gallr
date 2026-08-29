@@ -253,6 +253,7 @@ export function AdminWorkspace({
   const latestDraftRef = useRef<AdminExhibition | null>(null);
   const didInitializeSelection = useRef(false);
   const recordLoadGeneration = useRef(0);
+  const confirmedSavedRecords = useRef(new Map<string, AdminExhibition>());
   const mediaLoadGeneration = useRef(0);
   const preloadedMediaContext = useRef<string | null>(null);
   const mediaBusyRef = useRef(false);
@@ -320,20 +321,30 @@ export function AdminWorkspace({
     try {
       const next = await repository.list(filters);
       if (generation !== recordLoadGeneration.current) return;
-      setRecords(next);
-      if (!didInitializeSelection.current && next.length > 0) {
+      let reconciled = next;
+      for (const saved of confirmedSavedRecords.current.values()) {
+        const serverRecord = next.find((record) => record.id === saved.id);
+        if (serverRecord && serverRecord.revision >= saved.revision) {
+          confirmedSavedRecords.current.delete(saved.id);
+        } else {
+          reconciled = mergeVisibleRecord(reconciled, saved);
+        }
+      }
+      setRecords(reconciled);
+      if (!didInitializeSelection.current && reconciled.length > 0) {
         didInitializeSelection.current = true;
-        latestDraftRef.current = next[0];
-        setSelected(next[0]);
-        setDraft(next[0]);
+        latestDraftRef.current = reconciled[0];
+        setSelected(reconciled[0]);
+        setDraft(reconciled[0]);
       }
     } catch (error) {
       if (generation !== recordLoadGeneration.current) return;
+      setRecords([]);
       setNotice(uiErrorMessage(error, "notice.exhibitionsLoadFailed"));
     } finally {
       if (generation === recordLoadGeneration.current) setLoading(false);
     }
-  }, [filters, repository]);
+  }, [filters, mergeVisibleRecord, repository]);
 
   useEffect(() => {
     void loadRecords();
@@ -455,6 +466,7 @@ export function AdminWorkspace({
           lifecycleRequest.current = null;
           if (saveGeneration.current === generation) {
             latestDraftRef.current = saved;
+            confirmedSavedRecords.current.set(saved.id, saved);
             setSelected(saved);
             setDraft(saved);
             setSaveState("saved");
@@ -550,6 +562,7 @@ export function AdminWorkspace({
     }
     try {
       const created = await repository.createDraft();
+      confirmedSavedRecords.current.set(created.id, created);
       setFilters(defaultExhibitionFilters);
       setRecords((current) => [created, ...current.filter((item) => item.id !== created.id)]);
       saveGeneration.current += 1;
@@ -569,6 +582,7 @@ export function AdminWorkspace({
 
   const replaceVisibleRecord = useCallback(
     (record: AdminExhibition) => {
+      confirmedSavedRecords.current.set(record.id, record);
       setRecords((current) => mergeVisibleRecord(current, record));
       saveGeneration.current += 1;
       latestDraftRef.current = record;
@@ -876,6 +890,7 @@ export function AdminWorkspace({
         lifecycleRequestId("delete", draft),
       );
       const deletedId = draft.id;
+      confirmedSavedRecords.current.delete(deletedId);
       saveGeneration.current += 1;
       latestDraftRef.current = null;
       lifecycleRequest.current = null;

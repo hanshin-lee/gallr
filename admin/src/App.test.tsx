@@ -180,6 +180,67 @@ describe("gallr admin", () => {
     expect(within(table).queryByText("빛의 문법")).not.toBeInTheDocument();
   });
 
+  it("keeps a saved revision when an older list snapshot resolves afterward", async () => {
+    const user = userEvent.setup();
+    const repository = new InMemoryAdminExhibitionRepository();
+    const initial = await repository.list({ search: "", status: "All" });
+    const first = initial[0];
+    let resolveSave: (record: AdminExhibition) => void = () => undefined;
+    let resolveList: (records: AdminExhibition[]) => void = () => undefined;
+    const staleList = new Promise<AdminExhibition[]>((resolve) => {
+      resolveList = resolve;
+    });
+    const list = vi.spyOn(repository, "list").mockImplementation((filters) =>
+      filters.status === first.status ? staleList : Promise.resolve(initial)
+    );
+    const saveDraft = vi.spyOn(repository, "saveDraft").mockImplementation(
+      () => new Promise<AdminExhibition>((resolve) => {
+        resolveSave = resolve;
+      }),
+    );
+    render(<AdminWorkspace repository={repository} staffRole="admin" />);
+
+    await screen.findByRole("table", { name: "Exhibitions" });
+    await user.click(screen.getByRole("button", { name: first.status }));
+    await waitFor(() =>
+      expect(list).toHaveBeenCalledWith(expect.objectContaining({ status: first.status }))
+    );
+    await user.type(screen.getByLabelText("Exhibition name (Korean) *"), "!");
+    await waitFor(() => expect(saveDraft).toHaveBeenCalled(), { timeout: 2500 });
+
+    const saved = { ...first, nameKo: `${first.nameKo}!`, revision: first.revision + 1 };
+    await act(async () => resolveSave(saved));
+
+    await act(async () => resolveList([first]));
+    await waitFor(() => {
+      const currentTable = screen.getByRole("table", { name: "Exhibitions" });
+      expect(within(currentTable).getByText(saved.nameKo)).toBeInTheDocument();
+      expect(within(currentTable).queryByText(first.nameKo)).not.toBeInTheDocument();
+    });
+  });
+
+  it("clears previous rows when the current filter request fails", async () => {
+    const user = userEvent.setup();
+    const repository = new InMemoryAdminExhibitionRepository();
+    const initial = await repository.list({ search: "", status: "All" });
+    vi.spyOn(repository, "list").mockImplementation((filters) =>
+      filters.status === "Archived"
+        ? Promise.reject(new Error("list unavailable"))
+        : Promise.resolve(initial)
+    );
+    render(<AdminWorkspace repository={repository} staffRole="admin" />);
+
+    const table = await screen.findByRole("table", { name: "Exhibitions" });
+    expect(within(table).getByText(initial[0].nameKo)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Archived" }));
+
+    expect(
+      (await screen.findAllByText("Exhibitions could not be loaded.")).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByRole("table", { name: "Exhibitions" })).not.toBeInTheDocument();
+    expect(screen.getByText("0 exhibitions")).toBeInTheDocument();
+  });
+
   it("merges an in-flight save against the filters current when it resolves", async () => {
     const user = userEvent.setup();
     const repository = new InMemoryAdminExhibitionRepository();
