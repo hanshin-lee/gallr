@@ -63,6 +63,9 @@ All notable changes to gallr will be documented in this file.
   submission still awaiting review.
 
 ### Infrastructure
+- Mobile analytics delivery now uses a versioned seven-day/200-event DataStore
+  outbox, exact-ID acknowledgements, idempotent retries, and a header-free Ktor
+  client that stays separate from Auth and legacy anonymous-key headers.
 - Mobile analytics has a disabled-by-default first-party ingestion boundary
   with strict mobile event validation, short-lived retry/quota state, and only
   identity-free daily aggregate counters. No third-party analytics SDK or paid

@@ -462,7 +462,9 @@ data class MobileAnalyticsBatch(
     val events: List<MobileAnalyticsEvent>,
 ) {
     init {
-        require(events.size in 1..MAX_BATCH_SIZE) { "events must contain 1 to $MAX_BATCH_SIZE rows" }
+        require(events.size in 1..MOBILE_ANALYTICS_MAX_BATCH_SIZE) {
+            "events must contain 1 to $MOBILE_ANALYTICS_MAX_BATCH_SIZE rows"
+        }
         require(events.map(MobileAnalyticsEvent::eventId).distinct().size == events.size) {
             "event IDs must be unique within a batch"
         }
@@ -480,11 +482,12 @@ data class QueuedMobileAnalyticsEvent(
 fun normalizeAnalyticsQueue(
     entries: List<QueuedMobileAnalyticsEvent>,
     now: Instant,
-    maxSize: Int = MAX_QUEUE_SIZE,
+    maxSize: Int = MOBILE_ANALYTICS_MAX_QUEUE_SIZE,
 ): List<QueuedMobileAnalyticsEvent> {
     require(maxSize >= 0) { "maxSize must not be negative" }
     return entries
-        .filter { it.queuedAt >= now - QUEUE_TTL && it.queuedAt <= now }
+        .map { entry -> if (entry.queuedAt > now) entry.copy(queuedAt = now) else entry }
+        .filter { it.queuedAt >= now - MOBILE_ANALYTICS_QUEUE_TTL }
         .distinctBy { it.event.eventId }
         .sortedWith(compareBy({ it.queuedAt }, { it.event.eventId }))
         .takeLast(maxSize)
@@ -495,6 +498,6 @@ private fun validIdentifier(value: String): Boolean =
 
 private val UUID_PATTERN =
     Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", RegexOption.IGNORE_CASE)
-private val QUEUE_TTL = 7.days
-private const val MAX_BATCH_SIZE = 20
-private const val MAX_QUEUE_SIZE = 200
+internal val MOBILE_ANALYTICS_QUEUE_TTL = 7.days
+internal const val MOBILE_ANALYTICS_MAX_BATCH_SIZE = 20
+internal const val MOBILE_ANALYTICS_MAX_QUEUE_SIZE = 200

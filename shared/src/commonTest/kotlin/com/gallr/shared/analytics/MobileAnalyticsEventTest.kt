@@ -227,15 +227,33 @@ class MobileAnalyticsEventTest {
             val gate = GatedAnalyticsRecorder(delegate, initiallyEnabled = true)
             val event = surfaceEvent("a1000000-0000-4000-8000-000000000005")
 
-            gate.record(event)
+            gate.record { event }
             assertEquals(listOf(event), delegate.recorded)
             gate.setEnabled(false)
-            gate.record(surfaceEvent("a1000000-0000-4000-8000-000000000006"))
+            var disabledFactoryCalled = false
+            gate.record {
+                disabledFactoryCalled = true
+                surfaceEvent("a1000000-0000-4000-8000-000000000006")
+            }
             gate.flush()
 
             assertEquals(1, delegate.clears)
             assertEquals(1, delegate.recorded.size)
             assertEquals(0, delegate.flushes)
+            assertFalse(disabledFactoryCalled)
+        }
+
+    @Test
+    fun `no-op recorder never constructs an event`() =
+        runTest {
+            var factoryCalled = false
+
+            NoopAnalyticsRecorder.record {
+                factoryCalled = true
+                surfaceEvent("a1000000-0000-4000-8000-000000000007")
+            }
+
+            assertFalse(factoryCalled)
         }
 
     private class RecordingAnalyticsRecorder : AnalyticsRecorder {
@@ -243,8 +261,8 @@ class MobileAnalyticsEventTest {
         var flushes = 0
         var clears = 0
 
-        override suspend fun record(event: MobileAnalyticsEvent) {
-            recorded += event
+        override suspend fun record(createEvent: () -> MobileAnalyticsEvent) {
+            recorded += createEvent()
         }
 
         override suspend fun flush() {
