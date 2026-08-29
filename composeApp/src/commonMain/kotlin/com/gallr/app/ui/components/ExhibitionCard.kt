@@ -41,6 +41,7 @@ import com.gallr.app.ui.theme.GallrMotion
 import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Exhibition
+import com.gallr.shared.data.model.curationBadges
 import com.gallr.shared.data.model.exhibitionStatus
 import com.gallr.shared.data.network.nativeSupabaseImageUrl
 import kotlinx.datetime.TimeZone
@@ -250,6 +251,12 @@ fun ExhibitionCard(
                         color = contentColor,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
+                    )
+                    ExhibitionCurationBadges(
+                        badges = exhibition.curationBadges(),
+                        language = lang,
+                        color = contentColor,
+                        modifier = Modifier.padding(top = GallrSpacing.sm),
                     )
                     Spacer(Modifier.height(GallrSpacing.xs))
 

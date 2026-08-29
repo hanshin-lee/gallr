@@ -239,6 +239,7 @@ private fun createMainViewController(
             notificationScheduler = notificationScheduler,
             notificationSyncService = notificationSyncService,
             notificationPreferences = notificationPreferences,
+            externalMapLauncher = IosExternalMapLauncher(),
         )
     }
 }
