@@ -35,7 +35,7 @@ degrades to the project-wide ceiling, which still bounds durable growth.
 
 ## Contract
 
-`POST` with `application/json` and at most 4096 bytes. Every request carries
+`POST` with `application/json` and at most 8192 bytes. Every request carries
 `installation_id` and `installation_secret`; `action` selects the command.
 
 ```json
@@ -69,6 +69,11 @@ returning device refreshing itself is never rate limited. Trusted traffic
 through this function and legacy traffic from released clients through 1.10.1
 calling the RPCs directly spend separate project budgets, so abuse on the legacy
 path cannot starve this one.
+
+The forward migration keeps at most 200 existing subscription rows per
+installation, preferring enabled and recently changed choices. Publication
+fan-out materialization is serialized per outbox event and retains at most
+50,000 deliverable jobs, including when upgrading pre-limit state.
 
 The installation secret is a bearer credential. Do not include it, the request
 source, or the derived source key in logs or screenshots.

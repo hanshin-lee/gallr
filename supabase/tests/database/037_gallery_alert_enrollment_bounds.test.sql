@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(33);
+select plan(34);
 
 -- Storage and least privilege ------------------------------------------------
 
@@ -402,6 +402,17 @@ select ok(
     ) like '%limit greatest(0, v_fanout_limit - v_existing_jobs)%'
   ),
   'delivery fan-out for one publication is bounded by the ceiling'
+);
+select ok(
+  (
+    select pg_catalog.pg_get_functiondef(
+      to_regprocedure(
+        'content_private.claim_gallery_alert_delivery_jobs_impl('
+          || 'uuid,text,integer,integer)'
+      )
+    ) like '%gallery-alert-fanout:%pg_advisory_xact_lock%'
+  ),
+  'delivery fan-out materialization serializes on the publication event'
 );
 
 select * from finish();

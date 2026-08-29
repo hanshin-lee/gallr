@@ -166,6 +166,32 @@ Deno.test("a subscription ceiling is reported as 429", async () => {
   assertEquals(response.status, 429);
 });
 
+Deno.test("preserves the existing 4096 character FCM token contract", async () => {
+  let receivedLength = 0;
+  const response = await handler(
+    backend({
+      registerPushToken: (input) => {
+        receivedLength = input.providerToken.length;
+        return Promise.resolve({
+          push_token_revision: 1,
+          push_token_status: "active",
+        });
+      },
+    }),
+  )(post({
+    action: "register_push_token",
+    installation_id: INSTALLATION_ID,
+    installation_secret: INSTALLATION_SECRET,
+    provider: "fcm",
+    provider_token: "a".repeat(4096),
+    provider_environment: "production",
+    expected_revision: 0,
+  }));
+
+  assertEquals(response.status, 200);
+  assertEquals(receivedLength, 4096);
+});
+
 Deno.test("a wrong installation secret is reported as 403", async () => {
   const response = await handler(
     backend({

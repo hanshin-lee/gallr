@@ -11,8 +11,9 @@ begin;
 -- Function verifies the request, derives a pseudonymous source key the caller
 -- cannot choose, and spends the trusted budget. Released clients through
 -- 1.10.1 still call the public RPCs directly and spend a separate legacy
--- budget, so abuse on the legacy path cannot starve the trusted path. Subscriptions per
--- installation and delivery jobs per publication carry their own ceilings.
+-- budget, so abuse on the legacy path cannot starve the trusted path.
+-- Subscriptions per installation and delivery jobs per publication carry
+-- their own ceilings.
 
 create table if not exists content_private.gallery_alert_enrollment_quotas (
   scope text not null,
@@ -63,6 +64,65 @@ as $function$
     'publication_fanout', 50000
   );
 $function$;
+
+-- Normalize any state created before the ceilings existed. Keep enabled and
+-- recently changed preferences first, then remove the oldest excess rows.
+with ranked_subscription as (
+  select
+    subscription.installation_id,
+    subscription.gallery_id,
+    row_number() over (
+      partition by subscription.installation_id
+      order by
+        subscription.enabled desc,
+        subscription.updated_at desc,
+        subscription.gallery_id
+    ) as position
+  from content_private.gallery_alert_subscriptions as subscription
+), excess_subscription as (
+  select installation_id, gallery_id
+  from ranked_subscription
+  where position > (
+    content_private.gallery_alert_enrollment_limits()
+      ->> 'installation_subscriptions'
+  )::integer
+)
+delete from content_private.gallery_alert_subscriptions as subscription
+using excess_subscription as excess
+where subscription.installation_id = excess.installation_id
+  and subscription.gallery_id = excess.gallery_id;
+
+-- Preserve completed/dead evidence first and remove only excess work that a
+-- worker could still deliver. An event that already consumed the full budget
+-- before this migration cannot enqueue or claim additional provider work.
+with ranked_job as (
+  select
+    job.id,
+    job.status,
+    row_number() over (
+      partition by job.outbox_event_id
+      order by
+        case job.status
+          when 'delivered' then 0
+          when 'dead' then 1
+          else 2
+        end,
+        job.created_at,
+        job.id
+    ) as position
+  from content_private.gallery_alert_delivery_jobs as job
+), excess_job as (
+  select id
+  from ranked_job
+  where position > (
+    content_private.gallery_alert_enrollment_limits()
+      ->> 'publication_fanout'
+  )::integer
+    and status in ('pending', 'processing')
+)
+delete from content_private.gallery_alert_delivery_jobs as job
+using excess_job as excess
+where job.id = excess.id;
 
 -- Fixed key for the aggregate scopes; the table keeps one 64-hex key format.
 create or replace function content_private.gallery_alert_total_quota_key()
@@ -455,6 +515,16 @@ begin
     raise exception using
       errcode = '22023', message = 'gallery_alert_claim_invalid';
   end if;
+
+  -- Serialize materialization for one publication. Without this lock two
+  -- callers can count the same committed rows and insert disjoint candidate
+  -- sets above the ceiling.
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(
+      'gallery-alert-fanout:' || p_outbox_event_id::text,
+      0
+    )
+  );
 
   select event.*
   into v_event

@@ -3,7 +3,7 @@ import {
   GalleryAlertEnrollmentError,
 } from "./backend.ts";
 
-const MAX_BYTES = 4096;
+const MAX_BYTES = 8192;
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 const LOCALE_PATTERN = /^[A-Za-z]{2,3}([-_][A-Za-z0-9]{2,8})*$/u;
@@ -211,7 +211,7 @@ export function createGalleryAlertEnrollmentHandler(
             ])
           ) return failure("enrollment_invalid");
           const provider = text(input.provider, 1, 8);
-          const providerToken = text(input.provider_token, 1, 512);
+          const providerToken = text(input.provider_token, 1, 4096);
           const providerEnvironment = text(input.provider_environment, 1, 16);
           const expectedRevision = revision(input.expected_revision);
           if (
