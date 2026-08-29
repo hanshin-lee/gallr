@@ -4,6 +4,135 @@ All notable changes to gallr will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Gallery owners can download a poster-toned QR for every published
+  exhibition.** Gallery samples a scan-safe palette from the stable public
+  cover in the browser, previews the QR beside the public-page link, and
+  downloads a self-contained SVG with a monochrome fallback when the poster
+  cannot be read. Private signed preview URLs never enter the QR pipeline.
+- **Admin can list exhibitions that still need a cover image.** A
+  "Missing cover image only" checkbox on the Exhibitions page combines with the
+  existing search, publish-state, date-state, homepage-placement, and sort
+  controls so staff can revisit cards created before images were available.
+
+### Changed
+- **Exhibition artwork on the web now shows in colour.** Cards and detail pages
+  render their cover image in full colour, and hovering a card lifts its image.
+  Monochrome is now reserved for exhibitions that have ended, so a closed run is
+  recognisable at a glance instead of every listing looking archival.
+
+### Fixed
+- **Private gallery-owner drafts no longer appear in the staff Exhibitions
+  list.** The extended list RPC had lost the owner-visibility guard that the
+  original list and `admin_get_exhibition` apply; the new cover-aware overload
+  restores it and the five-argument overload now delegates to it.
+- **A newly published exhibition now reaches the public site within minutes
+  instead of returning 404.** Publishing already POSTed the Vercel deploy hook,
+  but the Ignored Build Step cancelled every one of those rebuilds: a deploy hook
+  builds an unchanged git HEAD, so the path diff exited 0 and Vercel skipped the
+  build. The public catalogue had been frozen at the last commit that touched
+  `web/`.
+- **The gallery workspace now says the public page trails approval by a few
+  minutes**, instead of offering a link that answers 404 while the rebuild runs.
+- **Accidental drafts can be permanently deleted again.** Deletion previously
+  refused any exhibition that had ever emitted a background event, and nothing
+  purges delivered events, so one owner submission — or a single
+  archive/restore round trip — stranded a draft forever. Only work still queued
+  for delivery blocks deletion now.
+- **Deleting an owner draft withdraws its open review round.** A submission
+  still sitting in the staff queue is marked withdrawn instead of leaving a
+  reviewer holding a record that no longer exists; a round that already reached
+  a decision keeps that decision. Launch Kit and local-promotion references now
+  refuse with named reasons instead of a raw database error, and Admin names
+  the blocking relationship rather than showing one generic failure notice.
+  The delete confirmation dialog warns before the fact when a draft has a
+  submission still awaiting review.
+
+### Infrastructure
+- Migration `20260823071500_admin_list_missing_cover_filter` adds the
+  six-argument `admin_list_exhibitions` overload with `p_missing_cover_only`
+  while keeping the two- and five-argument overloads for deployed clients.
+  Apply it to an environment before promoting the matching Admin deployment:
+  the new client always calls the six-argument overload, so an older database
+  would reject every list request, while rolling the Admin back remains safe.
+- Product-surface CI runs the public-web suite when the root `vercel.json`
+  changes, so the rebuild-trigger guard test covers the file it guards.
+
+## [1.10.1] - 2026-08-22
+
+### Added
+- **Gallr and Gallery share one self-service account plane.** Approved email,
+  Google, and Apple flows can create the same consumer identity while gallery,
+  editor, and staff access remains separately membership-gated.
+
+### Fixed
+- **OAuth signup failures no longer loop silently back to Gallery sign-in.**
+  Bounded bilingual messages explain disabled signup or an incomplete Google
+  callback, and Gallr mobile distinguishes the same signup-disabled condition.
+
+### Infrastructure
+- The reviewed Auth configuration requires global and email signup with email
+  confirmation, while anonymous and SMS signup remain disabled. Hosted
+  production enablement remains a separate read-back-verified rollout step.
+- The Android version is now **1.10.1 (36)** and the iOS version is
+  **1.10.1 (30)**.
+
+## [1.10.0] - 2026-08-22
+
+### Added
+- **Gallery Launch Kit is ready for a free beta.** Active gallery owners can
+  activate RSVP tooling for a published exhibition, manage multiple exhibition
+  guest lists, add walk-ins, rotate invitation links, and use a responsive,
+  idempotent opening-night check-in flow without a payment redirect.
+- **Every active Launch Kit can produce a print-ready RSVP QR code.** Gallery
+  builds derive the invitation from their matching public-web environment and
+  generate the SVG locally on demand without uploading QR or guest data.
+- **RSVP links now carry the exhibition, not just the form.** Visitors see the
+  published cover, bilingual identity and description, exhibition period,
+  opening reception, address, hours, and gallery contact before responding.
+- **Gallery owners can continue with Google.** OAuth authenticates the shared
+  account while gallery access remains separately controlled by staff-reviewed
+  owner claims.
+- **Admin, Editor, and Gallery portals support Korean and English.** Accessible
+  language controls switch portal-owned copy without discarding in-progress
+  workflow state.
+
+### Changed
+- **Paid local promotion remains independent from the free beta.** Gallery,
+  Admin, server delivery, public web, Android, and iOS promotion surfaces now
+  fail closed behind separate default-off R4 controls, and the database accepts
+  paid placement only from a paid entitlement.
+- **Gallery exhibition locations use address search instead of raw coordinates.**
+  Owners choose a bounded NAVER result, receive derived bilingual location
+  fields, and see an explicit checklist of anything still required before
+  submission.
+- **Gallery cover selection uses a full-size file-input overlay.** Mobile and
+  desktop browsers retain the native picker without depending solely on label
+  forwarding to a one-pixel input.
+
+### Fixed
+- **Admin revision conflicts stop after one save attempt.** Autosave and media
+  entry share a single-flight revision guard, stale editors require an explicit
+  reload, and the Data API exposes the logical conflict as HTTP 409 instead of
+  an ambiguous transaction failure.
+- **Legacy mobile catalogue mirroring carries canonical gallery identity.**
+  The guarded compatibility apply path once again accepts verified Seoul
+  snapshots without weakening checksum, row-shape, or rollback protections.
+
+### Infrastructure
+- A forward-only migration introduces explicit `free_beta` and `paid` Launch Kit
+  entitlement sources, idempotent free activation, paid-only R4 guards, and
+  removes the dormant checkout/webhook RPC surface while preserving historical
+  payment evidence. The unused Stripe Edge Function packages are retired;
+  future monetization requires a newly reviewed commercial contract.
+- A compatibility migration and parity watchdog keep canonical and installed-
+  client catalogue shapes aligned when gallery identity fields evolve.
+- The account-plane release contract now requires matching project fingerprints
+  across Android, iOS, Admin, Gallery, and Editor within each environment while
+  keeping staging and production distinct.
+- The Android version is now **1.10.0 (35)** and the iOS version is
+  **1.10.0 (29)**.
+
 ## [1.9.2] - 2026-08-18
 
 ### Fixed

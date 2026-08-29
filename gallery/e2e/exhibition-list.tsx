@@ -1,7 +1,18 @@
 import { createRoot } from "react-dom/client";
 import { ExhibitionWorkspace } from "../src/components/ExhibitionWorkspace";
 import type { OwnerExhibition } from "../src/domain";
+import { LocaleProvider } from "../src/i18n";
 import "../src/styles.css";
+
+const visualPosterUrl = "https://gallery-visual.test/published-poster.svg";
+const localPosterUrl = new URL("./exhibition-poster.svg", window.location.href).toString();
+const nativeFetch = window.fetch.bind(window);
+window.fetch = (input, init) => {
+  const requestUrl = input instanceof Request ? input.url : input.toString();
+  return requestUrl === visualPosterUrl
+    ? nativeFetch(localPosterUrl, init)
+    : nativeFetch(input, init);
+};
 
 const base: OwnerExhibition = {
   id: "visual-published",
@@ -34,7 +45,17 @@ const base: OwnerExhibition = {
   updatedAt: "2026-08-05T12:00:00Z",
   pageLoads30d: 42,
   pageLoadsAllTime: 210,
-  cover: null,
+  cover: {
+    assetId: "visual-cover",
+    status: "published",
+    bucketId: "exhibition-images",
+    objectPath: "visual/published-poster.svg",
+    publicUrl: visualPosterUrl,
+    mimeType: "image/svg+xml",
+    byteSize: 2048,
+    originalFilename: "published-poster.svg",
+    previewUrl: localPosterUrl,
+  },
 };
 
 const newDraft: OwnerExhibition = {
@@ -75,13 +96,30 @@ const repository = {
   saveExhibitionDraft: async () => base,
   uploadCover: async () => base,
   submitExhibition: async () => base,
-  startLaunchCheckout: async () => ({ active: true, launchKitId: "visual-launch" }),
+  activateLaunchKit: async () => ({
+    id: "visual-launch",
+    exhibitionId: base.id,
+    status: "active" as const,
+    entitlementSource: "free_beta" as const,
+    revision: 1,
+    publicToken: "00000000-0000-4000-8000-000000000001",
+    nameKo: base.nameKo,
+    nameEn: base.nameEn,
+    receptionDate: base.receptionDate,
+    receptionStartTime: base.receptionStartTime,
+    rsvpCount: 0,
+    guestCount: 0,
+    checkedInCount: 0,
+    updatedAt: "2026-08-22T00:00:00Z",
+  }),
 };
 
 createRoot(document.getElementById("root")!).render(
-  <ExhibitionWorkspace
-    membershipStatus="active"
-    repository={repository}
-    onSignOut={() => undefined}
-  />,
+  <LocaleProvider>
+    <ExhibitionWorkspace
+      membershipStatus="active"
+      repository={repository}
+      onSignOut={() => undefined}
+    />
+  </LocaleProvider>,
 );

@@ -48,6 +48,22 @@ export class EditorRevisionConflictError extends Error {
   }
 }
 
+/** Counts retained so the Admin can report what a removal detached. */
+export interface AdminEditorRemovalResult {
+  editorId: string;
+  detachedExhibitions: number;
+  detachedExhibitionVersions: number;
+  removedRequests: number;
+  hadWorkspaceAccount: boolean;
+}
+
+export class ProtectedEditorIdentityError extends Error {
+  constructor() {
+    super("This editor identity cannot be removed.");
+    this.name = "ProtectedEditorIdentityError";
+  }
+}
+
 export type AdminEditorRequestKind = "profile" | "curation";
 export type AdminEditorRequestStatus = "submitted" | "accepted" | "rejected";
 
@@ -76,6 +92,10 @@ export interface AdminEditorRepository {
     expectedRevision: number,
     active: boolean,
   ): Promise<AdminManagedEditor>;
+  deleteEditor(
+    editorId: string,
+    expectedRevision: number,
+  ): Promise<AdminEditorRemovalResult>;
   listRequests(status?: AdminEditorRequestStatus): Promise<AdminEditorRequest[]>;
   reviewRequest(
     requestId: string,

@@ -1,9 +1,27 @@
 # TODOS
 
-Last updated: 2026-08-11. Revalidate external service and release status before
+Last updated: 2026-08-23. Revalidate external service and release status before
 acting on older operational entries.
 
 ## P1 — Post-Launch
+
+### Commercialize Gallery Launch Kit after beta evidence
+Keep free exhibition publication unchanged and run RSVP, QR, guest-list, and
+check-in as a bounded beta before choosing a paid package. Do not restore the
+retired Stripe checkout/webhook implementation as a shortcut.
+
+- Evidence gate: measure gallery activation, RSVP completion, door check-in
+  reliability, support burden, and repeat use without treating public page-load
+  counts as billing-grade analytics.
+- Policy gate: approve purchase terms, refund/support behavior, guest-data
+  retention/deletion/export, incident response, and treatment of existing
+  `free_beta` entitlements before collecting payment.
+- Product decision: choose which later outcomes are paid (for example promotion,
+  richer reports, or a per-exhibition Launch Pass) while keeping organic
+  discovery and editorial Featured independent.
+- Implementation: create a new spec, provider contract, additive entitlement
+  migration, staging rehearsal, and narrow pilot. Payment credentials and live
+  provider changes remain separate external approvals stored through 1Password.
 
 ### Complete the Supabase legacy API-key migration before the end of 2026
 Supabase is deprecating the JWT-based `anon` and `service_role` keys by the end of 2026. The
@@ -81,3 +99,26 @@ Add a visited-exhibition history or collection section to the Profile tab. The M
 Expand basic 3-event logging to a proper analytics solution (Mixpanel, Amplitude, or Supabase dashboard).
 - Effort: M (CC: ~1 day)
 - Depends on: Basic analytics events being in place first.
+
+### Debounce public-site rebuilds triggered by the outbox
+`outbox-delivery` POSTs the Vercel deploy hook once per `exhibition.published`,
+`exhibition.archived`, and `exhibition.restored` event. Now that those builds
+actually run, a heavy staff editing session queues one full Eleventy build plus
+Supabase fetch per event. Steady state is fine; bursts are wasteful.
+- Effort: S (CC: ~1h)
+- Options: coalesce events in the function over a short window, or move the hook
+  POST behind a scheduled drain instead of a per-event fire.
+- Noticed on: shin/gallr-gallery-publish-error-464c65 while investigating the
+  cancelled rebuild that made newly published exhibitions 404 (fixed in #228).
+
+### Admin list reconciliation races
+Two pre-existing Admin Exhibitions-list races surfaced during the missing-cover
+filter review (`admin/src/App.tsx`): a list reload whose server snapshot
+predates an in-flight autosave can overwrite the optimistic merge with an older
+revision (`loadRecords` guards only against newer loads), and a failed filter
+request leaves the previous rows on screen under the new filter controls.
+Fix by tagging list responses with a snapshot revision (or re-merging the
+latest saved record after `setRecords(next)`) and by clearing or marking the
+table when a list request fails.
+- Effort: S (CC: ~1 hour)
+- Depends on: nothing; both self-heal on the next reload today.

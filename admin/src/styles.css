@@ -279,6 +279,7 @@ label:has(input[type="file"]:focus-visible) {
   grid-template-columns: var(--nav-width) minmax(620px, 1fr) var(--inspector-width);
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: var(--color-background);
 }
@@ -666,6 +667,38 @@ label:has(input[type="file"]:focus-visible) {
   min-width: 0;
   border-right: 1px solid var(--color-text);
   background: var(--color-background);
+}
+
+.navigation-footer {
+  display: grid;
+  gap: 16px;
+  margin-top: auto;
+}
+
+.language-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navigation-footer .language-switch {
+  margin-inline: 16px;
+}
+
+.language-switch button {
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.language-switch button[aria-pressed="true"] {
+  border-bottom-color: #ff5400;
 }
 
 .wordmark {
@@ -1258,6 +1291,7 @@ label:has(input[type="file"]:focus-visible) {
 
 .exhibition-list-options {
   display: flex;
+  flex-wrap: wrap;
   min-height: 60px;
   align-items: flex-end;
   padding: 8px 0 16px;
@@ -1265,7 +1299,7 @@ label:has(input[type="file"]:focus-visible) {
   gap: 16px;
 }
 
-.exhibition-list-options > label:not(.homepage-featured-filter) {
+.exhibition-list-options > label:not(.list-toggle-filter) {
   display: grid;
   min-width: 184px;
   gap: 4px;
@@ -1286,18 +1320,20 @@ label:has(input[type="file"]:focus-visible) {
   text-transform: none;
 }
 
-.homepage-featured-filter {
+.list-toggle-filter {
   display: flex;
   min-height: 44px;
   align-items: center;
   gap: 8px;
   font-size: 13px;
+  white-space: nowrap;
 }
 
-.homepage-featured-filter input {
+.list-toggle-filter input {
   width: 18px;
   height: 18px;
   border-radius: 0;
+  accent-color: var(--color-text);
 }
 
 @media (min-width: 1241px) and (max-width: 1500px) {
@@ -1436,7 +1472,7 @@ label:has(input[type="file"]:focus-visible) {
 
 .exhibition-cell {
   display: grid;
-  grid-template-columns: 24px 1fr;
+  grid-template-columns: 24px minmax(0, 1fr);
   align-items: center;
   min-width: 0;
   gap: 12px;
@@ -1524,6 +1560,7 @@ label:has(input[type="file"]:focus-visible) {
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   min-width: 0;
   height: 100vh;
+  height: 100dvh;
   border-left: 1px solid var(--color-text);
   background: var(--color-background);
 }
@@ -1582,6 +1619,10 @@ label:has(input[type="file"]:focus-visible) {
 }
 
 .inspector-mobile-close {
+  display: none;
+}
+
+.inspector-language-switch {
   display: none;
 }
 
@@ -2188,6 +2229,7 @@ label:has(input[type="file"]:focus-visible) {
   justify-content: space-between;
   min-height: 76px;
   padding: 15px 26px;
+  padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--color-text);
   background: var(--color-background);
 }
@@ -2221,6 +2263,7 @@ label:has(input[type="file"]:focus-visible) {
 .dialog {
   width: min(620px, 100%);
   max-height: min(760px, calc(100vh - 48px));
+  max-height: min(760px, calc(100dvh - 48px));
   overflow: auto;
   border: 1px solid var(--color-text);
   background: var(--color-background);
@@ -2237,9 +2280,17 @@ label:has(input[type="file"]:focus-visible) {
 }
 
 .dialog-header h2 {
+  min-width: 0;
   margin: 0;
   font-size: 20px;
   line-height: 1.3;
+}
+
+.dialog-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 12px;
 }
 
 .dialog-content {
@@ -2462,6 +2513,7 @@ label:has(input[type="file"]:focus-visible) {
   grid-template-rows: auto minmax(0, 1fr) auto;
   min-width: 0;
   height: 100vh;
+  height: 100dvh;
   border-left: 1px solid var(--color-text);
   background: var(--color-background);
 }
@@ -2478,6 +2530,17 @@ label:has(input[type="file"]:focus-visible) {
   gap: 20px;
   padding: 28px 32px 24px;
   border-bottom: 1px solid var(--color-text);
+}
+
+.submission-inspector-header > div:first-child {
+  min-width: 0;
+}
+
+.submission-inspector-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .submission-inspector-header h2 {
@@ -2666,6 +2729,18 @@ label:has(input[type="file"]:focus-visible) {
   .inspector-mobile-close {
     grid-column: 2;
     grid-row: 2;
+  }
+
+  .inspector-language-switch {
+    display: flex;
+    grid-column: 1 / -1;
+    grid-row: 3;
+    justify-content: flex-end;
+    padding-top: 8px;
+  }
+
+  .submission-inspector-header .inspector-language-switch {
+    padding-top: 0;
   }
 
   .login-shell {
@@ -2919,6 +2994,19 @@ label:has(input[type="file"]:focus-visible) {
     margin: 10px 12px;
   }
 
+  .navigation-footer {
+    display: flex;
+    grid-column: 2;
+    grid-row: 1;
+    align-items: center;
+    gap: 0;
+    margin: 0;
+  }
+
+  .navigation-footer .language-switch {
+    margin: 0;
+  }
+
   .workspace {
     overflow: visible;
   }
@@ -2969,7 +3057,7 @@ label:has(input[type="file"]:focus-visible) {
     gap: 8px;
   }
 
-  .exhibition-list-options > label:not(.homepage-featured-filter) {
+  .exhibition-list-options > label:not(.list-toggle-filter) {
     width: 100%;
   }
 
@@ -3070,6 +3158,35 @@ label:has(input[type="file"]:focus-visible) {
 
   .publish-action .accent-button {
     align-self: flex-end;
+  }
+}
+
+@media (max-width: 1240px) and (max-height: 500px) {
+  .inspector-header {
+    min-height: 0;
+    max-height: clamp(64px, calc(100dvh - 160px), 180px);
+    padding: 16px;
+    overflow-y: auto;
+  }
+
+  .inspector-content {
+    padding-block: 8px;
+  }
+
+  .inspector-footer {
+    min-height: 60px;
+    padding-top: 8px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .publish-action {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .publish-processing-note {
+    max-width: 240px;
+    text-align: right;
   }
 }
 

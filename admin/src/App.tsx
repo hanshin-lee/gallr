@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type {
   AdminExhibition,
   AdminExhibitionLookups,
@@ -14,9 +21,9 @@ import type {
   InspectorSection,
 } from "./domain";
 import {
-  exhibitionTemporalStatus,
   getAdminExhibitionValidation,
   getPublishReadiness,
+  matchesExhibitionFilters,
   seoulCalendarDate,
   shouldPreserveCoordinatesForAddressChange,
   sortAdminExhibitions,
@@ -50,6 +57,8 @@ import { InMemoryAdminEditorRepository } from "./repositories/InMemoryAdminEdito
 import { SupabaseAdminEditorRepository } from "./repositories/SupabaseAdminEditorRepository";
 import {
   type AdminExhibitionRepository,
+  DraftDeleteBlockedError,
+  type DraftDeleteBlockedReason,
   RevisionConflictError,
 } from "./repositories/AdminExhibitionRepository";
 import { supabase } from "./lib/supabase";
@@ -57,6 +66,15 @@ import type { AdminGeocodingService } from "./services/AdminGeocodingService";
 import { InMemoryAdminGeocodingService } from "./services/InMemoryAdminGeocodingService";
 import { NaverMapsJsAdminGeocodingService } from "./services/NaverMapsJsAdminGeocodingService";
 import { SupabaseAdminGeocodingService } from "./services/SupabaseAdminGeocodingService";
+import {
+  LanguageSwitch,
+  interfaceMessage,
+  uiErrorMessage,
+  uiMessageText,
+  useI18n,
+  type MessageKey,
+  type UiMessage,
+} from "./i18n";
 
 type SaveState =
   | "saved"
@@ -80,11 +98,33 @@ const statuses: ExhibitionFilters["status"][] = [
   "Archived",
 ];
 
+const statusKeys: Record<ExhibitionFilters["status"], MessageKey> = {
+  All: "common.all",
+  Draft: "status.draft",
+  Published: "status.published",
+  Archived: "status.archived",
+};
+
+// Permanent deletion is refused for eight distinct retained relationships. Name
+// the blocking one so an operator knows what to clear instead of retrying a
+// command that cannot succeed.
+const draftDeleteBlockedMessageKey: Record<DraftDeleteBlockedReason, MessageKey> = {
+  only_never_published_drafts_can_be_deleted: "notice.deleteBlocked.published",
+  draft_delete_requires_media_detach: "notice.deleteBlocked.media",
+  imported_exhibitions_cannot_be_deleted: "notice.deleteBlocked.imported",
+  draft_delete_has_submission_reference: "notice.deleteBlocked.submission",
+  draft_delete_has_curation_reference: "notice.deleteBlocked.curation",
+  draft_delete_has_launch_kit_reference: "notice.deleteBlocked.launchKit",
+  draft_delete_has_promotion_reference: "notice.deleteBlocked.promotion",
+  draft_delete_has_pending_outbox_event: "notice.deleteBlocked.pendingOutbox",
+};
+
 const defaultExhibitionFilters: ExhibitionFilters = {
   search: "",
   status: "All",
   temporalStatus: "all",
   featuredOnly: false,
+  missingCoverOnly: false,
   sort: "updated_desc",
 };
 
@@ -118,6 +158,7 @@ interface AdminWorkspaceProps {
   onSignOut?: () => void;
   mediaStatusPollIntervalMs?: number;
   fixturePersistence?: boolean;
+  promotionsEnabled?: boolean;
 }
 
 const fixtureGeocodingService = new InMemoryAdminGeocodingService();
@@ -127,45 +168,14 @@ const browserNaverClientId = import.meta.env.DEV
   : undefined;
 const fixtureAdminRequested =
   import.meta.env.VITE_ADMIN_FIXTURE_MODE?.trim().toLocaleLowerCase() === "true";
+const configuredAdminPromotionsEnabled =
+  import.meta.env.VITE_ADMIN_PROMOTIONS_ENABLED?.trim().toLocaleLowerCase() ===
+  "true";
 const fixtureAdminAllowed =
   !supabase &&
   !import.meta.env.PROD &&
   (import.meta.env.MODE === "test" ||
     (import.meta.env.DEV && fixtureAdminRequested));
-
-function matchesFilters(
-  exhibition: AdminExhibition,
-  filters: ExhibitionFilters,
-): boolean {
-  const query = filters.search.trim().toLocaleLowerCase();
-  const matchesStatus =
-    filters.status === "All" || exhibition.status === filters.status;
-  const temporalStatus = filters.temporalStatus ?? "all";
-  const matchesTemporalStatus =
-    temporalStatus === "all" ||
-    exhibitionTemporalStatus(
-      exhibition.openingDate,
-      exhibition.closingDate,
-      seoulCalendarDate(),
-    ) === temporalStatus;
-  const matchesHomepagePlacement =
-    !filters.featuredOnly || exhibition.isHomepageFeatured;
-  const matchesSearch =
-    query.length === 0 ||
-    [
-      exhibition.id,
-      exhibition.nameKo,
-      exhibition.nameEn,
-      exhibition.venueNameKo,
-      exhibition.venueNameEn,
-    ].some((value) => value.toLocaleLowerCase().includes(query));
-  return (
-    matchesStatus &&
-    matchesTemporalStatus &&
-    matchesHomepagePlacement &&
-    matchesSearch
-  );
-}
 
 export function AdminWorkspace({
   repository,
@@ -175,11 +185,31 @@ export function AdminWorkspace({
   onSignOut,
   mediaStatusPollIntervalMs = 5_000,
   fixturePersistence = false,
+  promotionsEnabled = false,
 }: AdminWorkspaceProps) {
+  const { t, formatNumber } = useI18n();
   const [activeSection, setActiveSection] =
     useState<AdminSection>("Exhibitions");
   const [filters, setFilters] =
     useState<ExhibitionFilters>(defaultExhibitionFilters);
+  // Optimistic list merges resolve after async work; they must apply the
+  // filters current at completion, not the ones captured when the work began.
+  // A layout effect keeps the ref fresh before any promise continuation runs.
+  const filtersRef = useRef(filters);
+  useLayoutEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
+  const mergeVisibleRecord = useCallback(
+    (current: AdminExhibition[], record: AdminExhibition) => {
+      const activeFilters = filtersRef.current;
+      const withoutRecord = current.filter((item) => item.id !== record.id);
+      if (!matchesExhibitionFilters(record, activeFilters, seoulCalendarDate())) {
+        return withoutRecord;
+      }
+      return sortAdminExhibitions([...withoutRecord, record], activeFilters.sort);
+    },
+    [],
+  );
   const [records, setRecords] = useState<AdminExhibition[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<AdminExhibition | null>(null);
@@ -195,27 +225,31 @@ export function AdminWorkspace({
   const [discardOpen, setDiscardOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [lifecycleBusy, setLifecycleBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<UiMessage | null>(null);
   const [media, setMedia] = useState<AdminMediaAsset[]>([]);
   const [mediaContext, setMediaContext] = useState<string | null>(null);
   const [mediaLoading, setMediaLoading] = useState(false);
   const [mediaBusy, setMediaBusy] = useState(false);
-  const [mediaError, setMediaError] = useState<string | null>(null);
+  const [mediaError, setMediaError] = useState<UiMessage | null>(null);
   const [mediaRecoveryEpoch, setMediaRecoveryEpoch] = useState(0);
   const [lookups, setLookups] = useState<AdminExhibitionLookups | null>(null);
   const [lookupsLoading, setLookupsLoading] = useState(true);
-  const [lookupsError, setLookupsError] = useState<string | null>(null);
+  const [lookupsError, setLookupsError] = useState<UiMessage | null>(null);
   const [geocodeCandidates, setGeocodeCandidates] = useState<
     AdminGeocodeCandidate[]
   >([]);
   const [geocodeLoading, setGeocodeLoading] = useState(false);
-  const [geocodeError, setGeocodeError] = useState<string | null>(null);
+  const [geocodeError, setGeocodeError] = useState<UiMessage | null>(null);
   const [saveInFlight, setSaveInFlight] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<UiMessage | null>(null);
   const [saveRecoveryBusy, setSaveRecoveryBusy] = useState(false);
   const saveGeneration = useRef(0);
   const activeSaveCount = useRef(0);
   const saveLoopRunning = useRef(false);
+  const saveRequestInFlight = useRef(false);
+  // A revision remains consumed after any outcome until an explicit server reload.
+  const attemptedSaveRevisions = useRef(new Set<string>());
+  const revisionConflict = useRef(false);
   const latestDraftRef = useRef<AdminExhibition | null>(null);
   const didInitializeSelection = useRef(false);
   const recordLoadGeneration = useRef(0);
@@ -230,6 +264,54 @@ export function AdminWorkspace({
     setGeocodeCandidates([]);
     setGeocodeLoading(false);
     setGeocodeError(null);
+  };
+
+  const resetSaveAttemptGuard = () => {
+    attemptedSaveRevisions.current.clear();
+    revisionConflict.current = false;
+  };
+
+  const saveDraftOnce = useCallback(
+    async (
+      snapshot: AdminExhibition,
+      patch: Partial<ExhibitionPatch>,
+    ): Promise<AdminExhibition | null> => {
+      const key = JSON.stringify([
+        snapshot.id,
+        snapshot.workingVersionId,
+        snapshot.revision,
+      ]);
+      if (
+        saveRequestInFlight.current ||
+        attemptedSaveRevisions.current.has(key)
+      ) {
+        return null;
+      }
+
+      attemptedSaveRevisions.current.add(key);
+      saveRequestInFlight.current = true;
+      try {
+        return await repository.saveDraft(
+          snapshot.id,
+          snapshot.workingVersionId,
+          snapshot.revision,
+          patch,
+        );
+      } finally {
+        saveRequestInFlight.current = false;
+      }
+    },
+    [repository],
+  );
+
+  const enterRevisionConflict = (error: RevisionConflictError) => {
+    revisionConflict.current = true;
+    setSaveState("conflict");
+    setSaveError(
+      interfaceMessage("notice.serverRevision", {
+        revision: error.serverRevision,
+      }),
+    );
   };
 
   const loadRecords = useCallback(async () => {
@@ -247,7 +329,7 @@ export function AdminWorkspace({
       }
     } catch (error) {
       if (generation !== recordLoadGeneration.current) return;
-      setNotice(error instanceof Error ? error.message : "Exhibitions could not be loaded.");
+      setNotice(uiErrorMessage(error, "notice.exhibitionsLoadFailed"));
     } finally {
       if (generation === recordLoadGeneration.current) setLoading(false);
     }
@@ -268,11 +350,7 @@ export function AdminWorkspace({
       })
       .catch((error: unknown) => {
         if (cancelled) return;
-        setLookupsError(
-          error instanceof Error
-            ? error.message
-            : "Event and editor choices could not be loaded.",
-        );
+        setLookupsError(uiErrorMessage(error, "notice.lookupsLoadFailed"));
       })
       .finally(() => {
         if (!cancelled) setLookupsLoading(false);
@@ -325,9 +403,7 @@ export function AdminWorkspace({
       })
       .catch((error: unknown) => {
         if (mediaLoadGeneration.current !== generation) return;
-        setMediaError(
-          error instanceof Error ? error.message : "Media could not be loaded.",
-        );
+        setMediaError(uiErrorMessage(error, "notice.mediaLoadFailed"));
       })
       .finally(() => {
         if (mediaLoadGeneration.current === generation) setMediaLoading(false);
@@ -359,23 +435,19 @@ export function AdminWorkspace({
 
           let saved: AdminExhibition;
           try {
-            saved = await repository.saveDraft(
-              snapshot.id,
-              snapshot.workingVersionId,
-              snapshot.revision,
-              toPatch(snapshot),
-            );
+            const result = await saveDraftOnce(snapshot, toPatch(snapshot));
+            if (result === null) {
+              setSaveState("error");
+              setSaveError(interfaceMessage("notice.draftSaveFailed"));
+              return;
+            }
+            saved = result;
           } catch (error) {
             if (error instanceof RevisionConflictError) {
-              setSaveState("conflict");
-              setSaveError(`The server is at revision ${error.serverRevision}.`);
+              enterRevisionConflict(error);
             } else {
               setSaveState("error");
-              setSaveError(
-                error instanceof Error
-                  ? error.message
-                  : "The draft could not be saved.",
-              );
+              setSaveError(uiErrorMessage(error, "notice.draftSaveFailed"));
             }
             return;
           }
@@ -387,18 +459,7 @@ export function AdminWorkspace({
             setDraft(saved);
             setSaveState("saved");
             setSaveError(null);
-            setRecords((current) => {
-              const existingIndex = current.findIndex(
-                (record) => record.id === saved.id,
-              );
-              const withoutRecord = current.filter(
-                (record) => record.id !== saved.id,
-              );
-              if (!matchesFilters(saved, filters)) return withoutRecord;
-              const next = [...withoutRecord];
-              next.splice(existingIndex < 0 ? 0 : existingIndex, 0, saved);
-              return sortAdminExhibitions(next, filters.sort);
-            });
+            setRecords((current) => mergeVisibleRecord(current, saved));
             return;
           }
 
@@ -426,13 +487,11 @@ export function AdminWorkspace({
       }
     }, 600);
     return () => window.clearTimeout(timer);
-  }, [draft, filters, mediaBusy, repository, saveState]);
+  }, [draft, mediaBusy, mergeVisibleRecord, saveDraftOnce, saveState]);
 
   const handleSelect = (exhibition: AdminExhibition) => {
     if (saveState !== "saved" || mediaBusyRef.current) {
-      setNotice(
-        "Retry or discard the current draft changes before changing exhibitions.",
-      );
+      setNotice(interfaceMessage("notice.resolveBeforeExhibition"));
       return;
     }
     lifecycleRequest.current = null;
@@ -451,7 +510,11 @@ export function AdminWorkspace({
     field: keyof AdminExhibition,
     value: string | boolean | null,
   ) => {
-    if (draft?.status === "Archived" || mediaBusyRef.current) return;
+    if (
+      draft?.status === "Archived" ||
+      mediaBusyRef.current ||
+      revisionConflict.current
+    ) return;
     if (!draft) return;
     const addressChanged = field === "addressKo" && value !== draft.addressKo;
     const preserveCoordinates =
@@ -482,9 +545,7 @@ export function AdminWorkspace({
 
   const handleCreate = async () => {
     if (saveState !== "saved" || mediaBusyRef.current) {
-      setNotice(
-        "Retry or discard the current draft changes before creating an exhibition.",
-      );
+      setNotice(interfaceMessage("notice.resolveBeforeCreate"));
       return;
     }
     try {
@@ -500,20 +561,15 @@ export function AdminWorkspace({
       setSaveError(null);
       lifecycleRequest.current = null;
       resetGeocoding();
-      setNotice("New draft created. Add its required details before publishing.");
+      setNotice(interfaceMessage("notice.newDraft"));
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Draft could not be created.");
+      setNotice(uiErrorMessage(error, "notice.draftCreateFailed"));
     }
   };
 
   const replaceVisibleRecord = useCallback(
     (record: AdminExhibition) => {
-      setRecords((current) => {
-        const withoutRecord = current.filter((item) => item.id !== record.id);
-        return matchesFilters(record, filters)
-          ? sortAdminExhibitions([record, ...withoutRecord], filters.sort)
-          : withoutRecord;
-      });
+      setRecords((current) => mergeVisibleRecord(current, record));
       saveGeneration.current += 1;
       latestDraftRef.current = record;
       setSelected(record);
@@ -521,7 +577,7 @@ export function AdminWorkspace({
       setSaveError(null);
       lifecycleRequest.current = null;
     },
-    [filters],
+    [mergeVisibleRecord],
   );
 
   const handleManageMedia = async () => {
@@ -537,43 +593,20 @@ export function AdminWorkspace({
     setSaveError(null);
     setNotice(null);
     try {
-      const workingDraft = await repository.saveDraft(
-        snapshot.id,
-        snapshot.workingVersionId,
-        snapshot.revision,
-        {},
-      );
+      const workingDraft = await saveDraftOnce(snapshot, {});
+      if (workingDraft === null) return;
       replaceVisibleRecord(workingDraft);
       setSaveState("saved");
       setSection("Media");
-      setNotice("Working draft created. You can now change images.");
+      setNotice(interfaceMessage("notice.workingDraft"));
     } catch (error) {
       if (error instanceof RevisionConflictError) {
-        setSaveState("conflict");
-        setSaveError(`The server is at revision ${error.serverRevision}.`);
+        enterRevisionConflict(error);
       } else {
         setSaveState("error");
-        setSaveError(
-          error instanceof Error
-            ? error.message
-            : "A working draft could not be created.",
-        );
+        setSaveError(uiErrorMessage(error, "notice.workingDraftFailed"));
       }
     }
-  };
-
-  const handleRetrySave = () => {
-    if (!draft || saveLoopRunning.current) return;
-    if (!getAdminExhibitionValidation(draft).isValid) {
-      setSaveState("invalid");
-      setSaveError(null);
-      return;
-    }
-    saveGeneration.current += 1;
-    latestDraftRef.current = draft;
-    setSaveError(null);
-    setNotice(null);
-    setSaveState("dirty");
   };
 
   const handleDiscardAndReload = async () => {
@@ -589,7 +622,8 @@ export function AdminWorkspace({
       });
       const reloaded = matches.find((record) => record.id === recoveryDraftId);
       if (!reloaded) {
-        throw new Error("The server version could not be found.");
+        setSaveError(interfaceMessage("notice.serverVersionMissing"));
+        return;
       }
       const reloadedMedia = await repository.listMedia(
         reloaded.id,
@@ -605,15 +639,16 @@ export function AdminWorkspace({
       setMediaLoading(false);
       setMediaError(null);
       setMediaRecoveryEpoch((current) => current + 1);
+      resetSaveAttemptGuard();
       replaceVisibleRecord(reloaded);
       setSaveState("saved");
       resetGeocoding();
-      setNotice("Server version reloaded. Local changes were discarded.");
+      setNotice(interfaceMessage("notice.serverReloaded"));
     } catch (error) {
       setSaveError(
         error instanceof Error
-          ? `Reload failed: ${error.message}`
-          : "The server version could not be reloaded.",
+          ? interfaceMessage("notice.reloadFailed", { detail: error.message })
+          : interfaceMessage("notice.serverReloadFailed"),
       );
     } finally {
       setSaveRecoveryBusy(false);
@@ -634,19 +669,15 @@ export function AdminWorkspace({
       if (geocodeGeneration.current !== generation) return;
       setGeocodeCandidates(candidates);
       if (candidates.length === 0) {
-        setGeocodeError(
+        setGeocodeError(interfaceMessage(
           geocodingService.mode === "fixture"
-            ? "Fixture lookup has no match. Use the sample 서울 용산구 한남대로 28 or enter both coordinates manually. No NAVER request was sent."
-            : "NAVER Maps found no matching address. Refine the Korean address or enter both coordinates manually.",
-        );
+            ? "notice.fixtureGeocodeEmpty"
+            : "notice.naverGeocodeEmpty",
+        ));
       }
     } catch (error) {
       if (geocodeGeneration.current !== generation) return;
-      setGeocodeError(
-        error instanceof Error
-          ? error.message
-          : "Coordinates could not be found. Try again later.",
-      );
+      setGeocodeError(uiErrorMessage(error, "notice.geocodeFailed"));
     } finally {
       if (geocodeGeneration.current === generation) setGeocodeLoading(false);
     }
@@ -657,7 +688,8 @@ export function AdminWorkspace({
       !draft ||
       draft.status === "Archived" ||
       mediaBusyRef.current ||
-      activeSaveCount.current > 0
+      activeSaveCount.current > 0 ||
+      revisionConflict.current
     ) {
       return;
     }
@@ -683,13 +715,16 @@ export function AdminWorkspace({
       getAdminExhibitionValidation(next).isValid ? "dirty" : "invalid",
     );
     setSaveError(null);
-    setNotice(
-      "NAVER-confirmed location selected. Saving its city, region, address, and coordinates.",
-    );
+    setNotice(interfaceMessage("notice.locationSelected"));
   };
 
   const handleApplyVenue = (venue: AdminVenueLookup) => {
-    if (!draft || draft.status === "Archived" || mediaBusyRef.current) return;
+    if (
+      !draft ||
+      draft.status === "Archived" ||
+      mediaBusyRef.current ||
+      revisionConflict.current
+    ) return;
     const next: AdminExhibition = {
       ...draft,
       venueNameKo: venue.nameKo,
@@ -717,7 +752,12 @@ export function AdminWorkspace({
   const handleLocationChange = (
     location: Pick<AdminExhibition, "cityKo" | "cityEn" | "regionKo" | "regionEn">,
   ) => {
-    if (!draft || draft.status === "Archived" || mediaBusyRef.current) return;
+    if (
+      !draft ||
+      draft.status === "Archived" ||
+      mediaBusyRef.current ||
+      revisionConflict.current
+    ) return;
     const next: AdminExhibition = { ...draft, ...location };
     saveGeneration.current += 1;
     latestDraftRef.current = next;
@@ -757,15 +797,14 @@ export function AdminWorkspace({
       );
       replaceVisibleRecord(published);
       setPublishOpen(false);
-      setNotice("Exhibition published. Website rebuild queued.");
+      setNotice(interfaceMessage("notice.published"));
     } catch (error) {
       if (error instanceof RevisionConflictError) {
         lifecycleRequest.current = null;
-        setSaveState("conflict");
-        setSaveError(`The server is at revision ${error.serverRevision}.`);
-        setNotice(`A newer revision (${error.serverRevision}) exists.`);
+        enterRevisionConflict(error);
+        setNotice(interfaceMessage("notice.newerRevision", { revision: error.serverRevision }));
       } else {
-        setNotice(error instanceof Error ? error.message : "Publish failed.");
+        setNotice(uiErrorMessage(error, "notice.publishFailed"));
       }
     } finally {
       setPublishing(false);
@@ -793,23 +832,20 @@ export function AdminWorkspace({
       replaceVisibleRecord(changed);
       setSaveState("saved");
       setLifecycleAction(null);
-      setNotice(
+      setNotice(interfaceMessage(
         action === "archive"
-          ? "Exhibition archived. Its history and media references are preserved."
+          ? "notice.archived"
           : changed.publishedVersionId
-            ? "Exhibition restored. Its last published version is available; curation remains disabled."
-            : "Exhibition restored as a draft. Publish it when it is ready.",
-      );
+            ? "notice.restoredPublished"
+            : "notice.restoredDraft",
+      ));
     } catch (error) {
       if (error instanceof RevisionConflictError) {
         lifecycleRequest.current = null;
-        setSaveState("conflict");
-        setSaveError(`The server is at revision ${error.serverRevision}.`);
-        setNotice(`A newer revision (${error.serverRevision}) exists.`);
+        enterRevisionConflict(error);
+        setNotice(interfaceMessage("notice.newerRevision", { revision: error.serverRevision }));
       } else {
-        setNotice(
-          error instanceof Error ? error.message : `Exhibition could not be ${action}d.`,
-        );
+        setNotice(uiErrorMessage(error, "notice.lifecycleFailed"));
       }
     } finally {
       setLifecycleBusy(false);
@@ -852,19 +888,16 @@ export function AdminWorkspace({
       setMediaContext(null);
       setDeleteOpen(false);
       resetGeocoding();
-      setNotice("Draft permanently deleted.");
+      setNotice(interfaceMessage("notice.deleted"));
     } catch (error) {
       if (error instanceof RevisionConflictError) {
         lifecycleRequest.current = null;
-        setSaveState("conflict");
-        setSaveError(`The server is at revision ${error.serverRevision}.`);
-        setNotice(`A newer revision (${error.serverRevision}) exists.`);
+        enterRevisionConflict(error);
+        setNotice(interfaceMessage("notice.newerRevision", { revision: error.serverRevision }));
+      } else if (error instanceof DraftDeleteBlockedError) {
+        setNotice(interfaceMessage(draftDeleteBlockedMessageKey[error.reason]));
       } else {
-        setNotice(
-          error instanceof Error
-            ? error.message
-            : "Draft could not be permanently deleted.",
-        );
+        setNotice(uiErrorMessage(error, "notice.deleteFailed"));
       }
     } finally {
       setLifecycleBusy(false);
@@ -899,21 +932,14 @@ export function AdminWorkspace({
       setSaveState("saved");
       setDiscardOpen(false);
       resetGeocoding();
-      setNotice(
-        "Draft changes discarded. The last published version was restored.",
-      );
+      setNotice(interfaceMessage("notice.discarded"));
     } catch (error) {
       if (error instanceof RevisionConflictError) {
         lifecycleRequest.current = null;
-        setSaveState("conflict");
-        setSaveError(`The server is at revision ${error.serverRevision}.`);
-        setNotice(`A newer revision (${error.serverRevision}) exists.`);
+        enterRevisionConflict(error);
+        setNotice(interfaceMessage("notice.newerRevision", { revision: error.serverRevision }));
       } else {
-        setNotice(
-          error instanceof Error
-            ? error.message
-            : "Draft changes could not be discarded.",
-        );
+        setNotice(uiErrorMessage(error, "notice.discardFailed"));
       }
     } finally {
       setLifecycleBusy(false);
@@ -964,8 +990,31 @@ export function AdminWorkspace({
           return;
         }
         setMedia(next);
+        const publishedCoverUrl =
+          next.find((asset) => asset.role === "cover")?.publicUrl ?? null;
+        if (publishedCoverUrl !== null) {
+          // The list row must follow the server's cover_image_url once the
+          // worker publishes the cover, so cover-based filters stay accurate
+          // without a reload. Only the list changes; the draft is left alone.
+          setRecords((current) => {
+            const record = current.find((item) => item.id === exhibitionId);
+            if (
+              !record ||
+              record.workingVersionId !== versionId ||
+              record.coverImageUrl === publishedCoverUrl
+            ) {
+              return current;
+            }
+            return mergeVisibleRecord(current, {
+              ...record,
+              coverImageUrl: publishedCoverUrl,
+            });
+          });
+        }
         setMediaError((current) =>
-          current?.startsWith("Media processing status could not be refreshed.")
+          current?.kind === "interface" &&
+          (current.key === "notice.mediaRefreshFailed" ||
+            current.key === "notice.mediaRefreshNoResponse")
             ? null
             : current,
         );
@@ -977,12 +1026,12 @@ export function AdminWorkspace({
         ) {
           return;
         }
-        const detail =
-          error instanceof Error ? error.message : "The server did not respond.";
         setMediaError(
           (current) =>
             current ??
-            `Media processing status could not be refreshed. ${detail}`,
+            (error instanceof Error
+              ? interfaceMessage("notice.mediaRefreshFailed", { detail: error.message })
+              : interfaceMessage("notice.mediaRefreshNoResponse")),
         );
       } finally {
         refreshing = false;
@@ -1005,20 +1054,21 @@ export function AdminWorkspace({
     mediaIsLoading,
     mediaRecoveryEpoch,
     mediaStatusPollIntervalMs,
+    mergeVisibleRecord,
     processingMediaKey,
     repository,
   ]);
 
   const runMediaMutation = async (
     operation: (snapshot: AdminExhibition) => Promise<AdminMediaMutationResult>,
-    successMessage: string,
+    successMessage: MessageKey,
   ) => {
     if (!draft || draft.status !== "Draft") {
-      setMediaError("Media can only be changed on a draft exhibition.");
+      setMediaError(interfaceMessage("notice.mediaDraftOnly"));
       return;
     }
     if (saveState !== "saved" || mediaIsLoading) {
-      setMediaError("Wait for exhibition details and media to finish loading.");
+      setMediaError(interfaceMessage("notice.waitForDetails"));
       return;
     }
     if (mediaBusyRef.current) return;
@@ -1037,19 +1087,14 @@ export function AdminWorkspace({
       );
       replaceVisibleRecord(result.exhibition);
       setSaveState("saved");
-      setNotice(successMessage);
+      setNotice(interfaceMessage(successMessage));
     } catch (error) {
       if (error instanceof RevisionConflictError) {
         lifecycleRequest.current = null;
-        setSaveState("conflict");
-        setSaveError(`The server is at revision ${error.serverRevision}.`);
-        setMediaError(
-          `A newer revision (${error.serverRevision}) exists. Reload before changing media.`,
-        );
+        enterRevisionConflict(error);
+        setMediaError(interfaceMessage("notice.newerMediaRevision", { revision: error.serverRevision }));
       } else {
-        setMediaError(
-          error instanceof Error ? error.message : "Media could not be updated.",
-        );
+        setMediaError(uiErrorMessage(error, "notice.mediaUpdateFailed"));
       }
     } finally {
       mediaBusyRef.current = false;
@@ -1067,9 +1112,7 @@ export function AdminWorkspace({
           file,
           role,
         ),
-      role === "cover"
-        ? "Cover image attached. Processing for publication."
-        : "Gallery image attached. Processing for publication.",
+      role === "cover" ? "notice.coverUploaded" : "notice.galleryUploaded",
     );
   };
 
@@ -1086,7 +1129,7 @@ export function AdminWorkspace({
           assetId,
           patch,
         ),
-      "Image metadata saved.",
+      "notice.metadataSaved",
     );
   };
 
@@ -1099,7 +1142,7 @@ export function AdminWorkspace({
           snapshot.revision,
           orderedAssetIds,
         ),
-      "Gallery order saved.",
+      "notice.galleryOrderSaved",
     );
   };
 
@@ -1112,7 +1155,7 @@ export function AdminWorkspace({
           snapshot.revision,
           assetId,
         ),
-      "Image removed from this draft.",
+      "notice.imageRemoved",
     );
   };
 
@@ -1129,11 +1172,11 @@ export function AdminWorkspace({
   const mediaReadOnlyReason = !draft
     ? null
     : draft.status === "Archived"
-      ? "Archived exhibitions are read-only. Restore this exhibition before changing media."
+      ? t("notice.archivedMediaReadonly")
       : draft.status !== "Draft"
-        ? "Create a working draft by editing exhibition details before changing media."
+        ? t("notice.createDraftForMedia")
         : saveState !== "saved"
-          ? "Wait for exhibition details to finish saving before changing media."
+          ? t("notice.waitForSaveMedia")
           : null;
   const geocodeResultWaitingForSave =
     saveInFlight && geocodeCandidates.length > 0;
@@ -1142,10 +1185,9 @@ export function AdminWorkspace({
   const handleNavigation = (next: AdminSection) => {
     if (next === activeSection) return;
     if (next === "Editors" && staffRole !== "admin") return;
+    if (next === "Promotions" && !promotionsEnabled) return;
     if (editorTransitionBlocked) {
-      setNotice(
-        "Retry or discard the current exhibition changes before changing sections.",
-      );
+      setNotice(interfaceMessage("notice.resolveBeforeSection"));
       return;
     }
     setActiveSection(next);
@@ -1165,9 +1207,7 @@ export function AdminWorkspace({
     setSection("Basics");
     setSaveState("saved");
     setSaveError(null);
-    setNotice(
-      "Submission accepted as an unpublished draft. Confirm its location, images, and public fields before publishing.",
-    );
+    setNotice(interfaceMessage("notice.submissionAccepted"));
     setActiveSection("Exhibitions");
   };
 
@@ -1179,6 +1219,7 @@ export function AdminWorkspace({
         onNavigate={handleNavigation}
         onSignOut={onSignOut}
         signOutDisabled={editorTransitionBlocked}
+        promotionsEnabled={promotionsEnabled}
       />
       {activeSection === "Submissions" ? (
         <SubmissionWorkspace
@@ -1187,7 +1228,7 @@ export function AdminWorkspace({
         />
       ) : activeSection === "Gallery claims" ? (
         <GalleryClaimsWorkspace repository={repository} />
-      ) : activeSection === "Promotions" ? (
+      ) : activeSection === "Promotions" && promotionsEnabled ? (
         <PromotionWorkspace repository={repository} />
       ) : activeSection === "Editors" && staffRole === "admin" ? (
         <EditorOnboardingWorkspace repository={editorRepository} />
@@ -1196,26 +1237,26 @@ export function AdminWorkspace({
       <main className="workspace">
         <header className="workspace-header">
           <div className="workspace-title-row">
-            <h1>Exhibitions</h1>
+            <h1>{t("workspace.exhibitions")}</h1>
             {(fixturePersistence || geocodingService.mode === "fixture") && (
               <div className="fixture-mode-indicator" role="note">
-                <strong>{fixturePersistence ? "Fixture admin" : "Fixture mode"}</strong>
+                <strong>{t(fixturePersistence ? "workspace.fixtureAdmin" : "workspace.fixtureMode")}</strong>
                 <span>
                   {fixturePersistence
-                    ? "Changes are temporary and are never saved to Supabase."
-                    : "Address lookup uses local sample data only."}
+                    ? t("workspace.fixtureTemporary")
+                    : t("workspace.fixtureAddress")}
                 </span>
               </div>
             )}
           </div>
           <div className="workspace-toolbar">
             <label className="search-field">
-              <span className="visually-hidden">Search exhibitions</span>
+              <span className="visually-hidden">{t("workspace.searchExhibitions")}</span>
               <SearchIcon />
               <input
                 type="search"
                 value={filters.search}
-                placeholder="Search exhibitions..."
+                placeholder={t("workspace.searchExhibitionsPlaceholder")}
                 onChange={(event) =>
                   setFilters((current) => ({
                     ...current,
@@ -1224,7 +1265,7 @@ export function AdminWorkspace({
                 }
               />
             </label>
-            <div className="status-filter" aria-label="Status filter">
+            <div className="status-filter" aria-label={t("workspace.statusFilter")}>
               {statuses.map((status) => (
                 <button
                   type="button"
@@ -1235,7 +1276,7 @@ export function AdminWorkspace({
                   }
                   key={status}
                 >
-                  {status}
+                  {t(statusKeys[status])}
                 </button>
               ))}
             </div>
@@ -1245,17 +1286,17 @@ export function AdminWorkspace({
               disabled={editorTransitionBlocked}
               onClick={handleCreate}
             >
-              New exhibition
+              {t("workspace.newExhibition")}
             </button>
           </div>
           <div
             className="exhibition-list-options"
-            aria-label="Exhibition list options"
+            aria-label={t("workspace.listOptions")}
           >
             <label>
-              <span>Exhibition date status</span>
+              <span>{t("workspace.dateStatus")}</span>
               <select
-                aria-label="Exhibition date status"
+                aria-label={t("workspace.dateStatus")}
                 value={filters.temporalStatus ?? "all"}
                 onChange={(event) =>
                   setFilters((current) => ({
@@ -1266,16 +1307,16 @@ export function AdminWorkspace({
                   }))
                 }
               >
-                <option value="all">All dates</option>
-                <option value="running">Currently running</option>
-                <option value="upcoming">Upcoming</option>
-                <option value="ended">Ended</option>
+                <option value="all">{t("workspace.allDates")}</option>
+                <option value="running">{t("workspace.currentlyRunning")}</option>
+                <option value="upcoming">{t("workspace.upcoming")}</option>
+                <option value="ended">{t("workspace.ended")}</option>
               </select>
             </label>
             <label>
-              <span>Sort</span>
+              <span>{t("workspace.sort")}</span>
               <select
-                aria-label="Sort exhibitions"
+                aria-label={t("workspace.sortExhibitions")}
                 value={filters.sort ?? "updated_desc"}
                 onChange={(event) =>
                   setFilters((current) => ({
@@ -1286,17 +1327,16 @@ export function AdminWorkspace({
                   }))
                 }
               >
-                <option value="updated_desc">Recently updated</option>
-                <option value="published_desc">Date published</option>
-                <option value="opening_asc">Opening date</option>
-                <option value="closing_asc">Closing date</option>
-                <option value="created_desc">Date created</option>
+                <option value="updated_desc">{t("workspace.recentlyUpdated")}</option>
+                <option value="published_desc">{t("workspace.datePublished")}</option>
+                <option value="opening_asc">{t("workspace.openingDate")}</option>
+                <option value="closing_asc">{t("workspace.closingDate")}</option>
+                <option value="created_desc">{t("workspace.dateCreated")}</option>
               </select>
             </label>
-            <label className="homepage-featured-filter">
+            <label className="list-toggle-filter">
               <input
                 type="checkbox"
-                aria-label="Featured on homepage only"
                 checked={filters.featuredOnly ?? false}
                 onChange={(event) =>
                   setFilters((current) => ({
@@ -1305,12 +1345,25 @@ export function AdminWorkspace({
                   }))
                 }
               />
-              Featured on homepage only
+              {t("workspace.homepageOnly")}
+            </label>
+            <label className="list-toggle-filter">
+              <input
+                type="checkbox"
+                checked={filters.missingCoverOnly ?? false}
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    missingCoverOnly: event.target.checked,
+                  }))
+                }
+              />
+              {t("workspace.missingCoverOnly")}
             </label>
           </div>
           {notice && (
             <div className="inline-notice" role="status">
-              {notice}
+              {uiMessageText(notice, t)}
             </div>
           )}
           {(saveState === "invalid" ||
@@ -1320,28 +1373,19 @@ export function AdminWorkspace({
             <div className="inline-notice" role="alert">
               <span aria-hidden="true">! </span>
               <span>
-                {saveError ??
-                  (saveState === "invalid"
-                    ? "This draft has invalid fields and was not saved."
-                    : "The server version changed while this draft was open.")}
+                {saveError
+                  ? uiMessageText(saveError, t)
+                  : saveState === "invalid"
+                    ? t("workspace.invalidDraft")
+                    : t("workspace.serverChanged")}
               </span>{" "}
-              {saveState === "error" && (
-                <button
-                  className="outlined-compact"
-                  type="button"
-                  disabled={saveRecoveryBusy}
-                  onClick={handleRetrySave}
-                >
-                  Retry save
-                </button>
-              )}{" "}
               <button
                 className="outlined-compact"
                 type="button"
                 disabled={saveRecoveryBusy}
                 onClick={() => void handleDiscardAndReload()}
               >
-                {saveRecoveryBusy ? "Reloading…" : "Discard changes and reload"}
+                {t(saveRecoveryBusy ? "workspace.reloading" : "workspace.discardReload")}
               </button>
             </div>
           )}
@@ -1354,8 +1398,8 @@ export function AdminWorkspace({
           loading={loading}
         />
         <footer className="table-footer">
-          <span>{records.length} exhibitions</span>
-          <span>Page 1</span>
+          <span>{t("workspace.exhibitionCount", { count: formatNumber(records.length) })}</span>
+          <span>{t("workspace.pageOne")}</span>
         </footer>
       </main>
 
@@ -1368,28 +1412,26 @@ export function AdminWorkspace({
           validation={validation}
           lookups={lookups}
           lookupsLoading={lookupsLoading}
-          lookupsError={lookupsError}
+          lookupsError={lookupsError ? uiMessageText(lookupsError, t) : null}
           publishAllowed={staffRole !== "contributor"}
           deleteAllowed={staffRole === "admin"}
           lifecycleBusy={lifecycleBusy}
           media={visibleMedia}
           mediaLoading={mediaIsLoading}
           mediaBusy={mediaBusy}
-          mediaError={mediaError}
+          mediaError={mediaError ? uiMessageText(mediaError, t) : null}
           mediaEditable={mediaEditable}
           mediaReadOnlyReason={mediaReadOnlyReason}
           geocodeCandidates={
             geocodeResultWaitingForSave ? [] : geocodeCandidates
           }
           geocodeLoading={geocodeLoading || geocodeResultWaitingForSave}
-          geocodeError={geocodeError}
+          geocodeError={geocodeError ? uiMessageText(geocodeError, t) : null}
           geocodingMode={geocodingService.mode}
           onSectionChange={setSection}
           onClose={() => {
             if (saveState !== "saved" || mediaBusyRef.current) {
-              setNotice(
-                "Retry or discard the current draft changes before closing the editor.",
-              );
+              setNotice(interfaceMessage("notice.resolveBeforeClose"));
               return;
             }
             saveGeneration.current += 1;
@@ -1460,13 +1502,14 @@ export function AdminWorkspace({
         </>
       )}
       <div className="visually-hidden" aria-live="polite">
-        {notice}
+        {notice ? uiMessageText(notice, t) : null}
       </div>
     </div>
   );
 }
 
 export default function App() {
+  const { t } = useI18n();
   const repository = useMemo<AdminExhibitionRepository | null>(
     () => {
       if (supabase) return new SupabaseAdminExhibitionRepository(supabase);
@@ -1505,8 +1548,9 @@ export default function App() {
   if (!repository || !geocodingService) {
     return (
       <div className="login-shell">
-        <aside className="login-rail" aria-label="gallr admin">
-          <strong>gallr admin</strong>
+        <aside className="login-rail" aria-label={t("config.rail")}>
+          <strong>{t("config.rail")}</strong>
+          <LanguageSwitch />
           <span className="login-rail-mark" aria-hidden="true" />
         </aside>
         <main className="login-stage">
@@ -1515,12 +1559,10 @@ export default function App() {
             aria-labelledby="admin-configuration-title"
           >
             <h1 id="admin-configuration-title">
-              Admin configuration required
+              {t("config.title")}
             </h1>
             <p>
-              Set both public Supabase environment variables before starting
-              the admin. Temporary fixture data is available only when
-              explicitly enabled in development or under the test harness.
+              {t("config.body")}
             </p>
           </section>
         </main>
@@ -1535,6 +1577,7 @@ export default function App() {
         geocodingService={geocodingService}
         staffRole="admin"
         fixturePersistence
+        promotionsEnabled={configuredAdminPromotionsEnabled}
       />
     );
   }
@@ -1562,6 +1605,7 @@ export default function App() {
             staffRole={access.role}
             editorRepository={editorOnboardingRepository ?? undefined}
             onSignOut={() => void signOut()}
+            promotionsEnabled={configuredAdminPromotionsEnabled}
           />
         ) : null
       }

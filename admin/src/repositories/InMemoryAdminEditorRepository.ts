@@ -1,5 +1,6 @@
 import type {
   AdminEditorRepository,
+  AdminEditorRemovalResult,
   AdminEditorRequest,
   AdminEditorRequestStatus,
   AdminEditorUpdateInput,
@@ -7,7 +8,10 @@ import type {
   EditorOnboardingInput,
   EditorOnboardingResult,
 } from "./AdminEditorRepository";
-import { EditorRevisionConflictError as RevisionConflict } from "./AdminEditorRepository";
+import {
+  EditorRevisionConflictError as RevisionConflict,
+  ProtectedEditorIdentityError,
+} from "./AdminEditorRepository";
 
 export class InMemoryAdminEditorRepository implements AdminEditorRepository {
   private readonly requests: AdminEditorRequest[] = [];
@@ -63,15 +67,37 @@ export class InMemoryAdminEditorRepository implements AdminEditorRepository {
   ): Promise<AdminManagedEditor> {
     await Promise.resolve();
     const editor = this.findEditor(editorId, expectedRevision);
-    if (!editor.hasAccess) throw new Error("Editor workspace account not found.");
     const updated = {
       ...editor,
       isActive: active ? editor.isActive : false,
-      accessActive: active,
+      // An editor with no linked workspace account has no membership to
+      // toggle; deactivation withdraws the public profile instead.
+      accessActive: editor.hasAccess ? active : false,
       revision: editor.revision + 1,
     };
     this.replaceEditor(updated);
     return { ...updated };
+  }
+
+  async deleteEditor(
+    editorId: string,
+    expectedRevision: number,
+  ): Promise<AdminEditorRemovalResult> {
+    await Promise.resolve();
+    const editor = this.findEditor(editorId, expectedRevision);
+    if (editor.editorId === "gallr-editors") {
+      throw new ProtectedEditorIdentityError();
+    }
+    this.editors = this.editors.filter(
+      (item) => item.editorId !== editor.editorId,
+    );
+    return {
+      editorId: editor.editorId,
+      detachedExhibitions: 0,
+      detachedExhibitionVersions: 0,
+      removedRequests: 0,
+      hadWorkspaceAccount: editor.hasAccess,
+    };
   }
 
   private findEditor(

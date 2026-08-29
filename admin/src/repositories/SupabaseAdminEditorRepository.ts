@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   AdminEditorRepository,
+  AdminEditorRemovalResult,
   AdminEditorRequest,
   AdminEditorRequestStatus,
   AdminEditorUpdateInput,
@@ -8,7 +9,10 @@ import type {
   EditorOnboardingInput,
   EditorOnboardingResult,
 } from "./AdminEditorRepository";
-import { EditorRevisionConflictError as RevisionConflict } from "./AdminEditorRepository";
+import {
+  EditorRevisionConflictError as RevisionConflict,
+  ProtectedEditorIdentityError,
+} from "./AdminEditorRepository";
 
 function record(value: unknown): Record<string, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
@@ -122,6 +126,35 @@ function mapManagedEditor(value: unknown): AdminManagedEditor {
   };
 }
 
+function countField(
+  value: Record<string, unknown>,
+  key: string,
+): number {
+  const field = value[key];
+  if (!Number.isInteger(field) || (field as number) < 0) {
+    throw new Error("The editor removal returned an invalid response.");
+  }
+  return field as number;
+}
+
+function mapRemoval(value: unknown): AdminEditorRemovalResult {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("The editor removal returned an invalid response.");
+  }
+  const row = value as Record<string, unknown>;
+  const hadWorkspaceAccount = row.had_workspace_account;
+  if (typeof hadWorkspaceAccount !== "boolean") {
+    throw new Error("The editor removal returned an invalid response.");
+  }
+  return {
+    editorId: stringField(row, "editor_id"),
+    detachedExhibitions: countField(row, "detached_exhibitions"),
+    detachedExhibitionVersions: countField(row, "detached_exhibition_versions"),
+    removedRequests: countField(row, "removed_requests"),
+    hadWorkspaceAccount,
+  };
+}
+
 function editorMutationError(
   error: unknown,
   fallback: string,
@@ -133,6 +166,9 @@ function editorMutationError(
       if (Number.isInteger(serverRevision) && serverRevision > 0) {
         return new RevisionConflict(serverRevision);
       }
+    }
+    if (row.message === "editor_identity_is_protected") {
+      return new ProtectedEditorIdentityError();
     }
   }
   return new Error(fallback);
@@ -252,6 +288,20 @@ export class SupabaseAdminEditorRepository implements AdminEditorRepository {
       );
     }
     return mapManagedEditor(data);
+  }
+
+  async deleteEditor(
+    editorId: string,
+    expectedRevision: number,
+  ): Promise<AdminEditorRemovalResult> {
+    const { data, error } = await this.client.rpc("admin_delete_editor", {
+      p_editor_id: editorId,
+      p_expected_revision: expectedRevision,
+    });
+    if (error) {
+      throw editorMutationError(error, "The editor could not be removed.");
+    }
+    return mapRemoval(data);
   }
 
   async listRequests(
