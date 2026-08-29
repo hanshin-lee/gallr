@@ -15,12 +15,11 @@ backend client.
 
 When enabled, configure a 32–256 character `MOBILE_ANALYTICS_HASH_SECRET` from
 the matching environment's 1Password item. It derives a short-lived source quota
-key from the trusted ingress address. The digest is used only across the
-24-hour rate-limit window in the private hourly quota table and is never joined
-to analytics facts. Expired rows are removed by the next hourly cleanup.
-Confirm that the
-hosted ingress overwrites `cf-connecting-ip` or `x-forwarded-for`; spoofing
-degrades source isolation to the still-bounded project quota.
+key from the trusted ingress address. The digest is used only across the 24-hour
+rate-limit window in the private hourly quota table and is never joined to
+analytics facts. Expired rows are removed by the next hourly cleanup. Confirm
+that the hosted ingress overwrites `cf-connecting-ip` or `x-forwarded-for`;
+spoofing degrades source isolation to the still-bounded project quota.
 
 `MOBILE_ANALYTICS_ALLOWED_ORIGINS` defaults to `app://gallr`. This is a routing
 check, not authentication. The handler also enforces body/batch limits, strict
