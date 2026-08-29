@@ -7,10 +7,17 @@ import com.gallr.shared.data.model.ExhibitionVisitSnapshot
 import com.gallr.shared.data.model.FollowedGallery
 import com.gallr.shared.data.model.FollowedGallerySnapshot
 import com.gallr.shared.data.model.map.GeoPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNotSame
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
@@ -26,7 +33,7 @@ class LocalExhibitionRecommenderTest {
         val thematic = exhibition("thematic", descriptionKo = "빛과 사진 설치 작업", descriptionEn = "photographic light")
         val generic = exhibition("generic", descriptionKo = "도자 공예", descriptionEn = "ceramic craft")
 
-        val result = recommender.recommend(listOf(saved, generic, thematic), context(bookmarks = setOf("saved")))
+        val result = recommend(listOf(saved, generic, thematic), context(bookmarks = setOf("saved")))
 
         assertEquals("thematic", result.first().exhibition.id)
         assertTrue(RecommendationReason.SIMILAR_TO_SAVED in result.first().reasons)
@@ -39,14 +46,13 @@ class LocalExhibitionRecommenderTest {
         val candidate = exhibition("candidate", descriptionEn = "painting")
 
         val result =
-            recommender
-                .recommend(
-                    listOf(saved, visited, candidate),
-                    context(
-                        bookmarks = setOf(saved.id),
-                        visits = listOf(visit(visited)),
-                    ),
-                )
+            recommend(
+                listOf(saved, visited, candidate),
+                context(
+                    bookmarks = setOf(saved.id),
+                    visits = listOf(visit(visited)),
+                ),
+            )
 
         assertEquals(listOf("candidate"), result.map { it.exhibition.id })
         assertFalse(result.any { it.exhibition.id in setOf(saved.id, visited.id) })
@@ -65,11 +71,10 @@ class LocalExhibitionRecommenderTest {
         val unrelated = exhibition("unrelated", descriptionEn = "traditional ceramic vessels")
 
         val result =
-            recommender
-                .recommend(
-                    listOf(unrelated, thematic, endedVisit),
-                    context(visits = listOf(visit(endedVisit))),
-                )
+            recommend(
+                listOf(unrelated, thematic, endedVisit),
+                context(visits = listOf(visit(endedVisit))),
+            )
 
         assertEquals("thematic", result.first().exhibition.id)
         assertTrue(RecommendationReason.SIMILAR_TO_VISITED in result.first().reasons)
@@ -81,7 +86,7 @@ class LocalExhibitionRecommenderTest {
         val other = exhibition("other", galleryId = "gallery-two", descriptionEn = "abstract")
 
         val result =
-            recommender.recommend(
+            recommend(
                 listOf(other, followed),
                 context(follows = listOf(follow("gallery-one"))),
             )
@@ -96,7 +101,7 @@ class LocalExhibitionRecommenderTest {
         val far = exhibition("far", latitude = 37.7, longitude = 127.2)
 
         val result =
-            recommender.recommend(
+            recommend(
                 listOf(far, nearbyFeatured),
                 context(origin = GeoPoint(37.5665, 126.9780)),
             )
@@ -120,7 +125,7 @@ class LocalExhibitionRecommenderTest {
 
         assertEquals(
             listOf("visible"),
-            recommender.recommend(listOf(ended, tooFarUpcoming, visible), context()).map { it.exhibition.id },
+            recommend(listOf(ended, tooFarUpcoming, visible), context()).map { it.exhibition.id },
         )
     }
 
@@ -134,7 +139,7 @@ class LocalExhibitionRecommenderTest {
                 exhibition("b1", galleryId = "other", descriptionEn = "light photo"),
             )
 
-        val result = recommender.recommend(catalogue, context(limit = 4))
+        val result = recommend(catalogue, context(limit = 4))
 
         assertTrue(result.count { it.exhibition.galleryId == "same" } <= 2)
         assertTrue(result.any { it.exhibition.id == "b1" })
@@ -158,7 +163,7 @@ class LocalExhibitionRecommenderTest {
                 isFeatured = true,
             )
 
-        val result = recommender.recommend(duplicates + alternative, context(limit = 4))
+        val result = recommend(duplicates + alternative, context(limit = 4))
 
         assertTrue(result.any { it.exhibition.id == alternative.id })
         assertTrue(result.count { it.exhibition.id.startsWith("duplicate-") } <= 2)
@@ -184,7 +189,7 @@ class LocalExhibitionRecommenderTest {
                 galleryId = "gallery-decomposed",
             ).copy(venueNameKo = "동일", venueNameEn = "Same")
 
-        val result = recommender.recommend(listOf(saved, decomposed, composed), context(bookmarks = setOf("saved")))
+        val result = recommend(listOf(saved, decomposed, composed), context(bookmarks = setOf("saved")))
 
         assertEquals(
             result.first { it.exhibition.id == "composed" }.scoreBasisPoints,
@@ -209,7 +214,7 @@ class LocalExhibitionRecommenderTest {
                 galleryId = "c2",
             ).copy(venueNameKo = "동일", venueNameEn = "Same")
         val caronResult =
-            recommender.recommend(
+            recommend(
                 listOf(caronSaved, caronComposed, caronDecomposed),
                 context(bookmarks = setOf(caronSaved.id)),
             )
@@ -232,15 +237,14 @@ class LocalExhibitionRecommenderTest {
             )
 
         val result =
-            recommender
-                .recommend(
-                    listOf(saved, visited, followed),
-                    context(
-                        bookmarks = setOf(saved.id),
-                        visits = listOf(visit(visited)),
-                        follows = listOf(follow("followed-gallery")),
-                    ),
-                ).single()
+            recommend(
+                listOf(saved, visited, followed),
+                context(
+                    bookmarks = setOf(saved.id),
+                    visits = listOf(visit(visited)),
+                    follows = listOf(follow("followed-gallery")),
+                ),
+            ).single()
 
         assertTrue(RecommendationReason.FOLLOWED_GALLERY in result.reasons)
     }
@@ -250,7 +254,7 @@ class LocalExhibitionRecommenderTest {
         val laterIdFirst = exhibition("a", closingDate = LocalDate(2026, 9, 20))
         val earlierClosing = exhibition("z", closingDate = LocalDate(2026, 9, 15))
 
-        val result = recommender.recommend(listOf(earlierClosing, laterIdFirst), context())
+        val result = recommend(listOf(earlierClosing, laterIdFirst), context())
 
         assertEquals(listOf("a", "z"), result.map { it.exhibition.id })
     }
@@ -272,8 +276,8 @@ class LocalExhibitionRecommenderTest {
             )
         val recommendationContext = context(bookmarks = setOf("c"))
 
-        val forward = recommender.recommend(catalogue, recommendationContext)
-        val reverse = recommender.recommend(catalogue.reversed(), recommendationContext)
+        val forward = recommend(catalogue, recommendationContext)
+        val reverse = recommend(catalogue.reversed(), recommendationContext)
 
         assertEquals(
             forward.map { Triple(it.exhibition.id, it.scoreBasisPoints, it.reasons) },
@@ -282,7 +286,7 @@ class LocalExhibitionRecommenderTest {
     }
 
     @Test
-    fun `representative catalogue remains bounded without an inference runtime`() {
+    fun `representative catalogue preparation and repeated reranking remain bounded`() {
         val catalogue =
             (0 until 1_205).map { index ->
                 exhibition(
@@ -293,15 +297,132 @@ class LocalExhibitionRecommenderTest {
                 )
             }
         var result: List<ExhibitionRecommendation> = emptyList()
+        lateinit var prepared: ExhibitionRecommendationIndex
 
-        val elapsed =
+        val preparationElapsed =
             measureTime {
-                result = recommender.recommend(catalogue, context(bookmarks = setOf("exhibition-0")))
+                prepared = recommender.prepare(catalogue)
+            }
+        val rerankElapsed =
+            measureTime {
+                repeat(20) { index ->
+                    result =
+                        prepared.recommend(
+                            context(bookmarks = setOf("exhibition-${index % 10}")),
+                        )
+                }
             }
 
         assertTrue(result.isNotEmpty())
-        assertTrue(elapsed < 10.seconds, "local recommendation took $elapsed")
+        assertTrue(preparationElapsed < 10.seconds, "catalogue preparation took $preparationElapsed")
+        assertTrue(rerankElapsed < 10.seconds, "20 prepared reranks took $rerankElapsed")
     }
+
+    @Test
+    fun `equal reconstructed and reordered catalogue reuses prepared index`() {
+        val catalogue =
+            listOf(
+                exhibition("a", descriptionEn = "video installation"),
+                exhibition("b", descriptionEn = "ceramic sculpture"),
+            )
+
+        val prepared = recommender.prepare(catalogue)
+        val reconstructed = catalogue.map { it.copy() }.reversed()
+        val reused = recommender.prepare(reconstructed, previous = prepared)
+
+        assertSame(prepared, reused)
+    }
+
+    @Test
+    fun `catalogue changes and duplicate ids invalidate or reject preparation`() {
+        val catalogue =
+            listOf(
+                exhibition("a", descriptionEn = "video installation"),
+                exhibition("b", descriptionEn = "ceramic sculpture"),
+            )
+        val prepared = recommender.prepare(catalogue)
+
+        assertNotSame(
+            prepared,
+            recommender.prepare(
+                catalogue.map { if (it.id == "a") it.copy(descriptionEn = "changed") else it },
+                previous = prepared,
+            ),
+        )
+        assertNotSame(
+            prepared,
+            recommender.prepare(
+                catalogue.map { if (it.id == "a") it.copy(coverImageUrl = "https://example.com/new.jpg") else it },
+                previous = prepared,
+            ),
+        )
+        assertNotSame(
+            prepared,
+            recommender.prepare(
+                catalogue + exhibition("c"),
+                previous = prepared,
+            ),
+        )
+        assertFailsWith<IllegalArgumentException> {
+            recommender.prepare(listOf(exhibition("duplicate"), exhibition("duplicate")))
+        }
+    }
+
+    @Test
+    fun `signal and date changes rerank one prepared catalogue`() {
+        val saved = exhibition("saved", descriptionEn = "light photography")
+        val thematic = exhibition("thematic", descriptionEn = "photographic light")
+        val expiring =
+            exhibition(
+                "expiring",
+                descriptionEn = "ceramic",
+                closingDate = LocalDate(2026, 8, 30),
+            )
+        val prepared = recommender.prepare(listOf(expiring, thematic, saved))
+
+        val coldStart = prepared.recommend(context())
+        val personalized = prepared.recommend(context(bookmarks = setOf(saved.id)))
+        val nextDay = prepared.recommend(context(today = LocalDate(2026, 8, 31)))
+
+        assertTrue(coldStart.any { it.exhibition.id == expiring.id })
+        assertEquals(thematic.id, personalized.first().exhibition.id)
+        assertFalse(nextDay.any { it.exhibition.id == expiring.id })
+    }
+
+    @Test
+    fun `prepared catalogue supports concurrent deterministic reranks`() =
+        runTest {
+            val catalogue =
+                (0 until 80).map { index ->
+                    exhibition(
+                        id = "exhibition-$index",
+                        descriptionEn = "theme ${index % 7} photography installation",
+                        galleryId = "gallery-${index % 10}",
+                    )
+                }
+            val prepared = recommender.prepare(catalogue)
+            val recommendationContext = context(bookmarks = setOf("exhibition-0"))
+            val expected = prepared.recommend(recommendationContext)
+
+            val concurrent =
+                (0 until 8)
+                    .map {
+                        async(Dispatchers.Default) { prepared.recommend(recommendationContext) }
+                    }.awaitAll()
+
+            concurrent.forEach { assertEquals(expected, it) }
+        }
+
+    @Test
+    fun `recommendation limit is bounded to twenty`() {
+        assertFailsWith<IllegalArgumentException> { context(limit = -1) }
+        assertFailsWith<IllegalArgumentException> { context(limit = 21) }
+    }
+
+    private fun recommend(
+        catalogue: List<Exhibition>,
+        context: RecommendationContext,
+    ): List<ExhibitionRecommendation> = recommender.prepare(catalogue).recommend(context)
 
     private fun context(
         bookmarks: Set<String> = emptySet(),
@@ -309,6 +430,7 @@ class LocalExhibitionRecommenderTest {
         follows: List<FollowedGallery> = emptyList(),
         origin: GeoPoint? = null,
         limit: Int = 6,
+        today: LocalDate = this.today,
     ) = RecommendationContext(
         bookmarkedExhibitionIds = bookmarks,
         visits = visits,

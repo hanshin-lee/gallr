@@ -51,17 +51,26 @@ data class RecommendationContext(
     val maxDistanceKm: Double? = null,
 ) {
     init {
-        require(limit >= 0) { "limit must not be negative" }
+        require(limit in 0..MAX_RECOMMENDATION_RESULT_LIMIT) {
+            "limit must be between 0 and $MAX_RECOMMENDATION_RESULT_LIMIT"
+        }
         require(maxDistanceKm == null || maxDistanceKm >= 0.0) {
             "maxDistanceKm must not be negative"
         }
     }
 }
 
-/** Replaceable contract for local recommendation strategies. */
-fun interface ExhibitionRecommender {
-    fun recommend(
+/** Replaceable contract that prepares immutable catalogue-only recommendation state. */
+interface ExhibitionRecommender {
+    fun prepare(
         catalogue: List<Exhibition>,
-        context: RecommendationContext,
-    ): List<ExhibitionRecommendation>
+        previous: ExhibitionRecommendationIndex? = null,
+    ): ExhibitionRecommendationIndex
 }
+
+/** Immutable prepared catalogue index safe for repeated and concurrent local reranking. */
+fun interface ExhibitionRecommendationIndex {
+    fun recommend(context: RecommendationContext): List<ExhibitionRecommendation>
+}
+
+private const val MAX_RECOMMENDATION_RESULT_LIMIT = 20

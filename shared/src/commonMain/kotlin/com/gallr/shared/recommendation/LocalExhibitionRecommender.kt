@@ -13,27 +13,56 @@ import kotlin.math.sqrt
 
 /** Zero-network bilingual content recommender for the current organic catalogue. */
 class LocalExhibitionRecommender : ExhibitionRecommender {
-    /** Returns deterministic, diverse recommendations without persisting a taste vector. */
-    override fun recommend(
+    /** Prepares immutable catalogue vectors while reusing an exactly matching prior index. */
+    override fun prepare(
         catalogue: List<Exhibition>,
-        context: RecommendationContext,
-    ): List<ExhibitionRecommendation> {
-        if (context.limit == 0) return emptyList()
+        previous: ExhibitionRecommendationIndex?,
+    ): ExhibitionRecommendationIndex {
         val indexable = catalogue.sortedBy(Exhibition::id)
+        require(indexable.map(Exhibition::id).distinct().size == indexable.size) {
+            "catalogue must not contain duplicate exhibition IDs"
+        }
+        val key = RecommendationIndexKey(FEATURE_SCHEMA_VERSION, indexable)
+        if (previous is LocalExhibitionRecommendationIndex && previous.key == key) return previous
+
+        val rawFeaturesById = indexable.associate { it.id to it.rawFeatures() }
+        val vectorizer = LocalContentVectorizer(rawFeaturesById.values)
+        val vectorsById = rawFeaturesById.mapValues { (_, rawFeatures) -> vectorizer.vector(rawFeatures) }
+        val diversityFeaturesById = indexable.associate { it.id to it.diversityFeatures() }
+        return LocalExhibitionRecommendationIndex(
+            key = key,
+            vectorsById = vectorsById,
+            diversityFeaturesById = diversityFeaturesById,
+        )
+    }
+}
+
+private data class RecommendationIndexKey(
+    val featureSchemaVersion: Int,
+    val exhibitionsById: List<Exhibition>,
+)
+
+private class LocalExhibitionRecommendationIndex(
+    val key: RecommendationIndexKey,
+    private val vectorsById: Map<String, Map<Int, Double>>,
+    private val diversityFeaturesById: Map<String, Set<Int>>,
+) : ExhibitionRecommendationIndex {
+    /** Returns deterministic, diverse recommendations without persisting a taste vector. */
+    override fun recommend(context: RecommendationContext): List<ExhibitionRecommendation> {
+        if (context.limit == 0) return emptyList()
+        val indexable = key.exhibitionsById
         val eligible =
             indexable
                 .filter { it.isLocallyDiscoverable(context.today) }
         if (eligible.isEmpty()) return emptyList()
 
-        val vectorizer = LocalContentVectorizer(indexable)
-        val vectors = indexable.associate { it.id to vectorizer.vector(it) }
         val visitedIds = context.visits.mapTo(mutableSetOf(), { it.exhibitionId })
         val savedProfile =
             weightedProfile(
                 indexable.filter { it.id in context.bookmarkedExhibitionIds },
-                vectors,
+                vectorsById,
             )
-        val visitedProfile = weightedProfile(indexable.filter { it.id in visitedIds }, vectors)
+        val visitedProfile = weightedProfile(indexable.filter { it.id in visitedIds }, vectorsById)
         val followedIds = context.followedGalleries.mapNotNullTo(mutableSetOf()) { it.galleryId }
         val followedKeys = context.followedGalleries.mapTo(mutableSetOf()) { it.galleryKey }
 
@@ -49,7 +78,7 @@ class LocalExhibitionRecommender : ExhibitionRecommender {
                     ) {
                         return@mapNotNull null
                     }
-                    val vector = vectors.getValue(exhibition.id)
+                    val vector = vectorsById.getValue(exhibition.id)
                     val savedSimilarity = cosine(vector, savedProfile)
                     val visitedSimilarity = cosine(vector, visitedProfile)
                     val followed =
@@ -115,14 +144,13 @@ class LocalExhibitionRecommender : ExhibitionRecommender {
     ): List<ExhibitionRecommendation> {
         val galleryCounts = mutableMapOf<String, Int>()
         val result = mutableListOf<ExhibitionRecommendation>()
-        val diversityFeatures = ranked.associate { it.exhibition.id to it.exhibition.diversityFeatures() }
         for (recommendation in ranked) {
             val gallery = recommendation.exhibition.galleryIdentity()
             if ((galleryCounts[gallery] ?: 0) >= MAX_PER_GALLERY) continue
-            val candidateFeatures = diversityFeatures.getValue(recommendation.exhibition.id)
+            val candidateFeatures = diversityFeaturesById.getValue(recommendation.exhibition.id)
             val nearDuplicates =
                 result.filter { selected ->
-                    jaccard(candidateFeatures, diversityFeatures.getValue(selected.exhibition.id)) >=
+                    jaccard(candidateFeatures, diversityFeaturesById.getValue(selected.exhibition.id)) >=
                         NEAR_DUPLICATE_JACCARD
                 }
             if (
@@ -143,61 +171,61 @@ internal fun Exhibition.isLocallyDiscoverable(today: kotlinx.datetime.LocalDate)
     closingDate >= today && openingDate <= today.plus(UPCOMING_VISIBILITY_DAYS, DateTimeUnit.DAY)
 
 private class LocalContentVectorizer(
-    catalogue: List<Exhibition>,
+    rawDocuments: Collection<Map<Int, Int>>,
 ) {
-    private val documentCount = catalogue.size.toDouble()
+    private val documentCount = rawDocuments.size.toDouble()
     private val inverseDocumentFrequency: Map<Int, Double> =
-        catalogue
-            .flatMap { rawFeatures(it).keys }
+        rawDocuments
+            .flatMap { it.keys }
             .groupingBy { it }
             .eachCount()
             .mapValues { (_, count) -> ln((documentCount + 1.0) / (count + 1.0)) + 1.0 }
 
-    fun vector(exhibition: Exhibition): Map<Int, Double> {
+    fun vector(rawFeatures: Map<Int, Int>): Map<Int, Double> {
         val weighted =
-            rawFeatures(exhibition).mapValues { (feature, count) ->
+            rawFeatures.mapValues { (feature, count) ->
                 (1.0 + ln(count.toDouble())) * inverseDocumentFrequency.getValue(feature)
             }
         val norm = sqrt(weighted.values.sumOf { it * it })
         return if (norm == 0.0) emptyMap() else weighted.mapValues { it.value / norm }
     }
+}
 
-    private fun rawFeatures(exhibition: Exhibition): Map<Int, Int> {
-        val text =
-            listOf(
-                exhibition.nameKo,
-                exhibition.nameEn,
-                exhibition.venueNameKo,
-                exhibition.venueNameEn,
-                exhibition.cityKo,
-                exhibition.cityEn,
-                exhibition.regionKo,
-                exhibition.regionEn,
-                exhibition.descriptionKo,
-                exhibition.descriptionEn,
-                exhibition.creditsKo,
-                exhibition.creditsEn,
-            ).joinToString(" ")
-        val normalized = text.canonicalSearchCodePoints()
-        val features = mutableMapOf<Int, Int>()
-        for (size in MIN_NGRAM_SIZE..MAX_NGRAM_SIZE) {
-            if (normalized.size < size) continue
-            for (index in 0..normalized.size - size) {
-                val feature = stableFeatureHash(normalized.subList(index, index + size))
-                features[feature] = (features[feature] ?: 0) + 1
-            }
+private fun Exhibition.rawFeatures(): Map<Int, Int> {
+    val text =
+        listOf(
+            nameKo,
+            nameEn,
+            venueNameKo,
+            venueNameEn,
+            cityKo,
+            cityEn,
+            regionKo,
+            regionEn,
+            descriptionKo,
+            descriptionEn,
+            creditsKo,
+            creditsEn,
+        ).joinToString(" ")
+    val normalized = text.canonicalSearchCodePoints()
+    val features = mutableMapOf<Int, Int>()
+    for (size in MIN_NGRAM_SIZE..MAX_NGRAM_SIZE) {
+        if (normalized.size < size) continue
+        for (index in 0..normalized.size - size) {
+            val feature = stableFeatureHash(normalized.subList(index, index + size))
+            features[feature] = (features[feature] ?: 0) + 1
         }
-        listOfNotNull(
-            exhibition.galleryId?.let { "gallery:$it" },
-            exhibition.eventId?.let { "event:$it" },
-            exhibition.editorId?.let { "editor:$it" },
-            "region:${exhibition.regionEn.ifBlank { exhibition.regionKo }.trim().lowercase()}",
-        ).forEach { label ->
-            val feature = stableFeatureHash(label.canonicalSearchCodePoints())
-            features[feature] = (features[feature] ?: 0) + 2
-        }
-        return features
     }
+    listOfNotNull(
+        galleryId?.let { "gallery:$it" },
+        eventId?.let { "event:$it" },
+        editorId?.let { "editor:$it" },
+        "region:${regionEn.ifBlank { regionKo }.trim().lowercase()}",
+    ).forEach { label ->
+        val feature = stableFeatureHash(label.canonicalSearchCodePoints())
+        features[feature] = (features[feature] ?: 0) + 2
+    }
+    return features
 }
 
 private fun weightedProfile(
@@ -238,6 +266,7 @@ private fun Exhibition.galleryIdentity(): String =
     galleryId ?: "${galleryKey(venueNameKo, venueNameEn)}:$latitude:$longitude"
 
 private const val UPCOMING_VISIBILITY_DAYS = 14
+private const val FEATURE_SCHEMA_VERSION = 1
 private const val MIN_NGRAM_SIZE = 2
 private const val MAX_NGRAM_SIZE = 3
 private const val SAVED_SIMILARITY_WEIGHT = 0.45

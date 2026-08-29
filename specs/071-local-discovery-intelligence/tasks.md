@@ -12,6 +12,11 @@
   representative catalogue fixture.
   - Android host: 153 ms for 1,205 exhibitions.
   - iOS simulator: 1.058 s for 1,205 exhibitions.
+- [x] T005A Split catalogue preparation from reranking, reuse an exact immutable
+  index across signal/date changes, reject duplicate IDs and result limits above
+  20, and verify deterministic concurrent reads. The expanded fixture covering
+  one 1,205-row preparation plus 20 prepared reranks completed in 175 ms on the
+  Android host and 1.595 s on the iOS simulator.
 - [ ] T006 Specify and implement the mobile presentation/ViewModel as a separate
   independently reviewable story after the shared engine is stable.
 - [ ] T007 Open a `develop`-targeted PR and complete review/CI.

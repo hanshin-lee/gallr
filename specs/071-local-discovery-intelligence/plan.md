@@ -4,8 +4,12 @@
 
 ### Shared domain
 
-- `LocalExhibitionRecommender`: builds normalized character n-gram term vectors
-  from bilingual exhibition content and scores eligible candidates.
+- `LocalExhibitionRecommender`: prepares one immutable catalogue index containing
+  normalized character n-gram vectors and diversity features, then reuses that
+  index for signal-only reranking. Exact sorted-catalogue equality controls
+  invalidation; no user taste state is cached or persisted.
+- `ExhibitionRecommendationIndex`: read-only prepared boundary safe for repeated
+  and concurrent reranking as bookmarks, visits, follows, origin, or date change.
 - `RecommendationContext`: bookmarks, visit IDs, followed gallery IDs/keys,
   optional origin, language, date, radius, and result limit.
 - `ExhibitionRecommendation`: exhibition, normalized component scores, and
@@ -35,6 +39,9 @@ saved/visited records. Explicit boosts for followed gallery, editorial state,
 proximity, and timing remain independently inspectable.
 
 No external dependency or bundled neural model is required for this phase.
+Index preparation and reranking remain synchronous pure shared functions; the
+future ViewModel must invoke both on `Dispatchers.Default`, keep the last prepared
+index, and offer it back to `prepare` when a refreshed catalogue arrives.
 
 ## Constitution check
 
