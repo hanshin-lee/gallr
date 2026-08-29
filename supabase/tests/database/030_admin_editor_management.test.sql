@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(25);
+select plan(40);
 
 select ok(
   has_function_privilege('authenticated', 'public.admin_list_editors()', 'EXECUTE')
@@ -68,6 +68,27 @@ values (
   '00000000-0000-0000-0000-000000003003',
   'profile',
   '{"bio_ko":"보존할 요청"}'::jsonb
+);
+
+-- Editors mirrored from the legacy catalogue never receive a membership row.
+insert into public.editors (
+  id, name_ko, name_en, title_ko, title_en, bio_ko, bio_en,
+  curation_description_ko, curation_description_en,
+  is_active, active_from, active_to
+)
+values (
+  'legacy-editor', '레거시 에디터', 'Legacy Editor', '객원 에디터', 'Guest Editor',
+  '개인 소개', 'Personal bio', '큐레이션 소개', 'Curation statement',
+  true, '2026-08-01', null
+);
+
+insert into public.exhibitions (
+  id, name_ko, venue_name_ko, city_ko, region_ko,
+  opening_date, closing_date, editor_id
+)
+values (
+  'legacy-attributed-exhibition', '레거시 전시', '레거시 미술관',
+  '서울', '서울', '2026-08-01', '2026-09-01', 'legacy-editor'
 );
 
 set local role authenticated;
@@ -269,6 +290,151 @@ select throws_ok(
   ) $$,
   '42501', 'active_staff_membership_required',
   'editors cannot update their admin-managed profile directly'
+);
+
+-- Account-less editors must still be deactivatable, and removal must be
+-- available, permanent, and detach exhibition attribution.
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-000000003001","role":"authenticated"}',
+  true
+);
+
+select ok(
+  has_function_privilege(
+    'authenticated', 'public.admin_delete_editor(text,integer)', 'EXECUTE'
+  )
+  and not has_function_privilege(
+    'anon', 'public.admin_delete_editor(text,integer)', 'EXECUTE'
+  )
+  and not has_function_privilege(
+    'service_role', 'public.admin_delete_editor(text,integer)', 'EXECUTE'
+  ),
+  'only authenticated callers receive the editor removal command'
+);
+
+insert into editor_management_state values (
+  'legacy_deactivated',
+  public.admin_set_editor_access('legacy-editor', 1, false)
+);
+
+reset role;
+
+select is(
+  (select is_active from public.editors where id = 'legacy-editor'),
+  false,
+  'deactivation withdraws the profile of an editor with no linked account'
+);
+select is(
+  (select payload ->> 'has_access' from editor_management_state
+   where key = 'legacy_deactivated'),
+  'false',
+  'an editor without a membership still reports no workspace account'
+);
+select is(
+  (select count(*)::integer from content.audit_log
+   where action = 'editor.access_deactivated' and entity_id = 'legacy-editor'),
+  1,
+  'account-less deactivation records an audit event'
+);
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-000000003001","role":"authenticated"}',
+  true
+);
+
+select throws_ok(
+  $$ select public.admin_set_editor_access('legacy-editor', 2, true) $$,
+  'P0002', 'editor_membership_not_found',
+  'restoring access fails closed when there is no account to hand back'
+);
+
+reset role;
+
+select is(
+  (select revision from public.editors where id = 'legacy-editor'),
+  2,
+  'a refused restore does not consume an editor revision'
+);
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-000000003001","role":"authenticated"}',
+  true
+);
+
+select throws_ok(
+  $$ select public.admin_delete_editor('legacy-editor', 1) $$,
+  '40001', 'revision_conflict',
+  'stale editor removals fail closed'
+);
+select throws_ok(
+  $$ select public.admin_delete_editor('gallr-editors', 1) $$,
+  '42501', 'editor_identity_is_protected',
+  'the seeded house identity cannot be removed'
+);
+
+insert into editor_management_state values (
+  'legacy_removed',
+  public.admin_delete_editor('legacy-editor', 2)
+);
+
+reset role;
+
+select is(
+  (select count(*)::integer from public.editors where id = 'legacy-editor'),
+  0,
+  'removal permanently deletes the editor identity'
+);
+select is(
+  (select (payload ->> 'detached_exhibitions')::integer
+   from editor_management_state where key = 'legacy_removed'),
+  1,
+  'removal reports the exhibitions it detached'
+);
+select is(
+  (select editor_id from public.exhibitions
+   where id = 'legacy-attributed-exhibition'),
+  null,
+  'removal detaches exhibition attribution instead of blocking'
+);
+select is(
+  (select count(*)::integer from public.exhibitions
+   where id = 'legacy-attributed-exhibition'),
+  1,
+  'a detached exhibition keeps publishing'
+);
+select is(
+  (select count(*)::integer from content.audit_log
+   where action = 'editor.removed' and entity_id = 'legacy-editor'),
+  1,
+  'removal records an audit event that outlives the editor row'
+);
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-000000003002","role":"authenticated"}',
+  true
+);
+select throws_ok(
+  $$ select public.admin_delete_editor('managed-editor', 5) $$,
+  '42501', 'insufficient_staff_role',
+  'contributors cannot remove editors'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-000000003003","role":"authenticated"}',
+  true
+);
+select throws_ok(
+  $$ select public.admin_delete_editor('managed-editor', 5) $$,
+  '42501', 'active_staff_membership_required',
+  'editors cannot remove themselves through the admin command'
 );
 
 select * from finish();

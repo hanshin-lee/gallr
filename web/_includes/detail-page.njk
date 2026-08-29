@@ -3,7 +3,7 @@
 <article class="detail-page has-sticky-cta"{% if impactEndpoint %} data-exhibition-impact="{{ ex.id }}" data-impact-endpoint="{{ impactEndpoint }}"{% endif %}>
   <div class="detail-page__inner">
 
-    <div class="detail-page__hero" data-fallback-title="{{ ex.name_ko }}">
+    <div class="detail-page__hero" data-status="{{ ex.status }}" data-fallback-title="{{ ex.name_ko }}">
       {% if ex.cover_image_url %}
       <img class="detail-page__hero-image"
            src="{{ ex.cover_image_url }}"

@@ -149,6 +149,7 @@ const shared: Pick<
   | "coverAltEn"
   | "imageCredit"
   | "isHomepageFeatured"
+  | "hasOpenOwnerSubmission"
   | "createdAt"
   | "publishedAt"
 > = {
@@ -176,6 +177,7 @@ const shared: Pick<
   coverAltEn: "Installation view",
   imageCredit: "Courtesy of the artist and gallery",
   isHomepageFeatured: false,
+  hasOpenOwnerSubmission: false,
   createdAt: "2026-07-01T09:00:00+09:00",
   publishedAt: null,
 };
@@ -329,6 +331,7 @@ export const exhibitionFixtures: AdminExhibition[] = [
     descriptionEn: "An inquiry into how light reads space and objects.",
     isFeatured: true,
     isHomepageFeatured: true,
+    coverImageUrl: "https://images.example.test/grammar-of-light/cover.webp",
     publishedAt: "2026-07-20T10:18:00+09:00",
     status: "Published",
     revision: 3,

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   exhibitionTemporalStatus,
+  hasCoverImage,
+  matchesExhibitionFilters,
   seoulCalendarDate,
   shouldPreserveCoordinatesForAddressChange,
   sortAdminExhibitions,
@@ -75,5 +77,78 @@ describe("admin exhibition sorting", () => {
       "newer",
       "older",
     ]);
+  });
+});
+
+describe("admin exhibition cover image presence", () => {
+  it("treats null and blank cover URLs as missing", () => {
+    expect(hasCoverImage({ coverImageUrl: null })).toBe(false);
+    expect(hasCoverImage({ coverImageUrl: "" })).toBe(false);
+    expect(hasCoverImage({ coverImageUrl: "   " })).toBe(false);
+    expect(
+      hasCoverImage({ coverImageUrl: "https://images.example.test/cover.webp" }),
+    ).toBe(true);
+  });
+});
+
+describe("admin exhibition list filter matching", () => {
+  const today = "2026-08-23";
+  const running = {
+    ...exhibitionFixtures[0],
+    id: "running-draft",
+    nameKo: "빛의 복도",
+    nameEn: "Corridor of Light",
+    venueNameKo: "갤러리 화이트룸",
+    venueNameEn: "White Room Gallery",
+    openingDate: "2026-08-01",
+    closingDate: "2026-09-01",
+    status: "Draft" as const,
+    isHomepageFeatured: true,
+    coverImageUrl: null,
+  };
+  const endedPublished = {
+    ...running,
+    id: "ended-published",
+    openingDate: "2026-01-01",
+    closingDate: "2026-02-01",
+    status: "Published" as const,
+    isHomepageFeatured: false,
+    coverImageUrl: "https://images.example.test/cover.webp",
+  };
+
+  it("matches everything when no filter narrows the list", () => {
+    const filters = { search: "", status: "All" as const };
+    expect(matchesExhibitionFilters(running, filters, today)).toBe(true);
+    expect(matchesExhibitionFilters(endedPublished, filters, today)).toBe(true);
+  });
+
+  it("applies publish state, date state, placement, and cover filters together", () => {
+    const filters = {
+      search: "",
+      status: "Draft" as const,
+      temporalStatus: "running" as const,
+      featuredOnly: true,
+      missingCoverOnly: true,
+    };
+    expect(matchesExhibitionFilters(running, filters, today)).toBe(true);
+    expect(matchesExhibitionFilters(endedPublished, filters, today)).toBe(false);
+    expect(
+      matchesExhibitionFilters(
+        { ...running, coverImageUrl: "https://images.example.test/new.webp" },
+        filters,
+        today,
+      ),
+    ).toBe(false);
+  });
+
+  it("searches names, venues, and ids case-insensitively with trimmed input", () => {
+    const byVenue = { search: "  white room  ", status: "All" as const };
+    expect(matchesExhibitionFilters(running, byVenue, today)).toBe(true);
+    expect(
+      matchesExhibitionFilters(running, { search: "ended-pub", status: "All" }, today),
+    ).toBe(false);
+    expect(
+      matchesExhibitionFilters(endedPublished, { search: "ENDED-PUB", status: "All" }, today),
+    ).toBe(true);
   });
 });

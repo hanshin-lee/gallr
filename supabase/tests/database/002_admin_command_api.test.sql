@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(64);
+select plan(66);
 
 -- Public surface and privilege boundary.
 select is(
@@ -24,7 +24,7 @@ select is(
       )
       and not procedure.prosecdef
   ),
-  9,
+  10,
   'all public admin RPC overloads are SECURITY INVOKER'
 );
 
@@ -46,7 +46,7 @@ select is(
       )
       and procedure.proconfig @> array['search_path=""']::text[]
   ),
-  9,
+  10,
   'all public admin RPCs pin an empty search_path'
 );
 
@@ -58,6 +58,7 @@ select is(
         ('public.admin_current_staff()'),
         ('public.admin_list_exhibitions(text,text)'),
         ('public.admin_list_exhibitions(text,text,text,boolean,text)'),
+        ('public.admin_list_exhibitions(text,text,text,boolean,boolean,text)'),
         ('public.admin_get_exhibition(text)'),
         ('public.admin_create_exhibition_draft()'),
         ('public.admin_save_exhibition_draft(text,uuid,integer,jsonb)'),
@@ -67,7 +68,7 @@ select is(
     ) as signature(value)
     where has_function_privilege('authenticated', signature.value, 'EXECUTE')
   ),
-  9,
+  10,
   'authenticated has execute on every public admin RPC'
 );
 
@@ -79,6 +80,7 @@ select is(
         ('public.admin_current_staff()'),
         ('public.admin_list_exhibitions(text,text)'),
         ('public.admin_list_exhibitions(text,text,text,boolean,text)'),
+        ('public.admin_list_exhibitions(text,text,text,boolean,boolean,text)'),
         ('public.admin_get_exhibition(text)'),
         ('public.admin_create_exhibition_draft()'),
         ('public.admin_save_exhibition_draft(text,uuid,integer,jsonb)'),
@@ -100,6 +102,7 @@ select is(
         ('public.admin_current_staff()'),
         ('public.admin_list_exhibitions(text,text)'),
         ('public.admin_list_exhibitions(text,text,text,boolean,text)'),
+        ('public.admin_list_exhibitions(text,text,text,boolean,boolean,text)'),
         ('public.admin_get_exhibition(text)'),
         ('public.admin_create_exhibition_draft()'),
         ('public.admin_save_exhibition_draft(text,uuid,integer,jsonb)'),
@@ -238,13 +241,34 @@ begin
   );
   return null;
 exception
-  when serialization_failure then
+  when sqlstate 'PT409' then
     get stacked diagnostics v_detail = pg_exception_detail;
     return v_detail;
 end;
 $$;
 grant execute on function pg_temp.capture_revision_detail(text, uuid, integer)
   to authenticated;
+
+create function pg_temp.raise_unrelated_admin_save_40001()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if current_setting('test.admin_save_raise_40001', true) = 'true' then
+    raise exception using
+      errcode = '40001',
+      message = 'synthetic_serialization_failure',
+      detail = 'preserve-me';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger zz_test_admin_save_unrelated_40001
+before update on content.exhibition_versions
+for each row
+execute function pg_temp.raise_unrelated_admin_save_40001();
 
 select ok(
   not has_function_privilege(
@@ -355,6 +379,28 @@ select is(
   ),
   1::bigint,
   'a null status includes the new draft when existing exhibitions are present'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-000000000201","role":"authenticated"}',
+  true
+);
+select throws_ok(
+  format(
+    'select public.admin_save_exhibition_draft(%L, %L::uuid, 1, %L::jsonb)',
+    (select payload ->> 'id' from pg_temp.api_test_state where key = 'draft'),
+    (select payload ->> 'working_version_id' from pg_temp.api_test_state where key = 'draft'),
+    '{"name_ko":"unauthorized"}'
+  ),
+  '42501',
+  'active_staff_membership_required',
+  'the HTTP conflict boundary preserves save authorization failures'
+);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-000000000202","role":"authenticated"}',
+  true
 );
 
 insert into pg_temp.api_test_state (key, payload)
@@ -478,6 +524,20 @@ select is(
   'search matches localized exhibition content'
 );
 
+select set_config('test.admin_save_raise_40001', 'true', true);
+select throws_ok(
+  format(
+    'select public.admin_save_exhibition_draft(%L, %L::uuid, 2, %L::jsonb)',
+    (select payload ->> 'id' from pg_temp.api_test_state where key = 'draft'),
+    (select payload ->> 'working_version_id' from pg_temp.api_test_state where key = 'draft'),
+    '{"name_ko":"serialization failure"}'
+  ),
+  '40001',
+  'synthetic_serialization_failure',
+  'the HTTP conflict boundary preserves unrelated serialization failures'
+);
+select set_config('test.admin_save_raise_40001', 'false', true);
+
 select throws_ok(
   format(
     'select public.admin_save_exhibition_draft(%L, %L::uuid, 1, %L::jsonb)',
@@ -485,9 +545,9 @@ select throws_ok(
     (select payload ->> 'working_version_id' from pg_temp.api_test_state where key = 'draft'),
     '{"name_ko":"stale"}'
   ),
-  '40001',
+  'PT409',
   'revision_conflict',
-  'save rejects a stale expected revision with SQLSTATE 40001'
+  'save exposes a stale expected revision through the PostgREST HTTP 409 SQLSTATE'
 );
 select is(
   pg_temp.capture_revision_detail(

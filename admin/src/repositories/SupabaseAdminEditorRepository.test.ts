@@ -208,4 +208,80 @@ describe("SupabaseAdminEditorRepository", () => {
       p_active: true,
     });
   });
+
+  it("removes an editor and returns the detached attribution counts", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: {
+        editor_id: "mina-kim",
+        detached_exhibitions: 2,
+        detached_exhibition_versions: 3,
+        removed_requests: 1,
+        had_workspace_account: true,
+      },
+      error: null,
+    });
+    const repository = new SupabaseAdminEditorRepository(
+      { rpc } as unknown as SupabaseClient,
+    );
+
+    await expect(repository.deleteEditor("mina-kim", 3)).resolves.toEqual({
+      editorId: "mina-kim",
+      detachedExhibitions: 2,
+      detachedExhibitionVersions: 3,
+      removedRequests: 1,
+      hadWorkspaceAccount: true,
+    });
+    expect(rpc).toHaveBeenCalledWith("admin_delete_editor", {
+      p_editor_id: "mina-kim",
+      p_expected_revision: 3,
+    });
+  });
+
+  it("rejects a malformed editor removal response", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: {
+        editor_id: "mina-kim",
+        detached_exhibitions: "2",
+        detached_exhibition_versions: 3,
+        removed_requests: 1,
+        had_workspace_account: true,
+      },
+      error: null,
+    });
+
+    await expect(
+      new SupabaseAdminEditorRepository(
+        { rpc } as unknown as SupabaseClient,
+      ).deleteEditor("mina-kim", 3),
+    ).rejects.toThrow(/invalid response/i);
+  });
+
+  it("maps a stale editor removal to a revision conflict", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: null,
+      error: { code: "40001", message: "revision_conflict", details: "6" },
+    });
+
+    await expect(
+      new SupabaseAdminEditorRepository(
+        { rpc } as unknown as SupabaseClient,
+      ).deleteEditor("mina-kim", 3),
+    ).rejects.toMatchObject({
+      name: "EditorRevisionConflictError",
+      serverRevision: 6,
+    });
+  });
+
+  it("surfaces the protected seed identity as its own error", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: null,
+      error: { code: "42501", message: "editor_identity_is_protected" },
+    });
+
+    await expect(
+      new SupabaseAdminEditorRepository(
+        { rpc } as unknown as SupabaseClient,
+      ).deleteEditor("gallr-editors", 1),
+    ).rejects.toMatchObject({ name: "ProtectedEditorIdentityError" });
+  });
 });

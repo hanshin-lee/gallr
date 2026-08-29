@@ -2,8 +2,8 @@
 
 The admin application is the editorial replacement for the exhibition Google
 Sheet. It provides an invite-only staff login, exhibition search plus publish-state,
-date-state, homepage-placement, and chronological list controls, draft creation,
-bilingual autosave, immutable published versions,
+date-state, homepage-placement, missing-cover, and chronological list controls,
+draft creation, bilingual autosave, immutable published versions,
 preview, publish, archive, and restore behind a typed repository boundary.
 Its Media workspace adds direct signed uploads, cover replacement, ordered
 galleries, version-scoped alt/credit/rights metadata, processing status, and
@@ -40,6 +40,9 @@ The adapter is selected by configuration:
   Deterministic in-memory fixtures are available only in tests or when a local
   development build explicitly sets `VITE_ADMIN_FIXTURE_MODE=true`. Fixture
   mode is never selected by a production build and is not a persistence path.
+- `VITE_ADMIN_PROMOTIONS_ENABLED` is an independent R4 capability and defaults
+  off. Keep it false for the R3 Launch Kit beta so the Admin does not expose
+  promotion review merely because RSVP and guest tools are enabled elsewhere.
 
 ## Run locally
 
@@ -112,6 +115,7 @@ appropriate:
 VITE_SUPABASE_URL
 VITE_SUPABASE_PUBLISHABLE_KEY
 VITE_ADMIN_FIXTURE_MODE=false
+VITE_ADMIN_PROMOTIONS_ENABLED=false
 ```
 
 Point Preview at the staging Supabase project. Do not add production Supabase
@@ -153,6 +157,7 @@ file:
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 VITE_ADMIN_FIXTURE_MODE=false
+VITE_ADMIN_PROMOTIONS_ENABLED=false
 ```
 
 Only the publishable browser key belongs in the admin client. Never put a

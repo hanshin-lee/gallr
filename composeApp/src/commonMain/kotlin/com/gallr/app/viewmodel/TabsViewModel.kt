@@ -113,6 +113,7 @@ class TabsViewModel(
     val selectedCity: StateFlow<String?> = filters.selectedCity
     val distinctCities: StateFlow<List<CityWithCount>> = filters.distinctCities
     val distinctRegions: StateFlow<List<RegionWithCount>> = filters.distinctRegions
+    val tabExhibitionCount: StateFlow<Int> = filters.tabExhibitionCount
     val showMyListOnly: StateFlow<Boolean> = filters.showMyListOnly
     val filteredExhibitions: StateFlow<ExhibitionListState> = filters.filteredExhibitions
 
@@ -146,6 +147,7 @@ class TabsViewModel(
             selectedCity,
             distinctCities,
             distinctRegions,
+            tabExhibitionCount,
             showMyListOnly,
             searchQuery,
             isRefreshing,
@@ -161,11 +163,12 @@ class TabsViewModel(
                 selectedCity = values[4] as String?,
                 cities = values[5] as List<CityWithCount>,
                 regions = values[6] as List<RegionWithCount>,
-                showMyListOnly = values[7] as Boolean,
-                searchQuery = values[8] as String,
-                isRefreshing = values[9] as Boolean,
-                activeEvents = values[10] as List<Event>,
-                promotedExhibition = values[11] as PromotedExhibition?,
+                tabExhibitionCount = values[7] as Int,
+                showMyListOnly = values[8] as Boolean,
+                searchQuery = values[9] as String,
+                isRefreshing = values[10] as Boolean,
+                activeEvents = values[11] as List<Event>,
+                promotedExhibition = values[12] as PromotedExhibition?,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ListScreenUiState())
 
