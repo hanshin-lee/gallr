@@ -63,6 +63,10 @@ All notable changes to gallr will be documented in this file.
   submission still awaiting review.
 
 ### Infrastructure
+- Mobile analytics has a disabled-by-default first-party ingestion boundary
+  with strict mobile event validation, short-lived retry/quota state, and only
+  identity-free daily aggregate counters. No third-party analytics SDK or paid
+  analytics service is introduced.
 - Mobile analytics now has a closed shared event contract, disabled/no-op gate,
   typed factories for all seven events, bounded batch/result validation, a
   privacy-safe exhibition identifier grammar, and deterministic seven-day/

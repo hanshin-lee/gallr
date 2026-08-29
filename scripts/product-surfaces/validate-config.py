@@ -18,6 +18,10 @@ EXPECTED_VERIFY_JWT = {
     "launch-rsvp": False,
     "legacy-catalog-mirror": False,
     "legacy-catalog-mirror-receiver": False,
+    # Mobile events are intentionally account-free. The function validates a
+    # closed aggregate-only contract and is disabled by its own kill switch
+    # until user controls and disclosures ship.
+    "mobile-analytics": False,
     "outbox-delivery": False,
     "outbox-worker": False,
     "promoted-nearby": False,
