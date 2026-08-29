@@ -42,12 +42,17 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gallr.app.analytics.DiscoveryAttribution
 import com.gallr.app.analytics.MobileAnalyticsTracker
+import com.gallr.app.analytics.ROUTE_DETAIL_ANALYTICS_SUPPRESSED
+import com.gallr.app.analytics.RouteMapHandoffAction
+import com.gallr.app.analytics.routeMapHandoffAnalyticsDecision
+import com.gallr.app.analytics.toAnalyticsSummary
 import com.gallr.app.notifications.NotificationPermissionHandler
 import com.gallr.app.notifications.RemotePushAddressProvider
 import com.gallr.app.splash.SplashController
 import com.gallr.app.splash.SplashOverlay
 import com.gallr.app.ui.components.GallrNavigationBar
 import com.gallr.app.ui.detail.ExhibitionDetailScreen
+import com.gallr.app.ui.discovery.RecommendationsScreen
 import com.gallr.app.ui.editor.EditorDetailScreen
 import com.gallr.app.ui.editor.EditorSelectorScreen
 import com.gallr.app.ui.event.EventDetailScreen
@@ -55,6 +60,8 @@ import com.gallr.app.ui.gallery.GalleryDetailScreen
 import com.gallr.app.ui.profile.CropOverlayState
 import com.gallr.app.ui.profile.CropScreen
 import com.gallr.app.ui.profile.LocalCropOverlay
+import com.gallr.app.ui.route.RoutePlannerScreen
+import com.gallr.app.ui.route.routeMapOpenErrorLabel
 import com.gallr.app.ui.settings.SettingsScreen
 import com.gallr.app.ui.tabs.featured.FeaturedScreen
 import com.gallr.app.ui.tabs.list.ListScreen
@@ -65,7 +72,9 @@ import com.gallr.app.viewmodel.EditorSelectorViewModel
 import com.gallr.app.viewmodel.EventDetailViewModel
 import com.gallr.app.viewmodel.ExhibitionListState
 import com.gallr.app.viewmodel.GalleryDetailViewModel
+import com.gallr.app.viewmodel.LocalDiscoveryViewModel
 import com.gallr.app.viewmodel.PersonalMapViewModel
+import com.gallr.app.viewmodel.RouteUiState
 import com.gallr.app.viewmodel.TabsViewModel
 import com.gallr.app.viewmodel.visitFromExhibition
 import com.gallr.shared.analytics.AnalyticsEntryPoint
@@ -246,6 +255,19 @@ fun App(
                 ),
         )
 
+    val localDiscoveryViewModel: LocalDiscoveryViewModel =
+        viewModel(
+            key = "local-discovery",
+            factory =
+                LocalDiscoveryViewModel.factory(
+                    exhibitionsState = viewModel.allExhibitions,
+                    bookmarkedIds = viewModel.bookmarkedIds,
+                    visitRepository = syncedVisitRepository,
+                    followedGalleryRepository = syncedFollowedGalleryRepository,
+                    language = viewModel.language,
+                ),
+        )
+
     val currentThemeMode by viewModel.themeMode.collectAsState()
     val analyticsEnabled by
         mobileAnalyticsController
@@ -315,6 +337,8 @@ fun App(
 
     GallrTheme(themeMode = currentThemeMode) {
         val lang by viewModel.language.collectAsState()
+        val recommendationState by localDiscoveryViewModel.recommendationState.collectAsState()
+        val routeState by localDiscoveryViewModel.routeState.collectAsState()
 
         androidx.compose.runtime.LaunchedEffect(lang, authState) {
             if (!notificationScheduler.hasPermission()) return@LaunchedEffect
@@ -350,6 +374,8 @@ fun App(
         val showSignUpNudge by viewModel.showSignUpNudge.collectAsState()
         val navigation = rememberAppNavigationState()
         var exhibitionDetailEntryPoint by remember { mutableStateOf(AnalyticsEntryPoint.CARD) }
+        val recordedRouteBuilds = remember { mutableSetOf<Long>() }
+        var routeMapOpenError by remember { mutableStateOf<String?>(null) }
 
         fun recordIntent(
             exhibitionId: String,
@@ -367,6 +393,7 @@ fun App(
             entryPoint: AnalyticsEntryPoint,
             impressionOnOpen: Boolean = false,
             analyticsSuppressed: Boolean = false,
+            returnTo: AppDestination = AppDestination.Tabs,
         ) {
             exhibitionDetailEntryPoint = entryPoint
             if (!analyticsSuppressed) {
@@ -377,7 +404,11 @@ fun App(
                     mobileAnalyticsTracker.exhibitionOpened(exhibition.id, attribution)
                 }
             }
-            navigation.showExhibition(exhibition, analyticsSuppressed)
+            navigation.showExhibition(
+                exhibition = exhibition,
+                analyticsSuppressed = analyticsSuppressed,
+                returnTo = returnTo,
+            )
         }
 
         fun toggleBookmark(
@@ -443,6 +474,14 @@ fun App(
 
                     AppDestination.Settings -> {
                         AnalyticsSurface.SETTINGS to AnalyticsEntryPoint.CARD
+                    }
+
+                    AppDestination.Recommendations -> {
+                        AnalyticsSurface.FEATURED to AnalyticsEntryPoint.RECOMMENDATION
+                    }
+
+                    is AppDestination.RoutePlanner -> {
+                        AnalyticsSurface.MAP to AnalyticsEntryPoint.ROUTE
                     }
 
                     AppDestination.EditorSelector -> {
@@ -540,7 +579,7 @@ fun App(
                             }
                             var isVisitSaving by remember(exhibition.id) { mutableStateOf(false) }
                             var visitSaveFailed by remember(exhibition.id) { mutableStateOf(false) }
-                            PlatformBackHandler(navigation::showTabs)
+                            PlatformBackHandler(navigation::returnFromExhibition)
                             ExhibitionDetailScreen(
                                 exhibition = exhibition,
                                 lang = lang,
@@ -613,7 +652,7 @@ fun App(
                                         }
                                     }
                                 },
-                                onBack = navigation::showTabs,
+                                onBack = navigation::returnFromExhibition,
                                 thoughtRepository = thoughtRepository,
                                 authState = authState,
                                 isAdmin = isAdmin,
@@ -719,6 +758,171 @@ fun App(
                                         AnalyticsEntryPoint.CARD,
                                     )
                                 },
+                            )
+                        }
+
+                        AppDestination.Recommendations -> {
+                            PlatformBackHandler(navigation::showTabs)
+                            RecommendationsScreen(
+                                state = recommendationState,
+                                lang = lang,
+                                bookmarkedIds = bookmarkedIds,
+                                onRecommendationsShown = { _, resultCount ->
+                                    appCoroutineScope.launch {
+                                        mobileAnalyticsTracker.recommendationsShown(
+                                            surface = AnalyticsSurface.FEATURED,
+                                            resultCount = resultCount,
+                                        )
+                                    }
+                                },
+                                onBookmarkToggle = { exhibition ->
+                                    toggleBookmark(exhibition.id, AnalyticsSurface.FEATURED)
+                                },
+                                onExhibitionTap = { exhibition, index ->
+                                    openExhibition(
+                                        exhibition = exhibition,
+                                        attribution =
+                                            DiscoveryAttribution(
+                                                surface = AnalyticsSurface.FEATURED,
+                                                kind = DiscoveryKind.RECOMMENDATION,
+                                                position = positionBucket(index),
+                                            ),
+                                        entryPoint = AnalyticsEntryPoint.RECOMMENDATION,
+                                        returnTo = AppDestination.Recommendations,
+                                    )
+                                },
+                                onImpressions = { exposures ->
+                                    appCoroutineScope.launch {
+                                        exposures.forEach { exposure ->
+                                            mobileAnalyticsTracker.exhibitionImpression(
+                                                exposure.exhibitionId,
+                                                DiscoveryAttribution(
+                                                    surface = AnalyticsSurface.FEATURED,
+                                                    kind = DiscoveryKind.RECOMMENDATION,
+                                                    position = exposure.position,
+                                                ),
+                                            )
+                                        }
+                                    }
+                                },
+                                onBack = navigation::showTabs,
+                                onRetry = {
+                                    viewModel.refresh()
+                                    localDiscoveryViewModel.retryRecommendations()
+                                },
+                            )
+                        }
+
+                        is AppDestination.RoutePlanner -> {
+                            PlatformBackHandler(navigation::showTabs)
+                            androidx.compose.runtime.LaunchedEffect(
+                                destination.origin,
+                                destination.initialMode,
+                                destination.requestId,
+                            ) {
+                                routeMapOpenError = null
+                                localDiscoveryViewModel.beginRouteIfNeeded(
+                                    origin = destination.origin,
+                                    initialMode = destination.initialMode,
+                                    requestId = destination.requestId,
+                                )
+                            }
+
+                            val ready = routeState as? RouteUiState.Ready
+                            androidx.compose.runtime.LaunchedEffect(ready?.buildId) {
+                                if (ready != null && recordedRouteBuilds.add(ready.buildId)) {
+                                    val summary = ready.estimate.toAnalyticsSummary()
+                                    mobileAnalyticsTracker.routeCreated(
+                                        mode = summary.mode,
+                                        stopCount = summary.stopCount,
+                                        distanceBand = summary.distanceBand,
+                                        durationBand = summary.durationBand,
+                                    )
+                                }
+                            }
+
+                            fun openRouteStop(
+                                exhibition: Exhibition,
+                                action: RouteMapHandoffAction,
+                            ) {
+                                val analyticsDecision = routeMapHandoffAnalyticsDecision(action)
+                                val result =
+                                    openExhibitionInMap(
+                                        exhibition = exhibition,
+                                        language = lang,
+                                        launcher = externalMapLauncher,
+                                    )
+                                if (result == null) {
+                                    routeMapOpenError = routeMapOpenErrorLabel(lang)
+                                    return
+                                }
+                                result
+                                    .onSuccess {
+                                        routeMapOpenError = null
+                                        val estimate =
+                                            (localDiscoveryViewModel.routeState.value as? RouteUiState.Ready)
+                                                ?.estimate
+                                        if (
+                                            analyticsDecision.recordsRouteStarted &&
+                                            estimate != null &&
+                                            localDiscoveryViewModel.markRouteStarted()
+                                        ) {
+                                            val summary = estimate.toAnalyticsSummary()
+                                            appCoroutineScope.launch {
+                                                mobileAnalyticsTracker.routeStarted(
+                                                    mode = summary.mode,
+                                                    stopCount = summary.stopCount,
+                                                    distanceBand = summary.distanceBand,
+                                                    durationBand = summary.durationBand,
+                                                )
+                                            }
+                                        }
+                                    }.onFailure { error ->
+                                        appLog.warn("route_map_handoff", error)
+                                        routeMapOpenError = routeMapOpenErrorLabel(lang)
+                                    }
+                            }
+
+                            RoutePlannerScreen(
+                                state = routeState,
+                                lang = lang,
+                                onModeChange = { mode ->
+                                    routeMapOpenError = null
+                                    localDiscoveryViewModel.setRouteMode(mode)
+                                },
+                                onStopCountChange = { count ->
+                                    routeMapOpenError = null
+                                    localDiscoveryViewModel.setStopCount(count)
+                                },
+                                onBuild = {
+                                    routeMapOpenError = null
+                                    localDiscoveryViewModel.buildRoute()
+                                },
+                                onReduceStops = {
+                                    val insufficient = routeState as? RouteUiState.Insufficient
+                                    if (insufficient != null && insufficient.request.stopCount > 2) {
+                                        localDiscoveryViewModel.setStopCount(
+                                            insufficient.request.stopCount - 1,
+                                        )
+                                        localDiscoveryViewModel.buildRoute()
+                                    }
+                                },
+                                onStartRoute = { exhibition ->
+                                    openRouteStop(exhibition, RouteMapHandoffAction.START_ROUTE)
+                                },
+                                onOpenStop = { exhibition ->
+                                    openRouteStop(exhibition, RouteMapHandoffAction.OPEN_STOP)
+                                },
+                                onExhibitionTap = { exhibition, _ ->
+                                    exhibitionDetailEntryPoint = AnalyticsEntryPoint.ROUTE
+                                    navigation.showExhibition(
+                                        exhibition = exhibition,
+                                        analyticsSuppressed = ROUTE_DETAIL_ANALYTICS_SUPPRESSED,
+                                        returnTo = destination,
+                                    )
+                                },
+                                onBack = navigation::showTabs,
+                                mapOpenError = routeMapOpenError,
                             )
                         }
 
@@ -890,6 +1094,7 @@ fun App(
                                                     }
                                                 },
                                                 onEventTap = navigation::showEvent,
+                                                onRecommendationsTap = navigation::showRecommendations,
                                                 modifier = Modifier.padding(innerPadding),
                                             )
                                         }
@@ -1039,6 +1244,7 @@ fun App(
                                                         impressionOnOpen = true,
                                                     )
                                                 },
+                                                onBuildRoute = { origin -> navigation.showRoute(origin) },
                                                 modifier = Modifier.padding(innerPadding),
                                             )
                                         }
