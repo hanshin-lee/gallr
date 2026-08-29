@@ -30,11 +30,11 @@ class MobileAnalyticsController(
                 current.pause()
                 try {
                     preferences.setEnabled(false)
-                    current.setEnabled(false)
                 } catch (error: Exception) {
                     runSuspendCatching { current.setEnabled(false) }
                     throw error
                 }
+                current.setEnabled(false)
                 return@withLock
             }
 

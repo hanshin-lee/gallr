@@ -247,6 +247,10 @@ fun App(
         )
 
     val currentThemeMode by viewModel.themeMode.collectAsState()
+    val analyticsEnabled by
+        mobileAnalyticsController
+            .observeUserEnabled()
+            .collectAsState(initial = null)
 
     val lifecycleOwner = LocalLifecycleOwner.current
     val appCoroutineScope = rememberCoroutineScope()
@@ -552,7 +556,7 @@ fun App(
                                     shareHandler
                                         .shareExhibition(exhibition, lang)
                                         .onSuccess {
-                                            recordDetailIntent(AnalyticsIntentAction.SHARE)
+                                            recordDetailIntent(AnalyticsIntentAction.SHARE_SHEET_OPENED)
                                         }
                                 },
                                 onGalleryTap = {
@@ -740,6 +744,7 @@ fun App(
                             SettingsScreen(
                                 lang = lang,
                                 themeMode = currentThemeMode,
+                                analyticsEnabled = analyticsEnabled,
                                 isAuthenticated = authState is AuthState.Authenticated,
                                 onLanguageChange = viewModel::setLanguage,
                                 onThemeChange = viewModel::setThemeMode,
@@ -752,6 +757,7 @@ fun App(
                                     }
                                     granted
                                 },
+                                onAnalyticsEnabledChange = mobileAnalyticsController::setUserEnabled,
                                 onShareApp = shareHandler::shareApp,
                                 onSignOut = {
                                     authRepository.signOut()

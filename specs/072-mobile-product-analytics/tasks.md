@@ -16,8 +16,8 @@
   configuration validation.
 - [x] T008 Wire common mobile capture points behind disabled-by-default release
   and user gates without adding a platform analytics SDK.
-- [ ] T009 Update privacy/store disclosures and add analytics preference UI
+- [x] T009 Update privacy/store disclosures and add analytics preference UI
   before any production enablement request.
-- [ ] T010 Run shared/Compose/Android/iOS, Edge, migration, pgTAP, lint, advisor,
+- [x] T010 Run shared/Compose/Android/iOS, Edge, migration, pgTAP, lint, advisor,
   and concurrency gates.
 - [ ] T011 Open a `develop`-targeted PR and complete review/CI.

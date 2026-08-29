@@ -36,6 +36,8 @@ exhibition opens and meaningful actions without identifying individual users.
    bands, never origin, coordinates, geometry, venue sequence, or route ID.
 5. `open_maps` is recorded only after platform handoff succeeds. Bookmark and
    visit intent events reflect completed state changes, not attempted taps.
+   The wire action `share` means the platform share sheet opened successfully;
+   it never claims that the user completed a share.
 6. Mobile capture is controlled by both a release kill switch and a user-facing
    analytics preference. Until policy/store disclosure and the preference UI
    ship, the production default is disabled.
