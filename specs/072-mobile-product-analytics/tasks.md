@@ -20,4 +20,4 @@
   before any production enablement request.
 - [x] T010 Run shared/Compose/Android/iOS, Edge, migration, pgTAP, lint, advisor,
   and concurrency gates.
-- [ ] T011 Open a `develop`-targeted PR and complete review/CI.
+- [x] T011 Open a `develop`-targeted PR and complete review/CI.
