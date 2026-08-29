@@ -63,6 +63,10 @@ All notable changes to gallr will be documented in this file.
   submission still awaiting review.
 
 ### Infrastructure
+- Android and iOS now share dark-launched mobile analytics orchestration for
+  surface visits, organic exhibition opens, and completed high-intent actions.
+  Both app release flags remain hard-disabled, event creation stays lazy, and
+  paid-promotion opens are excluded.
 - Mobile analytics delivery now uses a versioned seven-day/200-event DataStore
   outbox, exact-ID acknowledgements, idempotent retries, and a header-free Ktor
   client that stays separate from Auth and legacy anonymous-key headers.

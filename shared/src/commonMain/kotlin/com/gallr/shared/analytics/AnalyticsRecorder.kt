@@ -56,6 +56,22 @@ class GatedAnalyticsRecorder internal constructor(
         }
     }
 
+    /** Stops new records and cancels delivery without claiming that local purge has completed. */
+    suspend fun pause() {
+        lifecycleMutex.withLock {
+            val flushJob =
+                stateMutex.withLock {
+                    enabled = false
+                    purgeRequired = true
+                    gateCanceledFlushJob = activeFlushJob
+                    activeFlushJob
+                }
+            if (flushJob != null && flushJob !== currentCoroutineContext().job) {
+                flushJob.cancelAndJoin()
+            }
+        }
+    }
+
     override suspend fun record(createEvent: () -> MobileAnalyticsEvent) {
         stateMutex.withLock {
             if (enabled) delegate.record(createEvent)

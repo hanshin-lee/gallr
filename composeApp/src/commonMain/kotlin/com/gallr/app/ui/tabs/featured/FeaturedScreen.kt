@@ -30,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -40,6 +41,9 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.gallr.app.accessibility.isReduceMotionOrScreenReaderActive
+import com.gallr.app.analytics.ExhibitionExposureSession
+import com.gallr.app.analytics.RankedExhibitionExposure
+import com.gallr.app.analytics.halfVisibleStableKeys
 import com.gallr.app.ui.components.CatalogLoadingState
 import com.gallr.app.ui.components.CatalogUnavailableState
 import com.gallr.app.ui.components.EventPromotionCard
@@ -53,7 +57,9 @@ import com.gallr.app.viewmodel.TabsViewModel
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Exhibition
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,6 +68,10 @@ fun FeaturedScreen(
     viewModel: TabsViewModel,
     onExhibitionTap: (Exhibition) -> Unit,
     onEventTap: (String) -> Unit,
+    onBookmarkToggle: (Exhibition) -> Unit = { exhibition ->
+        viewModel.toggleBookmark(exhibition.id)
+    },
+    onExhibitionImpressions: (List<RankedExhibitionExposure>) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.featuredState.collectAsState()
@@ -71,6 +81,8 @@ fun FeaturedScreen(
     val activeEvents by viewModel.activeEvents.collectAsState()
 
     val listState = rememberLazyListState()
+    val exposureSession = remember { ExhibitionExposureSession() }
+    val currentImpressionCallback by rememberUpdatedState(onExhibitionImpressions)
     val pagerState = rememberPagerState(pageCount = { activeEvents.size })
 
     // A single card wraps its content (below). The pager can't wrap, so it measures
@@ -104,6 +116,15 @@ fun FeaturedScreen(
         derivedStateOf { activeEvents.size >= 2 && listState.firstVisibleItemIndex > 0 }
     }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(listState, state, exposureSession) {
+        exposureSession.updateCatalogue((state as? ExhibitionListState.Success)?.exhibitions.orEmpty().map { it.id })
+        snapshotFlow { halfVisibleStableKeys(listState.layoutInfo) }
+            .distinctUntilChanged()
+            .collect { keys ->
+                exposureSession.newlyVisible(keys).takeIf { it.isNotEmpty() }?.let(currentImpressionCallback)
+            }
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         when (val s = state) {
@@ -227,7 +248,7 @@ fun FeaturedScreen(
                                 ExhibitionCard(
                                     exhibition = exhibition,
                                     isBookmarked = exhibition.id in bookmarkedIds,
-                                    onBookmarkToggle = { viewModel.toggleBookmark(exhibition.id) },
+                                    onBookmarkToggle = { onBookmarkToggle(exhibition) },
                                     onTap = { onExhibitionTap(exhibition) },
                                     lang = lang,
                                     modifier = Modifier.fillMaxWidth().padding(bottom = GallrSpacing.md),

@@ -14,10 +14,12 @@ internal sealed interface AppDestination {
 
     data class ExhibitionDetail(
         val exhibition: Exhibition,
+        val analyticsSuppressed: Boolean = false,
     ) : AppDestination
 
     data class GalleryDetail(
         val exhibition: Exhibition,
+        val analyticsSuppressed: Boolean = false,
     ) : AppDestination
 
     data class EventDetail(
@@ -51,13 +53,19 @@ internal class AppNavigationState {
         destination = AppDestination.Tabs
     }
 
-    fun showExhibition(exhibition: Exhibition) {
-        destination = AppDestination.ExhibitionDetail(exhibition)
+    fun showExhibition(
+        exhibition: Exhibition,
+        analyticsSuppressed: Boolean = false,
+    ) {
+        destination = AppDestination.ExhibitionDetail(exhibition, analyticsSuppressed)
     }
 
-    fun showGallery(exhibition: Exhibition) {
+    fun showGallery(
+        exhibition: Exhibition,
+        analyticsSuppressed: Boolean = false,
+    ) {
         galleryBackDestination = destination
-        destination = AppDestination.GalleryDetail(exhibition)
+        destination = AppDestination.GalleryDetail(exhibition, analyticsSuppressed)
     }
 
     fun returnFromGallery() {

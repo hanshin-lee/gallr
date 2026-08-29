@@ -40,6 +40,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.gallr.app.analytics.DiscoveryAttribution
+import com.gallr.app.analytics.MobileAnalyticsTracker
 import com.gallr.app.notifications.NotificationPermissionHandler
 import com.gallr.app.notifications.RemotePushAddressProvider
 import com.gallr.app.splash.SplashController
@@ -66,6 +68,14 @@ import com.gallr.app.viewmodel.GalleryDetailViewModel
 import com.gallr.app.viewmodel.PersonalMapViewModel
 import com.gallr.app.viewmodel.TabsViewModel
 import com.gallr.app.viewmodel.visitFromExhibition
+import com.gallr.shared.analytics.AnalyticsEntryPoint
+import com.gallr.shared.analytics.AnalyticsIntentAction
+import com.gallr.shared.analytics.AnalyticsSurface
+import com.gallr.shared.analytics.DiscoveryKind
+import com.gallr.shared.analytics.MobileAnalyticsController
+import com.gallr.shared.analytics.MobileAnalyticsEventFactory
+import com.gallr.shared.analytics.PositionBucket
+import com.gallr.shared.analytics.positionBucket
 import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.AuthState
 import com.gallr.shared.data.model.Exhibition
@@ -139,6 +149,8 @@ fun App(
     notificationSyncService: NotificationSyncService,
     notificationPreferences: NotificationPreferences,
     externalMapLauncher: ExternalMapLauncher,
+    mobileAnalyticsController: MobileAnalyticsController,
+    mobileAnalyticsEventFactory: MobileAnalyticsEventFactory?,
 ) {
     // Auth state drives SyncBookmarkRepository delegation
     val authState by authRepository
@@ -238,16 +250,29 @@ fun App(
 
     val lifecycleOwner = LocalLifecycleOwner.current
     val appCoroutineScope = rememberCoroutineScope()
+    val mobileAnalyticsTracker =
+        remember(mobileAnalyticsController, mobileAnalyticsEventFactory) {
+            MobileAnalyticsTracker(mobileAnalyticsController, mobileAnalyticsEventFactory)
+        }
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer =
             LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME) {
                     viewModel.refreshIfStale()
                     appCoroutineScope.launch { myGallrSyncCoordinator.refresh() }
+                    appCoroutineScope.launch {
+                        runCatching { mobileAnalyticsController.onResume() }
+                            .onFailure { error -> appLog.warn("mobile_analytics_resume", error) }
+                    }
                 }
             }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    androidx.compose.runtime.LaunchedEffect(mobileAnalyticsController) {
+        runCatching { mobileAnalyticsController.initialize() }
+            .onFailure { error -> appLog.warn("mobile_analytics_initialize", error) }
     }
 
     androidx.compose.runtime.LaunchedEffect(viewModel) {
@@ -320,6 +345,114 @@ fun App(
         val bookmarkedIds by viewModel.bookmarkedIds.collectAsState()
         val showSignUpNudge by viewModel.showSignUpNudge.collectAsState()
         val navigation = rememberAppNavigationState()
+        var exhibitionDetailEntryPoint by remember { mutableStateOf(AnalyticsEntryPoint.CARD) }
+
+        fun recordIntent(
+            exhibitionId: String,
+            surface: AnalyticsSurface,
+            action: AnalyticsIntentAction,
+        ) {
+            appCoroutineScope.launch {
+                mobileAnalyticsTracker.exhibitionIntent(exhibitionId, surface, action)
+            }
+        }
+
+        fun openExhibition(
+            exhibition: Exhibition,
+            attribution: DiscoveryAttribution,
+            entryPoint: AnalyticsEntryPoint,
+            impressionOnOpen: Boolean = false,
+            analyticsSuppressed: Boolean = false,
+        ) {
+            exhibitionDetailEntryPoint = entryPoint
+            if (!analyticsSuppressed) {
+                appCoroutineScope.launch {
+                    if (impressionOnOpen) {
+                        mobileAnalyticsTracker.exhibitionImpression(exhibition.id, attribution)
+                    }
+                    mobileAnalyticsTracker.exhibitionOpened(exhibition.id, attribution)
+                }
+            }
+            navigation.showExhibition(exhibition, analyticsSuppressed)
+        }
+
+        fun toggleBookmark(
+            exhibitionId: String,
+            surface: AnalyticsSurface,
+        ) {
+            viewModel.toggleBookmark(exhibitionId) { saved ->
+                recordIntent(
+                    exhibitionId = exhibitionId,
+                    surface = surface,
+                    action =
+                        if (saved) {
+                            AnalyticsIntentAction.BOOKMARK_ADD
+                        } else {
+                            AnalyticsIntentAction.BOOKMARK_REMOVE
+                        },
+                )
+            }
+        }
+
+        androidx.compose.runtime.LaunchedEffect(
+            mobileAnalyticsController,
+            navigation.destination,
+            navigation.selectedTab,
+        ) {
+            val currentDestination = navigation.destination
+            val surfaceVisit =
+                when (currentDestination) {
+                    AppDestination.Tabs -> {
+                        val surface =
+                            when (navigation.selectedTab) {
+                                0 -> AnalyticsSurface.FEATURED
+                                1 -> AnalyticsSurface.LIST
+                                2 -> AnalyticsSurface.MAP
+                                else -> AnalyticsSurface.MY_GALLR
+                            }
+                        surface to AnalyticsEntryPoint.TAB
+                    }
+
+                    is AppDestination.ExhibitionDetail -> {
+                        if (currentDestination.analyticsSuppressed) {
+                            null
+                        } else {
+                            AnalyticsSurface.EXHIBITION_DETAIL to exhibitionDetailEntryPoint
+                        }
+                    }
+
+                    is AppDestination.GalleryDetail -> {
+                        if (currentDestination.analyticsSuppressed) {
+                            null
+                        } else {
+                            AnalyticsSurface.GALLERY_DETAIL to AnalyticsEntryPoint.CARD
+                        }
+                    }
+
+                    is AppDestination.EventDetail -> {
+                        AnalyticsSurface.EVENT_DETAIL to AnalyticsEntryPoint.CARD
+                    }
+
+                    is AppDestination.EditorDetail -> {
+                        AnalyticsSurface.EDITOR_DETAIL to AnalyticsEntryPoint.CARD
+                    }
+
+                    AppDestination.Settings -> {
+                        AnalyticsSurface.SETTINGS to AnalyticsEntryPoint.CARD
+                    }
+
+                    AppDestination.EditorSelector -> {
+                        null
+                    }
+                }
+            if (surfaceVisit != null) {
+                runCatching {
+                    mobileAnalyticsController.initialize()
+                    mobileAnalyticsTracker.surfaceViewed(surfaceVisit.first, surfaceVisit.second)
+                }.onFailure { error -> appLog.warn("mobile_analytics_surface", error) }
+            }
+        }
+
         val visitsState by
             syncedVisitRepository
                 .observeVisits()
@@ -340,7 +473,16 @@ fun App(
                                     .getOrNull()
                                     ?.firstOrNull { it.id == pendingLink.id }
                         if (target != null) {
-                            navigation.showExhibition(target)
+                            openExhibition(
+                                exhibition = target,
+                                attribution =
+                                    DiscoveryAttribution(
+                                        surface = AnalyticsSurface.MY_GALLR,
+                                        kind = DiscoveryKind.NOTIFICATION,
+                                        position = PositionBucket.UNRANKED,
+                                    ),
+                                entryPoint = AnalyticsEntryPoint.NOTIFICATION,
+                            )
                         } else {
                             navigation.selectTab(MY_LIST_TAB_INDEX)
                         }
@@ -381,6 +523,17 @@ fun App(
                         is AppDestination.ExhibitionDetail -> {
                             val exhibition = destination.exhibition
                             val mapDestination = exhibition.toExternalMapDestination(lang)
+                            val analyticsSuppressed = destination.analyticsSuppressed
+
+                            fun recordDetailIntent(action: AnalyticsIntentAction) {
+                                if (!analyticsSuppressed) {
+                                    recordIntent(
+                                        exhibition.id,
+                                        AnalyticsSurface.EXHIBITION_DETAIL,
+                                        action,
+                                    )
+                                }
+                            }
                             var isVisitSaving by remember(exhibition.id) { mutableStateOf(false) }
                             var visitSaveFailed by remember(exhibition.id) { mutableStateOf(false) }
                             PlatformBackHandler(navigation::showTabs)
@@ -388,9 +541,24 @@ fun App(
                                 exhibition = exhibition,
                                 lang = lang,
                                 isBookmarked = exhibition.id in bookmarkedIds,
-                                onBookmarkToggle = { viewModel.toggleBookmark(exhibition.id) },
-                                onShare = { shareHandler.shareExhibition(exhibition, lang) },
-                                onGalleryTap = { navigation.showGallery(exhibition) },
+                                onBookmarkToggle = {
+                                    if (analyticsSuppressed) {
+                                        viewModel.toggleBookmark(exhibition.id)
+                                    } else {
+                                        toggleBookmark(exhibition.id, AnalyticsSurface.EXHIBITION_DETAIL)
+                                    }
+                                },
+                                onShare = {
+                                    shareHandler
+                                        .shareExhibition(exhibition, lang)
+                                        .onSuccess {
+                                            recordDetailIntent(AnalyticsIntentAction.SHARE)
+                                        }
+                                },
+                                onGalleryTap = {
+                                    recordDetailIntent(AnalyticsIntentAction.GALLERY_OPEN)
+                                    navigation.showGallery(exhibition, analyticsSuppressed)
+                                },
                                 onOpenMap =
                                     if (mapDestination == null) {
                                         null
@@ -400,9 +568,17 @@ fun App(
                                                 exhibition = exhibition,
                                                 language = lang,
                                                 launcher = externalMapLauncher,
-                                            )?.onFailure { error -> appLog.warn("open_exhibition_map", error) }
+                                            )?.onSuccess {
+                                                recordDetailIntent(AnalyticsIntentAction.OPEN_MAPS)
+                                            }?.onFailure { error -> appLog.warn("open_exhibition_map", error) }
                                         }
                                     },
+                                onContactOpened = {
+                                    recordDetailIntent(AnalyticsIntentAction.CONTACT)
+                                },
+                                onTicketOpened = {
+                                    recordDetailIntent(AnalyticsIntentAction.TICKET)
+                                },
                                 isVisited = visits.any { it.exhibitionId == exhibition.id },
                                 isVisitSaving = isVisitSaving,
                                 visitSaveFailed = visitSaveFailed,
@@ -423,6 +599,8 @@ fun App(
                                                         ),
                                                     ),
                                                 )
+                                            }.onSuccess {
+                                                recordDetailIntent(AnalyticsIntentAction.VISIT_RECORDED)
                                             }.onFailure { error ->
                                                 appLog.warn("mark_exhibition_visited", error)
                                                 visitSaveFailed = true
@@ -440,6 +618,7 @@ fun App(
 
                         is AppDestination.GalleryDetail -> {
                             val exhibition = destination.exhibition
+                            val analyticsSuppressed = destination.analyticsSuppressed
                             PlatformBackHandler(navigation::returnFromGallery)
                             val galleryDetailViewModel: GalleryDetailViewModel =
                                 viewModel(
@@ -460,7 +639,18 @@ fun App(
                                 viewModel = galleryDetailViewModel,
                                 lang = lang,
                                 onBack = navigation::returnFromGallery,
-                                onExhibitionTap = navigation::showExhibition,
+                                onExhibitionTap = { candidate ->
+                                    openExhibition(
+                                        candidate,
+                                        DiscoveryAttribution(
+                                            AnalyticsSurface.GALLERY_DETAIL,
+                                            DiscoveryKind.GALLERY,
+                                            PositionBucket.UNRANKED,
+                                        ),
+                                        AnalyticsEntryPoint.CARD,
+                                        analyticsSuppressed = analyticsSuppressed,
+                                    )
+                                },
                             )
                         }
 
@@ -476,9 +666,21 @@ fun App(
                                 viewModel = eventDetailVm,
                                 lang = lang,
                                 bookmarkedIds = bookmarkedIds,
-                                onToggleBookmark = { viewModel.toggleBookmark(it) },
+                                onToggleBookmark = { id ->
+                                    toggleBookmark(id, AnalyticsSurface.EVENT_DETAIL)
+                                },
                                 onBack = navigation::showTabs,
-                                onExhibitionTap = navigation::showExhibition,
+                                onExhibitionTap = { candidate ->
+                                    openExhibition(
+                                        candidate,
+                                        DiscoveryAttribution(
+                                            AnalyticsSurface.EVENT_DETAIL,
+                                            DiscoveryKind.EVENT,
+                                            PositionBucket.UNRANKED,
+                                        ),
+                                        AnalyticsEntryPoint.CARD,
+                                    )
+                                },
                             )
                         }
 
@@ -498,9 +700,21 @@ fun App(
                             EditorDetailScreen(
                                 viewModel = editorDetailVm,
                                 bookmarkedIds = bookmarkedIds,
-                                onToggleBookmark = { viewModel.toggleBookmark(it) },
+                                onToggleBookmark = { id ->
+                                    toggleBookmark(id, AnalyticsSurface.EDITOR_DETAIL)
+                                },
                                 onBack = navigation::showTabs,
-                                onExhibitionTap = navigation::showExhibition,
+                                onExhibitionTap = { candidate ->
+                                    openExhibition(
+                                        candidate,
+                                        DiscoveryAttribution(
+                                            AnalyticsSurface.EDITOR_DETAIL,
+                                            DiscoveryKind.EDITOR,
+                                            PositionBucket.UNRANKED,
+                                        ),
+                                        AnalyticsEntryPoint.CARD,
+                                    )
+                                },
                             )
                         }
 
@@ -637,7 +851,38 @@ fun App(
                                         0 -> {
                                             FeaturedScreen(
                                                 viewModel = viewModel,
-                                                onExhibitionTap = navigation::showExhibition,
+                                                onExhibitionTap = { exhibition ->
+                                                    val index =
+                                                        (viewModel.featuredState.value as? ExhibitionListState.Success)
+                                                            ?.exhibitions
+                                                            ?.indexOfFirst { it.id == exhibition.id }
+                                                    openExhibition(
+                                                        exhibition,
+                                                        DiscoveryAttribution(
+                                                            surface = AnalyticsSurface.FEATURED,
+                                                            kind = DiscoveryKind.FEATURED,
+                                                            position = positionBucket(index),
+                                                        ),
+                                                        AnalyticsEntryPoint.CARD,
+                                                    )
+                                                },
+                                                onBookmarkToggle = { exhibition ->
+                                                    toggleBookmark(exhibition.id, AnalyticsSurface.FEATURED)
+                                                },
+                                                onExhibitionImpressions = { exposures ->
+                                                    appCoroutineScope.launch {
+                                                        exposures.forEach { exposure ->
+                                                            mobileAnalyticsTracker.exhibitionImpression(
+                                                                exposure.exhibitionId,
+                                                                DiscoveryAttribution(
+                                                                    AnalyticsSurface.FEATURED,
+                                                                    DiscoveryKind.FEATURED,
+                                                                    exposure.position,
+                                                                ),
+                                                            )
+                                                        }
+                                                    }
+                                                },
                                                 onEventTap = navigation::showEvent,
                                                 modifier = Modifier.padding(innerPadding),
                                             )
@@ -646,7 +891,83 @@ fun App(
                                         1 -> {
                                             ListScreen(
                                                 viewModel = viewModel,
-                                                onExhibitionTap = navigation::showExhibition,
+                                                onExhibitionTap = { exhibition ->
+                                                    val listState =
+                                                        viewModel.filteredExhibitions.value as?
+                                                            ExhibitionListState.Success
+                                                    val index =
+                                                        listState
+                                                            ?.exhibitions
+                                                            ?.indexOfFirst { it.id == exhibition.id }
+                                                    val discoveryKind =
+                                                        when {
+                                                            viewModel.showMyListOnly.value -> {
+                                                                DiscoveryKind.SAVED
+                                                            }
+
+                                                            viewModel.searchQuery.value.isNotBlank() -> {
+                                                                DiscoveryKind.SEARCH
+                                                            }
+
+                                                            viewModel.filterState.value.selectedEventId != null -> {
+                                                                DiscoveryKind.EVENT
+                                                            }
+
+                                                            else -> {
+                                                                DiscoveryKind.ORGANIC
+                                                            }
+                                                        }
+                                                    openExhibition(
+                                                        exhibition,
+                                                        DiscoveryAttribution(
+                                                            surface = AnalyticsSurface.LIST,
+                                                            kind = discoveryKind,
+                                                            position = positionBucket(index),
+                                                        ),
+                                                        AnalyticsEntryPoint.CARD,
+                                                    )
+                                                },
+                                                onPromotedExhibitionTap = { exhibition ->
+                                                    navigation.showExhibition(
+                                                        exhibition,
+                                                        analyticsSuppressed = true,
+                                                    )
+                                                },
+                                                onBookmarkToggle = { exhibition ->
+                                                    toggleBookmark(exhibition.id, AnalyticsSurface.LIST)
+                                                },
+                                                onExhibitionImpressions = { exposures ->
+                                                    val discoveryKind =
+                                                        when {
+                                                            viewModel.showMyListOnly.value -> {
+                                                                DiscoveryKind.SAVED
+                                                            }
+
+                                                            viewModel.searchQuery.value.isNotBlank() -> {
+                                                                DiscoveryKind.SEARCH
+                                                            }
+
+                                                            viewModel.filterState.value.selectedEventId != null -> {
+                                                                DiscoveryKind.EVENT
+                                                            }
+
+                                                            else -> {
+                                                                DiscoveryKind.ORGANIC
+                                                            }
+                                                        }
+                                                    appCoroutineScope.launch {
+                                                        exposures.forEach { exposure ->
+                                                            mobileAnalyticsTracker.exhibitionImpression(
+                                                                exposure.exhibitionId,
+                                                                DiscoveryAttribution(
+                                                                    AnalyticsSurface.LIST,
+                                                                    discoveryKind,
+                                                                    exposure.position,
+                                                                ),
+                                                            )
+                                                        }
+                                                    }
+                                                },
                                                 onEventTap = navigation::showEvent,
                                                 onEditorsChipTap = navigation::showEditorSelector,
                                                 visitedExhibitionIds =
@@ -656,7 +977,14 @@ fun App(
                                                 followedGalleryIds =
                                                     followedGalleries.mapNotNullTo(mutableSetOf()) { it.galleryId },
                                                 onGalleryTap = { candidate ->
-                                                    candidate.exhibitions.firstOrNull()?.let(navigation::showGallery)
+                                                    candidate.exhibitions.firstOrNull()?.let { representative ->
+                                                        recordIntent(
+                                                            representative.id,
+                                                            AnalyticsSurface.LIST,
+                                                            AnalyticsIntentAction.GALLERY_OPEN,
+                                                        )
+                                                        navigation.showGallery(representative)
+                                                    }
                                                 },
                                                 onFollowGallery = { candidate ->
                                                     appCoroutineScope.launch {
@@ -673,6 +1001,14 @@ fun App(
                                                                     followedAt = followedAt,
                                                                 ),
                                                             )
+                                                        }.onSuccess {
+                                                            candidate.exhibitions.firstOrNull()?.let { representative ->
+                                                                recordIntent(
+                                                                    representative.id,
+                                                                    AnalyticsSurface.LIST,
+                                                                    AnalyticsIntentAction.FOLLOW_GALLERY,
+                                                                )
+                                                            }
                                                         }.onFailure { error ->
                                                             appLog.warn("follow_gallery_from_search", error)
                                                         }
@@ -685,7 +1021,18 @@ fun App(
                                         2 -> {
                                             MapScreen(
                                                 mapViewModel = personalMapViewModel,
-                                                onExhibitionTap = navigation::showExhibition,
+                                                onExhibitionTap = { exhibition ->
+                                                    openExhibition(
+                                                        exhibition,
+                                                        DiscoveryAttribution(
+                                                            AnalyticsSurface.MAP,
+                                                            DiscoveryKind.NEARBY,
+                                                            PositionBucket.UNRANKED,
+                                                        ),
+                                                        AnalyticsEntryPoint.CARD,
+                                                        impressionOnOpen = true,
+                                                    )
+                                                },
                                                 modifier = Modifier.padding(innerPadding),
                                             )
                                         }
@@ -705,8 +1052,25 @@ fun App(
                                                 accountNudgeRepository = accountNudgeRepository,
                                                 tabsViewModel = viewModel,
                                                 lang = lang,
-                                                onExhibitionTap = navigation::showExhibition,
-                                                onGalleryTap = navigation::showGallery,
+                                                onExhibitionTap = { exhibition ->
+                                                    openExhibition(
+                                                        exhibition,
+                                                        DiscoveryAttribution(
+                                                            AnalyticsSurface.MY_GALLR,
+                                                            DiscoveryKind.SAVED,
+                                                            PositionBucket.UNRANKED,
+                                                        ),
+                                                        AnalyticsEntryPoint.CARD,
+                                                    )
+                                                },
+                                                onGalleryTap = { exhibition ->
+                                                    recordIntent(
+                                                        exhibition.id,
+                                                        AnalyticsSurface.MY_GALLR,
+                                                        AnalyticsIntentAction.GALLERY_OPEN,
+                                                    )
+                                                    navigation.showGallery(exhibition)
+                                                },
                                                 addPastVisitsRequest = navigation.addPastVisitsRequest,
                                                 modifier = Modifier.padding(innerPadding),
                                             )

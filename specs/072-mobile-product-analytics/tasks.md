@@ -14,7 +14,7 @@
   bounds, source identity, sanitized failures, and kill switch.
 - [x] T007 Implement and configure `mobile-analytics`; extend product-surface
   configuration validation.
-- [ ] T008 Wire common mobile capture points behind disabled-by-default release
+- [x] T008 Wire common mobile capture points behind disabled-by-default release
   and user gates without adding a platform analytics SDK.
 - [ ] T009 Update privacy/store disclosures and add analytics preference UI
   before any production enablement request.
