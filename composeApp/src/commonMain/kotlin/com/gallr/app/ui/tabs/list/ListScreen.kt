@@ -122,6 +122,7 @@ fun ListScreen(
     val selectedCity = uiState.selectedCity
     val distinctCities = uiState.cities
     val distinctRegions = uiState.regions
+    val tabExhibitionCount = uiState.tabExhibitionCount
     val showMyListOnly = uiState.showMyListOnly
     val searchQuery = uiState.searchQuery
     val isRefreshing = uiState.isRefreshing
@@ -211,7 +212,7 @@ fun ListScreen(
             indicator = {
                 TabRowDefaults.SecondaryIndicator(
                     modifier = Modifier.tabIndicatorOffset(selectedTabIndex),
-                    color = MaterialTheme.colorScheme.onBackground,
+                    color = GallrAccent.activeIndicator,
                 )
             },
             divider = {},
@@ -311,7 +312,7 @@ fun ListScreen(
                     GallrFilterChip(
                         selected = selectedCity == null,
                         onClick = { viewModel.setCity(null) },
-                        label = if (lang == AppLanguage.KO) "전체" else "All",
+                        label = "${if (lang == AppLanguage.KO) "전체" else "All"} ($tabExhibitionCount)",
                     )
                     Spacer(Modifier.width(GallrSpacing.sm))
                     distinctCities.forEach { city ->
