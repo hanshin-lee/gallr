@@ -19,4 +19,4 @@
   Android host and 1.595 s on the iOS simulator.
 - [ ] T006 Specify and implement the mobile presentation/ViewModel as a separate
   independently reviewable story after the shared engine is stable.
-- [ ] T007 Open a `develop`-targeted PR and complete review/CI.
+- [x] T007 Open a `develop`-targeted PR and complete review/CI.
