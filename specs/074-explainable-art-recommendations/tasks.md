@@ -1,9 +1,9 @@
 # Tasks: Explainable artist and style recommendations
 
-- [ ] T001 Add failing pgTAP and concurrency tests for private artist/taxonomy
+- [x] T001 Add failing pgTAP and concurrency tests for private artist/taxonomy
   storage, version cloning/replacement, owner/staff authorization, unresolved
   publish denial, canonical publication, and legacy compatibility.
-- [ ] T002 Create the additive migration with controlled vocabulary, private
+- [x] T002 Create the additive migration with controlled vocabulary, private
   RLS/grants, presence-sensitive Admin/owner patch contracts, bounded lookups,
   publication guard, and canonical-v2 metadata projection.
 - [x] T003 Add failing shared DTO/domain tests for rich/default-empty metadata,
