@@ -17,6 +17,7 @@ import type {
   AdminSection,
   AdminVenueLookup,
   ExhibitionFilters,
+  ExhibitionArtMetadata,
   ExhibitionPatch,
   InspectorSection,
 } from "./domain";
@@ -139,15 +140,17 @@ function toPatch(exhibition: AdminExhibition): ExhibitionPatch {
     coverAltKo: _coverAltKo,
     coverAltEn: _coverAltEn,
     imageCredit: _imageCredit,
+    hasOpenOwnerSubmission: _hasOpenOwnerSubmission,
     status: _status,
     revision: _revision,
     createdAt: _createdAt,
     publishedAt: _publishedAt,
     updatedAt: _updatedAt,
     updatedBy: _updatedBy,
+    artMetadata,
     ...patch
   } = exhibition;
-  return patch;
+  return artMetadata === null ? patch : { ...patch, artMetadata };
 }
 
 interface AdminWorkspaceProps {
@@ -302,6 +305,17 @@ export function AdminWorkspace({
         saveRequestInFlight.current = false;
       }
     },
+    [repository],
+  );
+
+  const searchArtists = useCallback(
+    (query: string) => repository.searchArtists(query),
+    [repository],
+  );
+
+  const createArtist = useCallback(
+    (nameKo: string, nameEn: string, requestId: string) =>
+      repository.createArtist(nameKo, nameEn, requestId),
     [repository],
   );
 
@@ -520,7 +534,7 @@ export function AdminWorkspace({
 
   const handleChange = (
     field: keyof AdminExhibition,
-    value: string | boolean | null,
+    value: string | boolean | ExhibitionArtMetadata | null,
   ) => {
     if (
       draft?.status === "Archived" ||
@@ -798,7 +812,13 @@ export function AdminWorkspace({
   };
 
   const handlePublish = async () => {
-    if (!draft || mediaBusyRef.current || mediaLoading || saveState !== "saved") {
+    if (
+      !draft ||
+      mediaBusyRef.current ||
+      mediaLoading ||
+      saveState !== "saved" ||
+      draft.artMetadata?.artists.some(({ id }) => id === null)
+    ) {
       return;
     }
     setPublishing(true);
@@ -1457,6 +1477,8 @@ export function AdminWorkspace({
             resetGeocoding();
           }}
           onChange={handleChange}
+          onSearchArtists={searchArtists}
+          onCreateArtist={createArtist}
           onPreview={() => setPreviewOpen(true)}
           onPublish={() => setPublishOpen(true)}
           onArchive={() => setLifecycleAction("archive")}

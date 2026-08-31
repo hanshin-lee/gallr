@@ -16,11 +16,11 @@
 - [x] T005 Add failing Compose tests for bilingual `WHY THIS` presentation,
   card accessibility, evidence-only empty state, route evidence snapshots, and
   analytics structural exclusion; then implement the mobile UI and route flow.
-- [ ] T006 Add failing Admin repository/component tests for supported-empty
+- [x] T006 Add failing Admin repository/component tests for supported-empty
   metadata, artist search/create/resolve, term selection, ordering, revision
   conflicts, publication blocking, malformed responses, and accessibility;
   then implement the staff Art editor.
-- [ ] T007 Add failing Gallery repository/component tests for canonical artist
+- [x] T007 Add failing Gallery repository/component tests for canonical artist
   selection, unresolved suggestions, ordered credits, controlled terms,
   editable-state rules, stale revisions, malformed responses, and
   accessibility; then implement owner metadata entry.
