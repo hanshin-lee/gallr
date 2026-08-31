@@ -275,8 +275,8 @@ fun ExhibitionCard(
                         Spacer(Modifier.height(GallrSpacing.sm))
                         Text(
                             text = label,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = secondaryColor,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = contentColor,
                         )
                     }
                     Spacer(Modifier.height(GallrSpacing.xs))
