@@ -1,6 +1,5 @@
 package com.gallr.shared.recommendation
 
-import com.gallr.shared.data.model.AppLanguage
 import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.ExhibitionVisit
 import com.gallr.shared.data.model.ExhibitionVisitSnapshot
@@ -36,7 +35,11 @@ class LocalExhibitionRecommenderTest {
         val result = recommend(listOf(saved, generic, thematic), context(bookmarks = setOf("saved")))
 
         assertEquals("thematic", result.first().exhibition.id)
-        assertTrue(RecommendationReason.SIMILAR_TO_SAVED in result.first().reasons)
+        assertTrue(
+            result.first().evidence.any {
+                it is RecommendationEvidence.TextSimilarity && it.source == RecommendationSignalSource.SAVED
+            },
+        )
     }
 
     @Test
@@ -77,7 +80,11 @@ class LocalExhibitionRecommenderTest {
             )
 
         assertEquals("thematic", result.first().exhibition.id)
-        assertTrue(RecommendationReason.SIMILAR_TO_VISITED in result.first().reasons)
+        assertTrue(
+            result.first().evidence.any {
+                it is RecommendationEvidence.TextSimilarity && it.source == RecommendationSignalSource.VISITED
+            },
+        )
     }
 
     @Test
@@ -92,7 +99,7 @@ class LocalExhibitionRecommenderTest {
             )
 
         assertEquals("followed", result.first().exhibition.id)
-        assertTrue(RecommendationReason.FOLLOWED_GALLERY in result.first().reasons)
+        assertTrue(RecommendationEvidence.FollowedGallery in result.first().evidence)
     }
 
     @Test
@@ -107,9 +114,9 @@ class LocalExhibitionRecommenderTest {
             )
 
         assertEquals("nearby", result.first().exhibition.id)
-        assertTrue(RecommendationReason.NEARBY in result.first().reasons)
-        assertTrue(RecommendationReason.FEATURED in result.first().reasons)
-        assertFalse(result.first().reasons.any { it.isSimilarityReason })
+        assertTrue(RecommendationEvidence.Nearby in result.first().evidence)
+        assertTrue(RecommendationEvidence.Featured in result.first().evidence)
+        assertFalse(result.first().evidence.any { it is RecommendationEvidence.TextSimilarity })
     }
 
     @Test
@@ -121,7 +128,7 @@ class LocalExhibitionRecommenderTest {
                 openingDate = LocalDate(2026, 9, 20),
                 closingDate = LocalDate(2026, 10, 20),
             )
-        val visible = exhibition("visible")
+        val visible = exhibition("visible", isFeatured = true)
 
         assertEquals(
             listOf("visible"),
@@ -133,10 +140,10 @@ class LocalExhibitionRecommenderTest {
     fun `diversity limits one gallery to two results when alternatives exist`() {
         val catalogue =
             listOf(
-                exhibition("a1", galleryId = "same", descriptionEn = "light photo"),
-                exhibition("a2", galleryId = "same", descriptionEn = "light photo"),
-                exhibition("a3", galleryId = "same", descriptionEn = "light photo"),
-                exhibition("b1", galleryId = "other", descriptionEn = "light photo"),
+                exhibition("a1", galleryId = "same", descriptionEn = "light photo", isFeatured = true),
+                exhibition("a2", galleryId = "same", descriptionEn = "light photo", isFeatured = true),
+                exhibition("a3", galleryId = "same", descriptionEn = "light photo", isFeatured = true),
+                exhibition("b1", galleryId = "other", descriptionEn = "light photo", isFeatured = true),
             )
 
         val result = recommend(catalogue, context(limit = 4))
@@ -153,6 +160,7 @@ class LocalExhibitionRecommenderTest {
                     id = "duplicate-$index",
                     galleryId = "gallery-$index",
                     descriptionEn = "immersive blue light photography installation",
+                    isFeatured = true,
                 )
             }
         val alternative =
@@ -171,13 +179,13 @@ class LocalExhibitionRecommenderTest {
 
     @Test
     fun `canonical Korean and Latin forms produce equivalent relevance`() {
-        val saved = exhibition("saved", descriptionKo = "가 카페")
+        val saved = exhibition("saved", descriptionKo = "가 카페 cafe 가 카페 cafe 가 카페 cafe")
         val composed =
             exhibition(
                 "composed",
                 nameKo = "형태",
                 nameEn = "Form",
-                descriptionKo = "가 café",
+                descriptionKo = "가 카페 café 가 카페 café 가 카페 café",
                 galleryId = "gallery-composed",
             ).copy(venueNameKo = "동일", venueNameEn = "Same")
         val decomposed =
@@ -185,24 +193,25 @@ class LocalExhibitionRecommenderTest {
                 "decomposed",
                 nameKo = "형태",
                 nameEn = "Form",
-                descriptionKo = "가 cafe\u0301",
+                descriptionKo = "가 카페 cafe\u0301 가 카페 cafe\u0301 가 카페 cafe\u0301",
                 galleryId = "gallery-decomposed",
             ).copy(venueNameKo = "동일", venueNameEn = "Same")
 
         val result = recommend(listOf(saved, decomposed, composed), context(bookmarks = setOf("saved")))
 
+        assertEquals(setOf("composed", "decomposed"), result.map { it.exhibition.id }.toSet())
         assertEquals(
             result.first { it.exhibition.id == "composed" }.scoreBasisPoints,
             result.first { it.exhibition.id == "decomposed" }.scoreBasisPoints,
         )
 
-        val caronSaved = exhibition("caron-saved", descriptionEn = "české umění")
+        val caronSaved = exhibition("caron-saved", descriptionEn = "české umění české umění české umění")
         val caronComposed =
             exhibition(
                 "caron-composed",
                 nameKo = "체코 예술",
                 nameEn = "Czech art",
-                descriptionEn = "české umění",
+                descriptionEn = "české umění české umění české umění",
                 galleryId = "c1",
             ).copy(venueNameKo = "동일", venueNameEn = "Same")
         val caronDecomposed =
@@ -210,7 +219,7 @@ class LocalExhibitionRecommenderTest {
                 "caron-decomposed",
                 nameKo = "체코 예술",
                 nameEn = "Czech art",
-                descriptionEn = "c\u030Ceské umění",
+                descriptionEn = "c\u030Ceské umění c\u030Ceské umění c\u030Ceské umění",
                 galleryId = "c2",
             ).copy(venueNameKo = "동일", venueNameEn = "Same")
         val caronResult =
@@ -246,24 +255,17 @@ class LocalExhibitionRecommenderTest {
                 ),
             ).single()
 
-        assertTrue(RecommendationReason.FOLLOWED_GALLERY in result.reasons)
+        assertTrue(RecommendationEvidence.FollowedGallery in result.evidence)
     }
 
     @Test
     fun `equal quantized scores use exhibition id as the tie breaker`() {
-        val laterIdFirst = exhibition("a", closingDate = LocalDate(2026, 9, 20))
-        val earlierClosing = exhibition("z", closingDate = LocalDate(2026, 9, 15))
+        val laterIdFirst = exhibition("a", closingDate = LocalDate(2026, 9, 20), isFeatured = true)
+        val earlierClosing = exhibition("z", closingDate = LocalDate(2026, 9, 15), isFeatured = true)
 
         val result = recommend(listOf(earlierClosing, laterIdFirst), context())
 
         assertEquals(listOf("a", "z"), result.map { it.exhibition.id })
-    }
-
-    @Test
-    fun `reason labels are deterministic and bilingual`() {
-        assertEquals("저장한 전시와 비슷함", RecommendationReason.SIMILAR_TO_SAVED.label(AppLanguage.KO))
-        assertEquals("SIMILAR TO YOUR SAVES", RecommendationReason.SIMILAR_TO_SAVED.label(AppLanguage.EN))
-        assertEquals("가까운 전시", RecommendationReason.NEARBY.label(AppLanguage.KO))
     }
 
     @Test
@@ -280,8 +282,8 @@ class LocalExhibitionRecommenderTest {
         val reverse = recommend(catalogue.reversed(), recommendationContext)
 
         assertEquals(
-            forward.map { Triple(it.exhibition.id, it.scoreBasisPoints, it.reasons) },
-            reverse.map { Triple(it.exhibition.id, it.scoreBasisPoints, it.reasons) },
+            forward.map { Triple(it.exhibition.id, it.scoreBasisPoints, it.evidence) },
+            reverse.map { Triple(it.exhibition.id, it.scoreBasisPoints, it.evidence) },
         )
     }
 

@@ -3,7 +3,7 @@ package com.gallr.shared.map
 import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.map.GeoPoint
 import com.gallr.shared.recommendation.ExhibitionRecommendation
-import com.gallr.shared.recommendation.RecommendationReason
+import com.gallr.shared.recommendation.RecommendationEvidence
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -38,6 +38,7 @@ class NeighborhoodRoutePlannerTest {
         assertEquals(135, route.estimatedVisitMinutes)
         assertTrue(RouteWarning.APPROXIMATE_DISTANCE in route.warnings)
         assertTrue(RouteWarning.HOURS_UNVERIFIED in route.warnings)
+        assertTrue(route.recommendationEvidenceByExhibitionId.isEmpty())
     }
 
     @Test
@@ -63,6 +64,10 @@ class NeighborhoodRoutePlannerTest {
             ).route
 
         assertEquals(setOf("high", "medium"), route.stops.map { it.id }.toSet())
+        assertEquals(
+            route.stops.associate { it.id to listOf(RecommendationEvidence.Featured) },
+            route.recommendationEvidenceByExhibitionId,
+        )
     }
 
     @Test
@@ -334,7 +339,7 @@ class NeighborhoodRoutePlannerTest {
     private fun recommendation(
         exhibition: Exhibition,
         score: Int,
-    ) = ExhibitionRecommendation(exhibition, score, listOf(RecommendationReason.SIMILAR_TO_SAVED))
+    ) = ExhibitionRecommendation(exhibition, score, listOf(RecommendationEvidence.Featured))
 
     private fun exhibition(
         id: String,

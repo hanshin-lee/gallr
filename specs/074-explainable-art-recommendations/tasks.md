@@ -6,14 +6,14 @@
 - [ ] T002 Create the additive migration with controlled vocabulary, private
   RLS/grants, presence-sensitive Admin/owner patch contracts, bounded lookups,
   publication guard, and canonical-v2 metadata projection.
-- [ ] T003 Add failing shared DTO/domain tests for rich/default-empty metadata,
+- [x] T003 Add failing shared DTO/domain tests for rich/default-empty metadata,
   canonical-v2 versus legacy selection, malformed entries, and cache
   compatibility; then implement the additive catalogue contract.
-- [ ] T004 Add failing recommender tests for exact artist and controlled-term
+- [x] T004 Add failing recommender tests for exact artist and controlled-term
   evidence, group-show normalization, lower-priority text fallback, nonempty
   evidence, deterministic diversity, and prepared-index invalidation; then
   implement the pure local scoring/evidence model.
-- [ ] T005 Add failing Compose tests for bilingual `WHY THIS` presentation,
+- [x] T005 Add failing Compose tests for bilingual `WHY THIS` presentation,
   card accessibility, evidence-only empty state, route evidence snapshots, and
   analytics structural exclusion; then implement the mobile UI and route flow.
 - [ ] T006 Add failing Admin repository/component tests for supported-empty

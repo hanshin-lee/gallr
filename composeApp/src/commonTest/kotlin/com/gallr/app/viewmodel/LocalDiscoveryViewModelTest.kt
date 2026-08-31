@@ -15,7 +15,7 @@ import com.gallr.shared.recommendation.ExhibitionRecommendation
 import com.gallr.shared.recommendation.ExhibitionRecommendationIndex
 import com.gallr.shared.recommendation.ExhibitionRecommender
 import com.gallr.shared.recommendation.RecommendationContext
-import com.gallr.shared.recommendation.RecommendationReason
+import com.gallr.shared.recommendation.RecommendationEvidence
 import com.gallr.shared.repository.FollowedGalleryRepository
 import com.gallr.shared.repository.VisitRepository
 import kotlinx.coroutines.Dispatchers
@@ -543,7 +543,7 @@ private class RecordingRecommender : ExhibitionRecommender {
                     ExhibitionRecommendation(
                         exhibition = exhibition,
                         scoreBasisPoints = 10_000 - index,
-                        reasons = listOf(RecommendationReason.FEATURED),
+                        evidence = listOf(RecommendationEvidence.Featured),
                     )
                 }
         }

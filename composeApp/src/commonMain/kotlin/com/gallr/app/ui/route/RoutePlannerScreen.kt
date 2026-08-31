@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.gallr.app.ui.components.GallrEmptyState
 import com.gallr.app.ui.components.GallrErrorMessage
+import com.gallr.app.ui.discovery.recommendationContextLabel
 import com.gallr.app.ui.theme.GallrAccent
 import com.gallr.app.ui.theme.GallrSpacing
 import com.gallr.app.viewmodel.RouteUiState
@@ -467,12 +468,17 @@ private fun ReadyRouteContent(
         )
         route.stops.forEachIndexed { index, exhibition ->
             val leg = route.legs[index]
+            val whyThisLabel =
+                route.recommendationEvidenceByExhibitionId[exhibition.id]
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { recommendationContextLabel(it, language) }
             RouteStopCard(
                 index = index,
                 stopCount = route.stops.size,
                 exhibition = exhibition,
                 leg = leg,
                 language = language,
+                whyThisLabel = whyThisLabel,
                 onOpenMap = { onOpenStop(exhibition) },
                 onOpenDetail = { onExhibitionTap(exhibition, index) },
             )
@@ -487,10 +493,19 @@ private fun RouteStopCard(
     exhibition: Exhibition,
     leg: com.gallr.shared.map.EstimatedRouteLeg,
     language: AppLanguage,
+    whyThisLabel: String?,
     onOpenMap: () -> Unit,
     onOpenDetail: () -> Unit,
 ) {
-    val semanticsLabel = routeStopSemanticsLabel(index, stopCount, exhibition, leg, language)
+    val semanticsLabel =
+        routeStopSemanticsLabel(
+            stopIndex = index,
+            stopCount = stopCount,
+            exhibition = exhibition,
+            leg = leg,
+            language = language,
+            whyThisLabel = whyThisLabel,
+        )
     Column(
         modifier =
             Modifier
@@ -526,6 +541,14 @@ private fun RouteStopCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                whyThisLabel?.let { label ->
+                    Spacer(Modifier.height(GallrSpacing.xs))
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Spacer(Modifier.height(GallrSpacing.xs))
                 Text(
                     text = routeLegLabel(index, leg, language),

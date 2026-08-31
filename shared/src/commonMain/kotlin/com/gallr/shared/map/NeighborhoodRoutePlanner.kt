@@ -3,6 +3,7 @@ package com.gallr.shared.map
 import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.data.model.map.GeoPoint
 import com.gallr.shared.recommendation.ExhibitionRecommendation
+import com.gallr.shared.recommendation.RecommendationEvidence
 import kotlinx.datetime.LocalDate
 import kotlin.math.ceil
 import kotlin.math.roundToInt
@@ -51,6 +52,7 @@ data class ExhibitionRouteEstimate(
     val estimatedTravelMinutes: Int,
     val estimatedVisitMinutes: Int,
     val warnings: Set<RouteWarning>,
+    val recommendationEvidenceByExhibitionId: Map<String, List<RecommendationEvidence>> = emptyMap(),
 ) {
     val totalDistanceKm: Double get() = totalDistanceMeters / 1_000.0
     val estimatedTotalMinutes: Int get() = estimatedTravelMinutes + estimatedVisitMinutes
@@ -131,7 +133,11 @@ class NeighborhoodRoutePlanner(
         bookmarkedIds: Set<String>,
         request: RoutePlanningRequest,
     ): RoutePlanResult {
-        val recommendationScores = recommendations.associate { it.exhibition.id to it.scoreBasisPoints }
+        val recommendationsById = recommendations.associateBy { it.exhibition.id }
+        val recommendationScores =
+            recommendationsById.mapValues { (_, recommendation) ->
+                recommendation.scoreBasisPoints
+            }
         val cachedLegEstimator = CachingRouteLegEstimator(legEstimator)
         val candidates =
             exhibitions
@@ -201,6 +207,15 @@ class NeighborhoodRoutePlanner(
                             add(RouteWarning.APPROXIMATE_DISTANCE)
                         }
                         add(RouteWarning.HOURS_UNVERIFIED)
+                    },
+                recommendationEvidenceByExhibitionId =
+                    if (request.mode == RouteCurationMode.FOR_YOU) {
+                        ordered.associate { candidate ->
+                            candidate.exhibition.id to
+                                recommendationsById.getValue(candidate.exhibition.id).evidence.toList()
+                        }
+                    } else {
+                        emptyMap()
                     },
             ),
         )

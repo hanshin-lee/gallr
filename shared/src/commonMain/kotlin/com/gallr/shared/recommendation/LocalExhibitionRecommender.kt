@@ -1,6 +1,8 @@
 package com.gallr.shared.recommendation
 
+import com.gallr.shared.data.model.ArtTerm
 import com.gallr.shared.data.model.Exhibition
+import com.gallr.shared.data.model.ExhibitionArtist
 import com.gallr.shared.data.model.galleryKey
 import com.gallr.shared.data.model.map.GeoPoint
 import com.gallr.shared.map.geographicDistanceKm
@@ -57,12 +59,8 @@ private class LocalExhibitionRecommendationIndex(
         if (eligible.isEmpty()) return emptyList()
 
         val visitedIds = context.visits.mapTo(mutableSetOf(), { it.exhibitionId })
-        val savedProfile =
-            weightedProfile(
-                indexable.filter { it.id in context.bookmarkedExhibitionIds },
-                vectorsById,
-            )
-        val visitedProfile = weightedProfile(indexable.filter { it.id in visitedIds }, vectorsById)
+        val savedAnchors = indexable.filter { it.id in context.bookmarkedExhibitionIds }
+        val visitedAnchors = indexable.filter { it.id in visitedIds }
         val followedIds = context.followedGalleries.mapNotNullTo(mutableSetOf()) { it.galleryId }
         val followedKeys = context.followedGalleries.mapTo(mutableSetOf()) { it.galleryKey }
 
@@ -79,8 +77,28 @@ private class LocalExhibitionRecommendationIndex(
                         return@mapNotNull null
                     }
                     val vector = vectorsById.getValue(exhibition.id)
-                    val savedSimilarity = cosine(vector, savedProfile)
-                    val visitedSimilarity = cosine(vector, visitedProfile)
+                    val savedArtistMatch =
+                        exhibition.bestArtistMatch(savedAnchors, RecommendationSignalSource.SAVED)
+                    val visitedArtistMatch =
+                        exhibition.bestArtistMatch(visitedAnchors, RecommendationSignalSource.VISITED)
+                    val savedTermMatch =
+                        exhibition.bestArtTermMatch(savedAnchors, RecommendationSignalSource.SAVED)
+                    val visitedTermMatch =
+                        exhibition.bestArtTermMatch(visitedAnchors, RecommendationSignalSource.VISITED)
+                    val savedTextMatch =
+                        bestTextMatch(
+                            candidateVector = vector,
+                            anchors = savedAnchors,
+                            vectors = vectorsById,
+                            source = RecommendationSignalSource.SAVED,
+                        )
+                    val visitedTextMatch =
+                        bestTextMatch(
+                            candidateVector = vector,
+                            anchors = visitedAnchors,
+                            vectors = vectorsById,
+                            source = RecommendationSignalSource.VISITED,
+                        )
                     val followed =
                         exhibition.galleryId?.let(followedIds::contains) == true ||
                             galleryKey(exhibition.venueNameKo, exhibition.venueNameEn) in followedKeys
@@ -93,43 +111,44 @@ private class LocalExhibitionRecommendationIndex(
                     val editorScore = if (editorPick) EDITOR_WEIGHT else 0.0
                     val closingScore = if (closingSoon) CLOSING_WEIGHT else 0.0
                     val score =
-                        savedSimilarity * SAVED_SIMILARITY_WEIGHT +
-                            visitedSimilarity * VISITED_SIMILARITY_WEIGHT +
+                        (savedArtistMatch?.strength ?: 0.0) * SAVED_ARTIST_WEIGHT +
+                            (visitedArtistMatch?.strength ?: 0.0) * VISITED_ARTIST_WEIGHT +
+                            (savedTermMatch?.strength ?: 0.0) * SAVED_ART_TERM_WEIGHT +
+                            (visitedTermMatch?.strength ?: 0.0) * VISITED_ART_TERM_WEIGHT +
+                            (savedTextMatch?.strength ?: 0.0) * SAVED_TEXT_WEIGHT +
+                            (visitedTextMatch?.strength ?: 0.0) * VISITED_TEXT_WEIGHT +
                             followedScore +
                             proximity * PROXIMITY_WEIGHT +
                             featuredScore +
                             editorScore +
                             closingScore
-                    val reasons =
+                    val evidence =
                         buildList {
-                            if (savedSimilarity > SIMILARITY_REASON_THRESHOLD) {
-                                add(
-                                    RecommendationReason.SIMILAR_TO_SAVED to
-                                        savedSimilarity * SAVED_SIMILARITY_WEIGHT,
-                                )
-                            }
-                            if (visitedSimilarity > SIMILARITY_REASON_THRESHOLD) {
-                                add(
-                                    RecommendationReason.SIMILAR_TO_VISITED to
-                                        visitedSimilarity * VISITED_SIMILARITY_WEIGHT,
-                                )
-                            }
-                            if (followed) add(RecommendationReason.FOLLOWED_GALLERY to followedScore)
+                            savedArtistMatch?.let { add(it.scored(SAVED_ARTIST_WEIGHT)) }
+                            visitedArtistMatch?.let { add(it.scored(VISITED_ARTIST_WEIGHT)) }
+                            savedTermMatch?.let { add(it.scored(SAVED_ART_TERM_WEIGHT)) }
+                            visitedTermMatch?.let { add(it.scored(VISITED_ART_TERM_WEIGHT)) }
+                            savedTextMatch?.let { add(it.scored(SAVED_TEXT_WEIGHT)) }
+                            visitedTextMatch?.let { add(it.scored(VISITED_TEXT_WEIGHT)) }
+                            if (followed) add(ScoredEvidence(RecommendationEvidence.FollowedGallery, followedScore))
                             if (proximity >= NEARBY_REASON_THRESHOLD) {
-                                add(RecommendationReason.NEARBY to proximity * PROXIMITY_WEIGHT)
+                                add(ScoredEvidence(RecommendationEvidence.Nearby, proximity * PROXIMITY_WEIGHT))
                             }
-                            if (exhibition.isFeatured) add(RecommendationReason.FEATURED to featuredScore)
-                            if (editorPick) add(RecommendationReason.EDITOR_CURATED to editorScore)
-                            if (closingSoon) add(RecommendationReason.CLOSING_SOON to closingScore)
-                        }.sortedWith(
-                            compareByDescending<Pair<RecommendationReason, Double>> { it.second }
-                                .thenBy { it.first.ordinal },
-                        ).take(MAX_REASONS)
-                            .map(Pair<RecommendationReason, Double>::first)
+                            if (exhibition.isFeatured) {
+                                add(ScoredEvidence(RecommendationEvidence.Featured, featuredScore))
+                            }
+                            if (editorPick) {
+                                add(ScoredEvidence(RecommendationEvidence.EditorCurated, editorScore))
+                            }
+                            if (closingSoon) {
+                                add(ScoredEvidence(RecommendationEvidence.ClosingSoon, closingScore))
+                            }
+                        }.strongestDistinctEvidence()
+                    if (evidence.isEmpty()) return@mapNotNull null
                     ExhibitionRecommendation(
                         exhibition = exhibition,
                         scoreBasisPoints = (score / MAX_SCORE * 10_000).roundToInt().coerceIn(0, 10_000),
-                        reasons = reasons,
+                        evidence = evidence,
                     )
                 }.sortedWith(
                     compareByDescending<ExhibitionRecommendation> { it.scoreBasisPoints }
@@ -196,12 +215,6 @@ private fun Exhibition.rawFeatures(): Map<Int, Int> {
         listOf(
             nameKo,
             nameEn,
-            venueNameKo,
-            venueNameEn,
-            cityKo,
-            cityEn,
-            regionKo,
-            regionEn,
             descriptionKo,
             descriptionEn,
             creditsKo,
@@ -216,32 +229,130 @@ private fun Exhibition.rawFeatures(): Map<Int, Int> {
             features[feature] = (features[feature] ?: 0) + 1
         }
     }
-    listOfNotNull(
-        galleryId?.let { "gallery:$it" },
-        eventId?.let { "event:$it" },
-        editorId?.let { "editor:$it" },
-        "region:${regionEn.ifBlank { regionKo }.trim().lowercase()}",
-    ).forEach { label ->
-        val feature = stableFeatureHash(label.canonicalSearchCodePoints())
-        features[feature] = (features[feature] ?: 0) + 2
-    }
     return features
 }
 
-private fun weightedProfile(
-    exhibitions: List<Exhibition>,
-    vectors: Map<String, Map<Int, Double>>,
-): Map<Int, Double> {
-    if (exhibitions.isEmpty()) return emptyMap()
-    val profile = mutableMapOf<Int, Double>()
-    exhibitions.forEach { exhibition ->
-        vectors.getValue(exhibition.id).forEach { (feature, weight) ->
-            profile[feature] = (profile[feature] ?: 0.0) + weight
-        }
+private data class EvidenceMatch(
+    val evidence: RecommendationEvidence,
+    val strength: Double,
+) {
+    init {
+        require(strength in 0.0..1.0) { "evidence strength must be between zero and one" }
     }
-    val norm = sqrt(profile.values.sumOf { it * it })
-    return if (norm == 0.0) emptyMap() else profile.mapValues { it.value / norm }
+
+    fun scored(weight: Double): ScoredEvidence = ScoredEvidence(evidence, strength * weight)
 }
+
+private data class ScoredEvidence(
+    val evidence: RecommendationEvidence,
+    val contribution: Double,
+)
+
+private fun Exhibition.bestArtistMatch(
+    anchors: List<Exhibition>,
+    source: RecommendationSignalSource,
+): EvidenceMatch? {
+    if (artists.isEmpty()) return null
+    val candidateArtistIds = artists.mapTo(mutableSetOf(), ExhibitionArtist::id)
+    return anchors
+        .mapNotNull { anchor ->
+            val matchedIds = anchor.artists.mapTo(mutableSetOf(), ExhibitionArtist::id).intersect(candidateArtistIds)
+            val matchedArtist =
+                artists.filter { it.id in matchedIds }.minByOrNull(ExhibitionArtist::id)
+                    ?: return@mapNotNull null
+            EvidenceMatch(
+                evidence =
+                    RecommendationEvidence.ArtistMatch(
+                        source = source,
+                        anchor = RecommendationEvidenceAnchor.from(anchor),
+                        artist = matchedArtist,
+                    ),
+                strength = matchedIds.size.toDouble() / artists.size,
+            )
+        }.bestEvidenceMatch()
+}
+
+private fun Exhibition.bestArtTermMatch(
+    anchors: List<Exhibition>,
+    source: RecommendationSignalSource,
+): EvidenceMatch? {
+    if (artTerms.isEmpty()) return null
+    val candidateTermIds = artTerms.mapTo(mutableSetOf(), ArtTerm::id)
+    return anchors
+        .mapNotNull { anchor ->
+            val matchedIds = anchor.artTerms.mapTo(mutableSetOf(), ArtTerm::id).intersect(candidateTermIds)
+            val matchedTerm =
+                artTerms.filter { it.id in matchedIds }.minByOrNull(ArtTerm::id)
+                    ?: return@mapNotNull null
+            EvidenceMatch(
+                evidence =
+                    RecommendationEvidence.ArtTermMatch(
+                        source = source,
+                        anchor = RecommendationEvidenceAnchor.from(anchor),
+                        term = matchedTerm,
+                    ),
+                strength = matchedIds.size.toDouble() / artTerms.size,
+            )
+        }.bestEvidenceMatch()
+}
+
+private fun bestTextMatch(
+    candidateVector: Map<Int, Double>,
+    anchors: List<Exhibition>,
+    vectors: Map<String, Map<Int, Double>>,
+    source: RecommendationSignalSource,
+): EvidenceMatch? =
+    anchors
+        .mapNotNull { anchor ->
+            val similarity = cosine(candidateVector, vectors.getValue(anchor.id))
+            if (similarity <= SIMILARITY_REASON_THRESHOLD) return@mapNotNull null
+            EvidenceMatch(
+                evidence =
+                    RecommendationEvidence.TextSimilarity(
+                        source = source,
+                        anchor = RecommendationEvidenceAnchor.from(anchor),
+                    ),
+                strength = similarity.coerceIn(0.0, 1.0),
+            )
+        }.bestEvidenceMatch()
+
+private fun List<EvidenceMatch>.bestEvidenceMatch(): EvidenceMatch? =
+    minWithOrNull(
+        compareByDescending<EvidenceMatch> { it.strength }
+            .thenBy { it.evidence.stableSortKey() },
+    )
+
+private fun List<ScoredEvidence>.strongestDistinctEvidence(): List<RecommendationEvidence> =
+    sortedWith(
+        compareByDescending<ScoredEvidence> { it.contribution }
+            .thenBy { it.evidence.stableSortKey() },
+    ).distinctBy { it.evidence.deduplicationKey() }
+        .take(MAX_EVIDENCE)
+        .map(ScoredEvidence::evidence)
+
+private fun RecommendationEvidence.deduplicationKey(): String =
+    when (this) {
+        is RecommendationEvidence.ArtistMatch -> "artist:${artist.id}"
+        is RecommendationEvidence.ArtTermMatch -> "term:${term.id}"
+        is RecommendationEvidence.TextSimilarity -> "text:${source.ordinal}"
+        RecommendationEvidence.FollowedGallery -> "followed_gallery"
+        RecommendationEvidence.Nearby -> "nearby"
+        RecommendationEvidence.Featured -> "featured"
+        RecommendationEvidence.EditorCurated -> "editor_curated"
+        RecommendationEvidence.ClosingSoon -> "closing_soon"
+    }
+
+private fun RecommendationEvidence.stableSortKey(): String =
+    when (this) {
+        is RecommendationEvidence.ArtistMatch -> "0:${source.ordinal}:${artist.id}:${anchor.exhibitionId}"
+        is RecommendationEvidence.ArtTermMatch -> "1:${source.ordinal}:${term.id}:${anchor.exhibitionId}"
+        is RecommendationEvidence.TextSimilarity -> "2:${source.ordinal}:${anchor.exhibitionId}"
+        RecommendationEvidence.FollowedGallery -> "3"
+        RecommendationEvidence.Nearby -> "4"
+        RecommendationEvidence.Featured -> "5"
+        RecommendationEvidence.EditorCurated -> "6"
+        RecommendationEvidence.ClosingSoon -> "7"
+    }
 
 private fun cosine(
     first: Map<Int, Double>,
@@ -266,23 +377,29 @@ private fun Exhibition.galleryIdentity(): String =
     galleryId ?: "${galleryKey(venueNameKo, venueNameEn)}:$latitude:$longitude"
 
 private const val UPCOMING_VISIBILITY_DAYS = 14
-private const val FEATURE_SCHEMA_VERSION = 1
+private const val FEATURE_SCHEMA_VERSION = 2
 private const val MIN_NGRAM_SIZE = 2
 private const val MAX_NGRAM_SIZE = 3
-private const val SAVED_SIMILARITY_WEIGHT = 0.45
-private const val VISITED_SIMILARITY_WEIGHT = 0.30
+private const val SAVED_ARTIST_WEIGHT = 0.50
+private const val VISITED_ARTIST_WEIGHT = 0.35
+private const val SAVED_ART_TERM_WEIGHT = 0.35
+private const val VISITED_ART_TERM_WEIGHT = 0.25
+private const val SAVED_TEXT_WEIGHT = 0.20
+private const val VISITED_TEXT_WEIGHT = 0.12
 private const val FOLLOWED_GALLERY_WEIGHT = 0.18
 private const val PROXIMITY_WEIGHT = 0.20
 private const val FEATURED_WEIGHT = 0.08
 private const val EDITOR_WEIGHT = 0.05
 private const val CLOSING_WEIGHT = 0.05
 private const val MAX_SCORE =
-    SAVED_SIMILARITY_WEIGHT + VISITED_SIMILARITY_WEIGHT + FOLLOWED_GALLERY_WEIGHT +
-        PROXIMITY_WEIGHT + FEATURED_WEIGHT + EDITOR_WEIGHT + CLOSING_WEIGHT
+    SAVED_ARTIST_WEIGHT + VISITED_ARTIST_WEIGHT + SAVED_ART_TERM_WEIGHT +
+        VISITED_ART_TERM_WEIGHT + SAVED_TEXT_WEIGHT + VISITED_TEXT_WEIGHT +
+        FOLLOWED_GALLERY_WEIGHT + PROXIMITY_WEIGHT + FEATURED_WEIGHT + EDITOR_WEIGHT +
+        CLOSING_WEIGHT
 private const val PROXIMITY_RANGE_KM = 5.0
 private const val SIMILARITY_REASON_THRESHOLD = 0.05
 private const val NEARBY_REASON_THRESHOLD = 0.50
-private const val MAX_REASONS = 2
+private const val MAX_EVIDENCE = 2
 private const val MAX_PER_GALLERY = 2
 private const val MAX_PER_CONTENT_CLUSTER = 2
 private const val NEAR_DUPLICATE_JACCARD = 0.80

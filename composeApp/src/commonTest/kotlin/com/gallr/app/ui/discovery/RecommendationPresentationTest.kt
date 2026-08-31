@@ -1,9 +1,14 @@
 package com.gallr.app.ui.discovery
 
 import com.gallr.shared.data.model.AppLanguage
+import com.gallr.shared.data.model.ArtTerm
+import com.gallr.shared.data.model.ArtTermCategory
 import com.gallr.shared.data.model.Exhibition
+import com.gallr.shared.data.model.ExhibitionArtist
 import com.gallr.shared.recommendation.ExhibitionRecommendation
-import com.gallr.shared.recommendation.RecommendationReason
+import com.gallr.shared.recommendation.RecommendationEvidence
+import com.gallr.shared.recommendation.RecommendationEvidenceAnchor
+import com.gallr.shared.recommendation.RecommendationSignalSource
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -46,18 +51,31 @@ class RecommendationPresentationTest {
     }
 
     @Test
-    fun `presentation caps organic cards and localized reasons without exposing scores`() {
+    fun `presentation caps organic cards and always exposes specific evidence without scores`() {
+        val anchor = exhibition("saved").let(RecommendationEvidenceAnchor::from)
         val recommendations =
             (0 until 8).map { index ->
                 ExhibitionRecommendation(
                     exhibition = exhibition("exhibition-$index"),
                     scoreBasisPoints = 9_999 - index,
-                    reasons =
+                    evidence =
                         listOf(
-                            RecommendationReason.SIMILAR_TO_SAVED,
-                            RecommendationReason.SIMILAR_TO_SAVED,
-                            RecommendationReason.FOLLOWED_GALLERY,
-                            RecommendationReason.CLOSING_SOON,
+                            RecommendationEvidence.ArtistMatch(
+                                source = RecommendationSignalSource.SAVED,
+                                anchor = anchor,
+                                artist = ExhibitionArtist("artist-kimsooja", "김수자", "Kimsooja"),
+                            ),
+                            RecommendationEvidence.ArtTermMatch(
+                                source = RecommendationSignalSource.SAVED,
+                                anchor = anchor,
+                                term =
+                                    ArtTerm(
+                                        id = "mood:quiet-meditative",
+                                        category = ArtTermCategory.MOOD,
+                                        nameKo = "고요함 · 명상적",
+                                        nameEn = "Quiet · meditative",
+                                    ),
+                            ),
                         ),
                 )
             }
@@ -67,34 +85,62 @@ class RecommendationPresentationTest {
         assertEquals(6, presented.size)
         assertEquals((0 until 6).map { "exhibition-$it" }, presented.map { it.exhibition.id })
         assertEquals(
-            listOf("SIMILAR TO YOUR SAVES", "FROM A GALLERY YOU FOLLOW"),
-            presented.first().reasonLabels,
+            "WHY THIS · BECAUSE YOU SAVED “Exhibition saved” · SAME ARTIST: KIMSOOJA · " +
+                "BECAUSE YOU SAVED “Exhibition saved” · SHARED MOOD: QUIET · MEDITATIVE",
+            presented.first().contextLabel,
         )
         assertEquals(
             RecommendationCardPresentation(
                 exhibition = recommendations.first().exhibition,
-                reasonLabels = listOf("SIMILAR TO YOUR SAVES", "FROM A GALLERY YOU FOLLOW"),
+                contextLabel = presented.first().contextLabel,
             ),
             presented.first(),
         )
     }
 
     @Test
-    fun `existing reason order is preserved in both languages`() {
-        val reasons =
-            listOf(
-                RecommendationReason.NEARBY,
-                RecommendationReason.FEATURED,
-                RecommendationReason.EDITOR_CURATED,
+    fun `artist and tone evidence is specific deterministic and bilingual`() {
+        val anchor = exhibition("saved").let(RecommendationEvidenceAnchor::from)
+        val artist = ExhibitionArtist("artist-kimsooja", "김수자", "Kimsooja")
+        val tone =
+            ArtTerm(
+                id = "mood:quiet-meditative",
+                category = ArtTermCategory.MOOD,
+                nameKo = "고요함 · 명상적",
+                nameEn = "Quiet · meditative",
             )
 
         assertEquals(
-            listOf("가까운 전시", "추천 전시"),
-            localizedRecommendationReasons(reasons, AppLanguage.KO),
+            "저장한 “전시 saved”와 같은 작가: 김수자",
+            localizedRecommendationEvidence(
+                RecommendationEvidence.ArtistMatch(RecommendationSignalSource.SAVED, anchor, artist),
+                AppLanguage.KO,
+            ),
         )
         assertEquals(
-            listOf("NEARBY", "FEATURED"),
-            localizedRecommendationReasons(reasons, AppLanguage.EN),
+            "BECAUSE YOU VISITED “Exhibition saved” · SHARED MOOD: QUIET · MEDITATIVE",
+            localizedRecommendationEvidence(
+                RecommendationEvidence.ArtTermMatch(RecommendationSignalSource.VISITED, anchor, tone),
+                AppLanguage.EN,
+            ),
+        )
+    }
+
+    @Test
+    fun `generic evidence remains truthful and bilingual`() {
+        assertEquals(
+            "WHY THIS · FROM A GALLERY YOU FOLLOW · CLOSING SOON",
+            recommendationContextLabel(
+                evidence = listOf(RecommendationEvidence.FollowedGallery, RecommendationEvidence.ClosingSoon),
+                language = AppLanguage.EN,
+            ),
+        )
+        assertEquals(
+            "추천 이유 · 에디터 큐레이션",
+            recommendationContextLabel(
+                evidence = listOf(RecommendationEvidence.EditorCurated),
+                language = AppLanguage.KO,
+            ),
         )
     }
 
