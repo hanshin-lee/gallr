@@ -174,6 +174,39 @@ values
   ('mood:monumental', 'mood', '기념비적', 'Monumental', 5)
 on conflict (id) do nothing;
 
+create or replace function
+  content_private.guard_art_taxonomy_term_semantics()
+returns trigger
+language plpgsql
+volatile
+security invoker
+set search_path = ''
+as $function$
+begin
+  if row(old.id, old.category, old.name_ko, old.name_en)
+     is distinct from
+     row(new.id, new.category, new.name_ko, new.name_en) then
+    raise exception using
+      errcode = '23514',
+      message = 'art_taxonomy_term_semantics_immutable';
+  end if;
+  return new;
+end;
+$function$;
+
+revoke all on function
+  content_private.guard_art_taxonomy_term_semantics()
+from public, anon, authenticated, service_role;
+
+drop trigger if exists art_taxonomy_terms_guard_semantics
+  on content.art_taxonomy_terms;
+create trigger art_taxonomy_terms_guard_semantics
+  before update of id, category, name_ko, name_en
+  on content.art_taxonomy_terms
+  for each row
+  execute function
+    content_private.guard_art_taxonomy_term_semantics();
+
 drop trigger if exists artists_set_updated_at on content.artists;
 create trigger artists_set_updated_at
   before update on content.artists
@@ -622,6 +655,10 @@ declare
   v_artist_id uuid;
   v_name_ko text;
   v_name_en text;
+  v_term record;
+  v_requested_term_count integer;
+  v_locked_term_count integer;
+  v_inserted_term_count integer;
   v_actor_id uuid := (select auth.uid());
 begin
   if not v_active then
@@ -688,6 +725,30 @@ begin
       nullif(current_setting('content.art_metadata_term_ids', true), '')::jsonb,
       '[]'::jsonb
     );
+    v_requested_term_count := jsonb_array_length(v_terms);
+    v_locked_term_count := 0;
+
+    -- Validation happens before the save acquires the exhibition revision
+    -- lock. Re-read and lock every requested term here, in stable ID order,
+    -- so retirement cannot race between validation and link replacement.
+    for v_term in
+      select term.id
+      from jsonb_array_elements_text(v_terms) as requested(id)
+      join content.art_taxonomy_terms as term
+        on term.id = requested.id
+       and term.active
+      order by term.id
+      for share of term
+    loop
+      v_locked_term_count := v_locked_term_count + 1;
+    end loop;
+
+    if v_locked_term_count <> v_requested_term_count then
+      raise exception using
+        errcode = '22023',
+        message = 'art_metadata_term_unknown';
+    end if;
+
     delete from content.exhibition_version_terms
     where version_id = new.id;
 
@@ -708,6 +769,13 @@ begin
       on term.id = requested.id
      and term.active
     order by requested.ordinality;
+
+    get diagnostics v_inserted_term_count = row_count;
+    if v_inserted_term_count <> v_requested_term_count then
+      raise exception using
+        errcode = '22023',
+        message = 'art_metadata_term_unknown';
+    end if;
   end if;
 
   return new;

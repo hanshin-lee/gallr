@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(53);
+select plan(60);
 
 select has_type(
   'content',
@@ -26,6 +26,12 @@ select has_table(
   'content',
   'exhibition_version_terms',
   'controlled terms are attached to exhibition versions'
+);
+select has_trigger(
+  'content',
+  'art_taxonomy_terms',
+  'art_taxonomy_terms_guard_semantics',
+  'controlled taxonomy semantics have an immutable-row trigger'
 );
 
 select has_column(
@@ -595,6 +601,57 @@ select is(
   'anonymous readers receive the evidence labels without private table access'
 );
 reset role;
+
+select throws_ok(
+  $$update content.art_taxonomy_terms
+    set id = 'medium:painting-renamed'
+    where id = 'medium:painting'$$,
+  '23514',
+  'art_taxonomy_term_semantics_immutable',
+  'a controlled taxonomy identifier cannot be reinterpreted'
+);
+select throws_ok(
+  $$update content.art_taxonomy_terms
+    set category = 'style'
+    where id = 'medium:painting'$$,
+  '23514',
+  'art_taxonomy_term_semantics_immutable',
+  'a controlled taxonomy category cannot be reinterpreted'
+);
+select throws_ok(
+  $$update content.art_taxonomy_terms
+    set name_ko = '변경된 회화'
+    where id = 'medium:painting'$$,
+  '23514',
+  'art_taxonomy_term_semantics_immutable',
+  'a controlled taxonomy Korean label is immutable'
+);
+select throws_ok(
+  $$update content.art_taxonomy_terms
+    set name_en = 'Changed painting'
+    where id = 'medium:painting'$$,
+  '23514',
+  'art_taxonomy_term_semantics_immutable',
+  'a controlled taxonomy English label is immutable'
+);
+select lives_ok(
+  $$update content.art_taxonomy_terms
+    set active = false
+    where id = 'medium:painting'$$,
+  'taxonomy retirement remains an explicit mutable editorial operation'
+);
+update content.art_taxonomy_terms
+set active = true
+where id = 'medium:painting';
+select is(
+  (
+    select art_terms -> 0 ->> 'name_en'
+    from public.exhibition_catalog_v2
+    where id = 'art-metadata-published-fixture'
+  ),
+  'Painting',
+  'rejected taxonomy mutations and retirement do not rewrite published labels'
+);
 
 set local role authenticated;
 select set_config(
