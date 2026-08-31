@@ -688,6 +688,7 @@ export function ExhibitionInspector({
 
         {section === "Art" && (
           <ExhibitionArtMetadataEditor
+            key={`${exhibition.id}:${exhibition.workingVersionId}`}
             metadata={exhibition.artMetadata}
             terms={lookups?.artTerms ?? null}
             disabled={contentReadOnly}

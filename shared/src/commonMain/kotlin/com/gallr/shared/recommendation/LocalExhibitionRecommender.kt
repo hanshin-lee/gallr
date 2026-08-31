@@ -29,12 +29,23 @@ class LocalExhibitionRecommender : ExhibitionRecommender {
 
         val rawFeaturesById = indexable.associate { it.id to it.rawFeatures() }
         val vectorizer = LocalContentVectorizer(rawFeaturesById.values)
-        val vectorsById = rawFeaturesById.mapValues { (_, rawFeatures) -> vectorizer.vector(rawFeatures) }
-        val diversityFeaturesById = indexable.associate { it.id to it.diversityFeatures() }
+        val featuresById =
+            indexable.associate { exhibition ->
+                exhibition.id to
+                    PreparedExhibitionFeatures(
+                        exhibition = exhibition,
+                        vector = vectorizer.vector(rawFeaturesById.getValue(exhibition.id)),
+                        diversityFeatures = exhibition.diversityFeatures(),
+                        artistIds = exhibition.artists.mapTo(mutableSetOf(), ExhibitionArtist::id),
+                        artistsById = exhibition.artists.associateBy(ExhibitionArtist::id),
+                        termIds = exhibition.artTerms.mapTo(mutableSetOf(), ArtTerm::id),
+                        termsById = exhibition.artTerms.associateBy(ArtTerm::id),
+                        evidenceAnchor = RecommendationEvidenceAnchor.from(exhibition),
+                    )
+            }
         return LocalExhibitionRecommendationIndex(
             key = key,
-            vectorsById = vectorsById,
-            diversityFeaturesById = diversityFeaturesById,
+            featuresById = featuresById,
         )
     }
 }
@@ -44,31 +55,43 @@ private data class RecommendationIndexKey(
     val exhibitionsById: List<Exhibition>,
 )
 
+private data class PreparedExhibitionFeatures(
+    val exhibition: Exhibition,
+    val vector: Map<Int, Double>,
+    val diversityFeatures: Set<Int>,
+    val artistIds: Set<String>,
+    val artistsById: Map<String, ExhibitionArtist>,
+    val termIds: Set<String>,
+    val termsById: Map<String, ArtTerm>,
+    val evidenceAnchor: RecommendationEvidenceAnchor,
+)
+
 private class LocalExhibitionRecommendationIndex(
     val key: RecommendationIndexKey,
-    private val vectorsById: Map<String, Map<Int, Double>>,
-    private val diversityFeaturesById: Map<String, Set<Int>>,
+    private val featuresById: Map<String, PreparedExhibitionFeatures>,
 ) : ExhibitionRecommendationIndex {
     /** Returns deterministic, diverse recommendations without persisting a taste vector. */
     override fun recommend(context: RecommendationContext): List<ExhibitionRecommendation> {
         if (context.limit == 0) return emptyList()
-        val indexable = key.exhibitionsById
+        val indexable = key.exhibitionsById.map { featuresById.getValue(it.id) }
         val eligible =
             indexable
-                .filter { it.isLocallyDiscoverable(context.today) }
+                .filter { it.exhibition.isLocallyDiscoverable(context.today) }
         if (eligible.isEmpty()) return emptyList()
 
         val visitedIds = context.visits.mapTo(mutableSetOf(), { it.exhibitionId })
-        val savedAnchors = indexable.filter { it.id in context.bookmarkedExhibitionIds }
-        val visitedAnchors = indexable.filter { it.id in visitedIds }
+        val savedAnchors = indexable.filter { it.exhibition.id in context.bookmarkedExhibitionIds }
+        val visitedAnchors = indexable.filter { it.exhibition.id in visitedIds }
         val followedIds = context.followedGalleries.mapNotNullTo(mutableSetOf()) { it.galleryId }
         val followedKeys = context.followedGalleries.mapTo(mutableSetOf()) { it.galleryKey }
 
         val ranked =
             eligible
                 .asSequence()
-                .filterNot { it.id in context.bookmarkedExhibitionIds || it.id in visitedIds }
-                .mapNotNull { exhibition ->
+                .filterNot {
+                    it.exhibition.id in context.bookmarkedExhibitionIds || it.exhibition.id in visitedIds
+                }.mapNotNull { candidate ->
+                    val exhibition = candidate.exhibition
                     val distanceKm = context.origin?.let { origin -> exhibition.distanceFrom(origin) }
                     if (
                         context.maxDistanceKm != null &&
@@ -76,27 +99,24 @@ private class LocalExhibitionRecommendationIndex(
                     ) {
                         return@mapNotNull null
                     }
-                    val vector = vectorsById.getValue(exhibition.id)
                     val savedArtistMatch =
-                        exhibition.bestArtistMatch(savedAnchors, RecommendationSignalSource.SAVED)
+                        candidate.bestArtistMatch(savedAnchors, RecommendationSignalSource.SAVED)
                     val visitedArtistMatch =
-                        exhibition.bestArtistMatch(visitedAnchors, RecommendationSignalSource.VISITED)
+                        candidate.bestArtistMatch(visitedAnchors, RecommendationSignalSource.VISITED)
                     val savedTermMatch =
-                        exhibition.bestArtTermMatch(savedAnchors, RecommendationSignalSource.SAVED)
+                        candidate.bestArtTermMatch(savedAnchors, RecommendationSignalSource.SAVED)
                     val visitedTermMatch =
-                        exhibition.bestArtTermMatch(visitedAnchors, RecommendationSignalSource.VISITED)
+                        candidate.bestArtTermMatch(visitedAnchors, RecommendationSignalSource.VISITED)
                     val savedTextMatch =
                         bestTextMatch(
-                            candidateVector = vector,
+                            candidateVector = candidate.vector,
                             anchors = savedAnchors,
-                            vectors = vectorsById,
                             source = RecommendationSignalSource.SAVED,
                         )
                     val visitedTextMatch =
                         bestTextMatch(
-                            candidateVector = vector,
+                            candidateVector = candidate.vector,
                             anchors = visitedAnchors,
-                            vectors = vectorsById,
                             source = RecommendationSignalSource.VISITED,
                         )
                     val followed =
@@ -166,10 +186,13 @@ private class LocalExhibitionRecommendationIndex(
         for (recommendation in ranked) {
             val gallery = recommendation.exhibition.galleryIdentity()
             if ((galleryCounts[gallery] ?: 0) >= MAX_PER_GALLERY) continue
-            val candidateFeatures = diversityFeaturesById.getValue(recommendation.exhibition.id)
+            val candidateFeatures = featuresById.getValue(recommendation.exhibition.id).diversityFeatures
             val nearDuplicates =
                 result.filter { selected ->
-                    jaccard(candidateFeatures, diversityFeaturesById.getValue(selected.exhibition.id)) >=
+                    jaccard(
+                        candidateFeatures,
+                        featuresById.getValue(selected.exhibition.id).diversityFeatures,
+                    ) >=
                         NEAR_DUPLICATE_JACCARD
                 }
             if (
@@ -248,87 +271,180 @@ private data class ScoredEvidence(
     val contribution: Double,
 )
 
-private fun Exhibition.bestArtistMatch(
-    anchors: List<Exhibition>,
+private fun PreparedExhibitionFeatures.bestArtistMatch(
+    anchors: List<PreparedExhibitionFeatures>,
     source: RecommendationSignalSource,
 ): EvidenceMatch? {
-    if (artists.isEmpty()) return null
-    val candidateArtistIds = artists.mapTo(mutableSetOf(), ExhibitionArtist::id)
-    return anchors
-        .mapNotNull { anchor ->
-            val matchedIds = anchor.artists.mapTo(mutableSetOf(), ExhibitionArtist::id).intersect(candidateArtistIds)
-            val matchedArtist =
-                artists.filter { it.id in matchedIds }.minByOrNull(ExhibitionArtist::id)
-                    ?: return@mapNotNull null
-            EvidenceMatch(
-                evidence =
-                    RecommendationEvidence.ArtistMatch(
-                        source = source,
-                        anchor = RecommendationEvidenceAnchor.from(anchor),
-                        artist = matchedArtist,
-                    ),
-                strength = matchedIds.size.toDouble() / artists.size,
+    if (artistIds.isEmpty()) return null
+    var bestAnchor: PreparedExhibitionFeatures? = null
+    var bestArtistId: String? = null
+    var bestStrength = 0.0
+    for (anchor in anchors) {
+        val intersectionSize = sharedIdentifierCount(artistIds, anchor.artistIds)
+        if (intersectionSize == 0) continue
+        val matchedId = firstSharedIdentifier(artistIds, anchor.artistIds) ?: continue
+        val strength = symmetricOverlapStrength(artistIds, anchor.artistIds, intersectionSize)
+        if (
+            strength > bestStrength ||
+            (
+                strength == bestStrength &&
+                    isStableMatchEarlier(
+                        anchorId = anchor.exhibition.id,
+                        matchedId = matchedId,
+                        currentAnchorId = bestAnchor?.exhibition?.id,
+                        currentMatchedId = bestArtistId,
+                    )
             )
-        }.bestEvidenceMatch()
+        ) {
+            bestAnchor = anchor
+            bestArtistId = matchedId
+            bestStrength = strength
+        }
+    }
+    val anchor = bestAnchor ?: return null
+    val artistId = bestArtistId ?: return null
+    return EvidenceMatch(
+        evidence =
+            RecommendationEvidence.ArtistMatch(
+                source = source,
+                anchor = anchor.evidenceAnchor,
+                artist = artistsById.getValue(artistId),
+            ),
+        strength = bestStrength,
+    )
 }
 
-private fun Exhibition.bestArtTermMatch(
-    anchors: List<Exhibition>,
+private fun PreparedExhibitionFeatures.bestArtTermMatch(
+    anchors: List<PreparedExhibitionFeatures>,
     source: RecommendationSignalSource,
 ): EvidenceMatch? {
-    if (artTerms.isEmpty()) return null
-    val candidateTermIds = artTerms.mapTo(mutableSetOf(), ArtTerm::id)
-    return anchors
-        .mapNotNull { anchor ->
-            val matchedIds = anchor.artTerms.mapTo(mutableSetOf(), ArtTerm::id).intersect(candidateTermIds)
-            val matchedTerm =
-                artTerms.filter { it.id in matchedIds }.minByOrNull(ArtTerm::id)
-                    ?: return@mapNotNull null
-            EvidenceMatch(
-                evidence =
-                    RecommendationEvidence.ArtTermMatch(
-                        source = source,
-                        anchor = RecommendationEvidenceAnchor.from(anchor),
-                        term = matchedTerm,
-                    ),
-                strength = matchedIds.size.toDouble() / artTerms.size,
+    if (termIds.isEmpty()) return null
+    var bestAnchor: PreparedExhibitionFeatures? = null
+    var bestTermId: String? = null
+    var bestStrength = 0.0
+    for (anchor in anchors) {
+        val intersectionSize = sharedIdentifierCount(termIds, anchor.termIds)
+        if (intersectionSize == 0) continue
+        val matchedId = firstSharedIdentifier(termIds, anchor.termIds) ?: continue
+        val strength = symmetricOverlapStrength(termIds, anchor.termIds, intersectionSize)
+        if (
+            strength > bestStrength ||
+            (
+                strength == bestStrength &&
+                    isStableMatchEarlier(
+                        anchorId = anchor.exhibition.id,
+                        matchedId = matchedId,
+                        currentAnchorId = bestAnchor?.exhibition?.id,
+                        currentMatchedId = bestTermId,
+                    )
             )
-        }.bestEvidenceMatch()
+        ) {
+            bestAnchor = anchor
+            bestTermId = matchedId
+            bestStrength = strength
+        }
+    }
+    val anchor = bestAnchor ?: return null
+    val termId = bestTermId ?: return null
+    return EvidenceMatch(
+        evidence =
+            RecommendationEvidence.ArtTermMatch(
+                source = source,
+                anchor = anchor.evidenceAnchor,
+                term = termsById.getValue(termId),
+            ),
+        strength = bestStrength,
+    )
 }
 
 private fun bestTextMatch(
     candidateVector: Map<Int, Double>,
-    anchors: List<Exhibition>,
-    vectors: Map<String, Map<Int, Double>>,
+    anchors: List<PreparedExhibitionFeatures>,
     source: RecommendationSignalSource,
-): EvidenceMatch? =
-    anchors
-        .mapNotNull { anchor ->
-            val similarity = cosine(candidateVector, vectors.getValue(anchor.id))
-            if (similarity <= SIMILARITY_REASON_THRESHOLD) return@mapNotNull null
-            EvidenceMatch(
-                evidence =
-                    RecommendationEvidence.TextSimilarity(
-                        source = source,
-                        anchor = RecommendationEvidenceAnchor.from(anchor),
-                    ),
-                strength = similarity.coerceIn(0.0, 1.0),
+): EvidenceMatch? {
+    var bestAnchor: PreparedExhibitionFeatures? = null
+    var bestStrength = 0.0
+    for (anchor in anchors) {
+        val similarity = cosine(candidateVector, anchor.vector).coerceIn(0.0, 1.0)
+        if (
+            similarity > SIMILARITY_REASON_THRESHOLD &&
+            (
+                similarity > bestStrength ||
+                    (
+                        similarity == bestStrength &&
+                            (bestAnchor == null || anchor.exhibition.id < bestAnchor.exhibition.id)
+                    )
             )
-        }.bestEvidenceMatch()
-
-private fun List<EvidenceMatch>.bestEvidenceMatch(): EvidenceMatch? =
-    minWithOrNull(
-        compareByDescending<EvidenceMatch> { it.strength }
-            .thenBy { it.evidence.stableSortKey() },
+        ) {
+            bestAnchor = anchor
+            bestStrength = similarity
+        }
+    }
+    val anchor = bestAnchor ?: return null
+    return EvidenceMatch(
+        evidence = RecommendationEvidence.TextSimilarity(source, anchor.evidenceAnchor),
+        strength = bestStrength,
     )
+}
+
+private fun sharedIdentifierCount(
+    first: Set<String>,
+    second: Set<String>,
+): Int {
+    if (first.isEmpty() || second.isEmpty()) return 0
+    val smaller = if (first.size <= second.size) first else second
+    val larger = if (smaller === first) second else first
+    var intersectionSize = 0
+    for (id in smaller) {
+        if (id in larger) intersectionSize += 1
+    }
+    return intersectionSize
+}
+
+private fun firstSharedIdentifier(
+    first: Set<String>,
+    second: Set<String>,
+): String? {
+    val smaller = if (first.size <= second.size) first else second
+    val larger = if (smaller === first) second else first
+    var firstSharedId: String? = null
+    for (id in smaller) {
+        if (id in larger && (firstSharedId == null || id < firstSharedId)) firstSharedId = id
+    }
+    return firstSharedId
+}
+
+private fun symmetricOverlapStrength(
+    first: Set<String>,
+    second: Set<String>,
+    intersectionSize: Int,
+): Double = intersectionSize.toDouble() / (first.size + second.size - intersectionSize)
+
+private fun isStableMatchEarlier(
+    anchorId: String,
+    matchedId: String,
+    currentAnchorId: String?,
+    currentMatchedId: String?,
+): Boolean =
+    currentAnchorId == null ||
+        anchorId < currentAnchorId ||
+        (anchorId == currentAnchorId && (currentMatchedId == null || matchedId < currentMatchedId))
 
 private fun List<ScoredEvidence>.strongestDistinctEvidence(): List<RecommendationEvidence> =
     sortedWith(
-        compareByDescending<ScoredEvidence> { it.contribution }
+        compareBy<ScoredEvidence> { it.evidence.evidenceTier() }
+            .thenByDescending { it.contribution }
             .thenBy { it.evidence.stableSortKey() },
     ).distinctBy { it.evidence.deduplicationKey() }
         .take(MAX_EVIDENCE)
         .map(ScoredEvidence::evidence)
+
+private fun RecommendationEvidence.evidenceTier(): Int =
+    when (this) {
+        is RecommendationEvidence.ArtistMatch -> 0
+        is RecommendationEvidence.ArtTermMatch -> 1
+        else -> 2
+    }
 
 private fun RecommendationEvidence.deduplicationKey(): String =
     when (this) {
@@ -377,7 +493,7 @@ private fun Exhibition.galleryIdentity(): String =
     galleryId ?: "${galleryKey(venueNameKo, venueNameEn)}:$latitude:$longitude"
 
 private const val UPCOMING_VISIBILITY_DAYS = 14
-private const val FEATURE_SCHEMA_VERSION = 2
+private const val FEATURE_SCHEMA_VERSION = 3
 private const val MIN_NGRAM_SIZE = 2
 private const val MAX_NGRAM_SIZE = 3
 private const val SAVED_ARTIST_WEIGHT = 0.50

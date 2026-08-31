@@ -502,6 +502,7 @@ describe("gallery exhibition workspace", () => {
       3,
       expect.objectContaining({ nameEn: "Notes, Revised" }),
     ));
+    expect(repository.saveExhibitionDraft.mock.calls[0][3]).not.toHaveProperty("artMetadata");
     expect(await screen.findByText("Draft · Saved")).toBeInTheDocument();
   });
 

@@ -71,6 +71,149 @@ class ExplainableLocalExhibitionRecommenderTest {
     }
 
     @Test
+    fun `saved group to candidate solo artist overlap is symmetrically diluted`() {
+        val shared = ExhibitionArtist("artist-shared", "공통", "Shared")
+        val groupAnchor =
+            exhibition(
+                "qqqq",
+                artists =
+                    listOf(
+                        shared,
+                        ExhibitionArtist("artist-2", "둘", "Two"),
+                        ExhibitionArtist("artist-3", "셋", "Three"),
+                        ExhibitionArtist("artist-4", "넷", "Four"),
+                    ),
+            )
+        val soloAnchor = exhibition("rrrr", artists = listOf(shared))
+        val candidate = exhibition("ssss", artists = listOf(shared))
+        val prepared = recommender.prepare(listOf(candidate, groupAnchor, soloAnchor))
+
+        val groupScore =
+            prepared
+                .recommend(context(bookmarks = setOf(groupAnchor.id)))
+                .first { it.exhibition.id == candidate.id }
+                .scoreBasisPoints
+        val soloScore =
+            prepared
+                .recommend(context(bookmarks = setOf(soloAnchor.id)))
+                .first { it.exhibition.id == candidate.id }
+                .scoreBasisPoints
+        val reverseScore =
+            prepared
+                .recommend(context(bookmarks = setOf(candidate.id)))
+                .first { it.exhibition.id == groupAnchor.id }
+                .scoreBasisPoints
+
+        assertTrue(groupScore < soloScore, "group=$groupScore solo=$soloScore")
+        assertEquals(groupScore, reverseScore)
+    }
+
+    @Test
+    fun `saved broad taxonomy to candidate single term overlap is symmetrically diluted`() {
+        val shared = ArtTerm("mood:shared", ArtTermCategory.MOOD, "공통", "Shared")
+        val broadAnchor =
+            exhibition(
+                "tttt",
+                artTerms =
+                    listOf(
+                        shared,
+                        ArtTerm("mood:two", ArtTermCategory.MOOD, "둘", "Two"),
+                        ArtTerm("mood:three", ArtTermCategory.MOOD, "셋", "Three"),
+                        ArtTerm("mood:four", ArtTermCategory.MOOD, "넷", "Four"),
+                    ),
+            )
+        val singleAnchor = exhibition("uuuu", artTerms = listOf(shared))
+        val candidate = exhibition("vvvv", artTerms = listOf(shared))
+        val prepared = recommender.prepare(listOf(candidate, broadAnchor, singleAnchor))
+
+        val broadScore =
+            prepared
+                .recommend(context(bookmarks = setOf(broadAnchor.id)))
+                .first { it.exhibition.id == candidate.id }
+                .scoreBasisPoints
+        val singleScore =
+            prepared
+                .recommend(context(bookmarks = setOf(singleAnchor.id)))
+                .first { it.exhibition.id == candidate.id }
+                .scoreBasisPoints
+        val reverseScore =
+            prepared
+                .recommend(context(bookmarks = setOf(candidate.id)))
+                .first { it.exhibition.id == broadAnchor.id }
+                .scoreBasisPoints
+
+        assertTrue(broadScore < singleScore, "broad=$broadScore single=$singleScore")
+        assertEquals(broadScore, reverseScore)
+    }
+
+    @Test
+    fun `structured evidence remains ahead of text after symmetric dilution`() {
+        val shared = ArtTerm("style:shared", ArtTermCategory.STYLE, "공통", "Shared")
+        val saved =
+            exhibition(
+                "saved",
+                descriptionEn = "identical repeated content for a strong text similarity",
+                artTerms =
+                    listOf(
+                        shared,
+                        ArtTerm("style:two", ArtTermCategory.STYLE, "둘", "Two"),
+                        ArtTerm("style:three", ArtTermCategory.STYLE, "셋", "Three"),
+                        ArtTerm("style:four", ArtTermCategory.STYLE, "넷", "Four"),
+                    ),
+            )
+        val candidate =
+            exhibition(
+                "candidate",
+                descriptionEn = "identical repeated content for a strong text similarity",
+                artTerms = listOf(shared),
+            )
+
+        val result = recommend(listOf(candidate, saved), bookmarks = setOf(saved.id)).single()
+
+        assertIs<RecommendationEvidence.ArtTermMatch>(result.evidence.first())
+        assertTrue(result.evidence.any { it is RecommendationEvidence.TextSimilarity })
+    }
+
+    @Test
+    fun `prepared metadata prevents candidate history cross product reads during rerank`() {
+        val artist = ExhibitionArtist("artist-shared", "공통", "Shared")
+        val term = ArtTerm("theme:shared", ArtTermCategory.THEME, "공통", "Shared")
+        val artistLists = mutableListOf<CountingList<ExhibitionArtist>>()
+        val termLists = mutableListOf<CountingList<ArtTerm>>()
+        val catalogue =
+            (0 until 24).map { index ->
+                val artists =
+                    CountingList(
+                        listOf(
+                            artist,
+                            ExhibitionArtist("artist-$index", "작가 $index", "Artist $index"),
+                        ),
+                    ).also(artistLists::add)
+                val terms =
+                    CountingList(
+                        listOf(
+                            term,
+                            ArtTerm("theme:item-$index", ArtTermCategory.THEME, "주제 $index", "Theme $index"),
+                        ),
+                    ).also(termLists::add)
+                exhibition(
+                    id = "item-$index",
+                    artists = artists,
+                    artTerms = terms,
+                )
+            }
+        val prepared = recommender.prepare(catalogue)
+        (artistLists + termLists).forEach(CountingList<*>::resetReads)
+
+        prepared.recommend(
+            context(bookmarks = catalogue.take(12).mapTo(mutableSetOf(), Exhibition::id)),
+        )
+
+        val rerankReads = (artistLists + termLists).sumOf(CountingList<*>::reads)
+        assertTrue(rerankReads <= catalogue.size * 4, "metadata reads during rerank=$rerankReads")
+    }
+
+    @Test
     fun `text similarity remains truthful generic evidence`() {
         val saved = exhibition("saved", descriptionEn = "experimental cyanotype photography")
         val candidate = exhibition("candidate", descriptionEn = "cyanotype photographic experiment")
@@ -147,10 +290,13 @@ class ExplainableLocalExhibitionRecommenderTest {
         bookmarks: Set<String> = emptySet(),
     ): List<ExhibitionRecommendation> =
         recommender.prepare(catalogue).recommend(
-            RecommendationContext(
-                bookmarkedExhibitionIds = bookmarks,
-                today = today,
-            ),
+            context(bookmarks),
+        )
+
+    private fun context(bookmarks: Set<String> = emptySet()) =
+        RecommendationContext(
+            bookmarkedExhibitionIds = bookmarks,
+            today = today,
         )
 
     private fun exhibition(
@@ -184,4 +330,22 @@ class ExplainableLocalExhibitionRecommenderTest {
         artists = artists,
         artTerms = artTerms,
     )
+
+    private class CountingList<T>(
+        private val values: List<T>,
+    ) : AbstractList<T>() {
+        var reads: Int = 0
+            private set
+
+        override val size: Int get() = values.size
+
+        override fun get(index: Int): T {
+            reads += 1
+            return values[index]
+        }
+
+        fun resetReads() {
+            reads = 0
+        }
+    }
 }

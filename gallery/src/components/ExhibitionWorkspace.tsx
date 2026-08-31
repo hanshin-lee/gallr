@@ -174,7 +174,10 @@ function ImpactSummary({ exhibition }: { exhibition: OwnerExhibition }) {
   );
 }
 
-function editablePatch(exhibition: OwnerExhibition): OwnerExhibitionPatch {
+function editablePatch(
+  exhibition: OwnerExhibition,
+  includeArtMetadata = false,
+): OwnerExhibitionPatch {
   const patch: OwnerExhibitionPatch = {
     nameKo: exhibition.nameKo,
     nameEn: exhibition.nameEn,
@@ -198,7 +201,9 @@ function editablePatch(exhibition: OwnerExhibition): OwnerExhibitionPatch {
     receptionStartTime: exhibition.receptionStartTime,
     ticketUrl: exhibition.ticketUrl,
   };
-  if (exhibition.artMetadata !== null) patch.artMetadata = exhibition.artMetadata;
+  if (includeArtMetadata && exhibition.artMetadata !== null) {
+    patch.artMetadata = exhibition.artMetadata;
+  }
   return patch;
 }
 
@@ -499,6 +504,7 @@ function Editor({
   const [candidates, setCandidates] = useState<GalleryGeocodeCandidate[]>([]);
   const [searchCompleted, setSearchCompleted] = useState(false);
   const [searching, setSearching] = useState(false);
+  const artMetadataDirty = useRef(false);
   const canEdit = record.ownerStatus === "draft" || record.ownerStatus === "needs_changes";
   // Mirrors the submit-time requirement exactly, so a legacy draft holding
   // coordinates but no address text renders the search prompt (and is listed in
@@ -513,6 +519,7 @@ function Editor({
   );
 
   const update = <Key extends keyof OwnerExhibition>(key: Key, value: OwnerExhibition[Key]) => {
+    if (key === "artMetadata") artMetadataDirty.current = true;
     setRecord((current) => ({ ...current, [key]: value }));
     setSaved(false);
     setDirty(true);
@@ -540,11 +547,12 @@ function Editor({
       current.id,
       current.workingVersionId,
       current.revision,
-      editablePatch(current),
+      editablePatch(current, artMetadataDirty.current),
     );
     setRecord(updated);
     onChange(updated);
     setDirty(false);
+    artMetadataDirty.current = false;
     return updated;
   };
 
@@ -758,7 +766,7 @@ function Editor({
               metadata={record.artMetadata}
               terms={artTerms}
               termsError={artTermsError}
-              disabled={!canEdit}
+              disabled={!canEdit || Boolean(busy)}
               onChange={(metadata) => update("artMetadata", metadata)}
               onSearchArtists={searchArtists}
             />

@@ -18,6 +18,32 @@ const categoryKeys: Record<ArtTermCategory, MessageKey> = {
   mood: "art.mood",
 };
 
+function withCanonicalArtist(
+  metadata: ExhibitionArtMetadata,
+  artist: ArtistLookup,
+  resolvingIndex: number | null,
+): ExhibitionArtMetadata | null {
+  const duplicateIndex = metadata.artists.findIndex(({ id }) => id === artist.id);
+  if (duplicateIndex >= 0 && duplicateIndex !== resolvingIndex) {
+    return resolvingIndex === null
+      ? null
+      : {
+          ...metadata,
+          artists: metadata.artists.filter((_, index) => index !== resolvingIndex),
+        };
+  }
+  const artists = [...metadata.artists];
+  if (resolvingIndex === null) {
+    if (artists.length >= MAX_ARTISTS) return null;
+    artists.push(artist);
+  } else if (resolvingIndex < artists.length) {
+    artists[resolvingIndex] = artist;
+  } else {
+    return null;
+  }
+  return { ...metadata, artists };
+}
+
 interface Props {
   metadata: ExhibitionArtMetadata | null;
   terms: ArtTerm[] | null;
@@ -51,8 +77,17 @@ export function ExhibitionArtMetadataEditor({
   const [creating, setCreating] = useState(false);
   const [createFailed, setCreateFailed] = useState(false);
   const searchGeneration = useRef(0);
+  const createGeneration = useRef(0);
+  const mounted = useRef(true);
   const createRequest = useRef<{ key: string; id: string } | null>(null);
+  const latestMetadata = useRef(metadata);
+  const latestOnChange = useRef(onChange);
+  const latestResolvingIndex = useRef(resolvingIndex);
+  latestMetadata.current = metadata;
+  latestOnChange.current = onChange;
+  latestResolvingIndex.current = resolvingIndex;
   const metadataSupported = metadata !== null;
+  const interactionDisabled = disabled || creating;
   const selectedTermIds = useMemo(
     () => new Set(metadata?.terms.map(({ id }) => id) ?? []),
     [metadata?.terms],
@@ -69,7 +104,7 @@ export function ExhibitionArtMetadataEditor({
     const generation = ++searchGeneration.current;
     setSearchFailed(false);
     setSearchCompleted(false);
-    if (normalized.length < 2 || disabled || !metadataSupported) {
+    if (normalized.length < 2 || interactionDisabled || !metadataSupported) {
       setResults([]);
       setSearching(false);
       return;
@@ -91,8 +126,20 @@ export function ExhibitionArtMetadataEditor({
           if (searchGeneration.current === generation) setSearching(false);
         });
     }, 250);
-    return () => window.clearTimeout(timer);
-  }, [disabled, metadataSupported, onSearchArtists, query]);
+    return () => {
+      window.clearTimeout(timer);
+      if (searchGeneration.current === generation) searchGeneration.current += 1;
+    };
+  }, [interactionDisabled, metadataSupported, onSearchArtists, query]);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      createGeneration.current += 1;
+      searchGeneration.current += 1;
+    };
+  }, []);
 
   if (metadata === null) {
     return <p className="field-help" role="status">{t("art.unsupported")}</p>;
@@ -102,27 +149,10 @@ export function ExhibitionArtMetadataEditor({
     localized(artist.nameKo, artist.nameEn, t("common.unavailable"));
 
   const updateArtist = (artist: ArtistLookup) => {
-    const duplicateIndex = metadata.artists.findIndex(({ id }) => id === artist.id);
-    if (duplicateIndex >= 0 && duplicateIndex !== resolvingIndex) {
-      if (resolvingIndex !== null) {
-        onChange({
-          ...metadata,
-          artists: metadata.artists.filter((_, index) => index !== resolvingIndex),
-        });
-        setResolvingIndex(null);
-        setQuery("");
-        setResults([]);
-      }
-      return;
-    }
-    const artists = [...metadata.artists];
-    if (resolvingIndex === null) {
-      if (artists.length >= MAX_ARTISTS) return;
-      artists.push(artist);
-    } else {
-      artists[resolvingIndex] = artist;
-    }
-    onChange({ ...metadata, artists });
+    if (creating) return;
+    const next = withCanonicalArtist(metadata, artist, resolvingIndex);
+    if (next === null) return;
+    onChange(next);
     setResolvingIndex(null);
     setQuery("");
     setResults([]);
@@ -163,20 +193,26 @@ export function ExhibitionArtMetadataEditor({
     }
     setCreating(true);
     setCreateFailed(false);
+    const generation = ++createGeneration.current;
+    const requestId = createRequest.current.id;
     try {
       const artist = await onCreateArtist(
         normalizedKo,
         normalizedEn,
-        createRequest.current.id,
+        requestId,
       );
-      updateArtist(artist);
+      if (!mounted.current || createGeneration.current !== generation) return;
+      const current = latestMetadata.current;
+      if (current === null) return;
+      const next = withCanonicalArtist(current, artist, latestResolvingIndex.current);
+      if (next !== null) latestOnChange.current(next);
       setNameKo("");
       setNameEn("");
       createRequest.current = null;
     } catch {
-      setCreateFailed(true);
+      if (mounted.current && createGeneration.current === generation) setCreateFailed(true);
     } finally {
-      setCreating(false);
+      if (mounted.current && createGeneration.current === generation) setCreating(false);
     }
   };
 
@@ -202,15 +238,15 @@ export function ExhibitionArtMetadataEditor({
                       <button
                         className="outlined-compact"
                         type="button"
-                        disabled={disabled}
+                        disabled={interactionDisabled}
                         onClick={() => setResolvingIndex(index)}
                       >
                         {t("art.resolveArtist", { name })}
                       </button>
                     )}
-                    <button className="outlined-compact" type="button" disabled={disabled || index === 0} aria-label={t("art.moveUp", { name })} onClick={() => move(index, -1)}>↑</button>
-                    <button className="outlined-compact" type="button" disabled={disabled || index === metadata.artists.length - 1} aria-label={t("art.moveDown", { name })} onClick={() => move(index, 1)}>↓</button>
-                    <button className="text-button" type="button" disabled={disabled} aria-label={t("art.remove", { name })} onClick={() => remove(index)}>×</button>
+                    <button className="outlined-compact" type="button" disabled={interactionDisabled || index === 0} aria-label={t("art.moveUp", { name })} onClick={() => move(index, -1)}>↑</button>
+                    <button className="outlined-compact" type="button" disabled={interactionDisabled || index === metadata.artists.length - 1} aria-label={t("art.moveDown", { name })} onClick={() => move(index, 1)}>↓</button>
+                    <button className="text-button" type="button" disabled={interactionDisabled} aria-label={t("art.remove", { name })} onClick={() => remove(index)}>×</button>
                   </div>
                 </li>
               );
@@ -219,13 +255,13 @@ export function ExhibitionArtMetadataEditor({
         )}
 
         {resolvingIndex !== null && (
-          <button className="text-button" type="button" onClick={() => setResolvingIndex(null)}>
+          <button className="text-button" type="button" disabled={interactionDisabled} onClick={() => setResolvingIndex(null)}>
             {t("art.cancelResolve")}
           </button>
         )}
         <label className="field">
           <span>{t("art.searchArtists")}</span>
-          <input type="search" value={query} disabled={disabled} onChange={(event) => setQuery(event.target.value)} />
+          <input type="search" value={query} disabled={interactionDisabled} onChange={(event) => setQuery(event.target.value)} />
         </label>
         <div className="art-search-status" role="status" aria-live="polite">
           {searching ? t("art.searching") : searchFailed ? t("art.searchFailed") : searchCompleted && results.length === 0 ? t("art.noMatches") : ""}
@@ -241,6 +277,7 @@ export function ExhibitionArtMetadataEditor({
                     className="outlined-compact"
                     type="button"
                     disabled={
+                      interactionDisabled ||
                       resolvingIndex === null &&
                       (metadata.artists.length >= MAX_ARTISTS || metadata.artists.some(({ id }) => id === artist.id))
                     }
@@ -280,7 +317,7 @@ export function ExhibitionArtMetadataEditor({
                     type="checkbox"
                     checked={selectedTermIds.has(term.id)}
                     disabled={
-                      disabled ||
+                      interactionDisabled ||
                       (!selectedTermIds.has(term.id) && metadata.terms.length >= MAX_TERMS) ||
                       (!selectedTermIds.has(term.id) && metadata.terms.filter((selected) => selected.category === category).length >= MAX_TERMS_PER_CATEGORY)
                     }
