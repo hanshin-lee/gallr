@@ -24,9 +24,9 @@
   selection, unresolved suggestions, ordered credits, controlled terms,
   editable-state rules, stale revisions, malformed responses, and
   accessibility; then implement owner metadata entry.
-- [ ] T008 Run full database, shared, Compose, Android, Admin, Gallery, and iOS
+- [x] T008 Run full database, shared, Compose, Android, Admin, Gallery, and iOS
   verification plus a bilingual runtime visual/accessibility pass.
-- [ ] T009 Independently review security, privacy, scoring truthfulness,
+- [x] T009 Independently review security, privacy, scoring truthfulness,
   compatibility, and React/KMP quality; fix all P1/P2 findings.
 - [ ] T010 Push a stacked PR without deploying schema/configuration, enabling
   analytics, adding paid services, or changing legacy credentials/readers.
