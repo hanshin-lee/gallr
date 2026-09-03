@@ -33,6 +33,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
@@ -69,6 +71,7 @@ class TabsViewModel(
     nowMillisProvider: () -> Long = { Clock.System.now().toEpochMilliseconds() },
 ) : ViewModel() {
     private val log = AppLog.tagged("TabsViewModel")
+    private val bookmarkMutationMutex = Mutex()
 
     val themeMode: StateFlow<ThemeMode> =
         themeRepository
@@ -229,12 +232,22 @@ class TabsViewModel(
 
     fun setMapDisplayMode(mode: MapDisplayMode) = map.setDisplayMode(mode)
 
-    fun toggleBookmark(exhibitionId: String) {
+    fun toggleBookmark(
+        exhibitionId: String,
+        onCompleted: (saved: Boolean) -> Unit = {},
+    ) {
         viewModelScope.launch {
-            if (bookmarkRepository.isBookmarked(exhibitionId)) {
-                bookmarkRepository.removeBookmark(exhibitionId)
-            } else {
-                bookmarkRepository.addBookmark(exhibitionId)
+            bookmarkMutationMutex.withLock {
+                runSuspendCatching {
+                    val wasBookmarked = bookmarkRepository.isBookmarked(exhibitionId)
+                    if (wasBookmarked) {
+                        bookmarkRepository.removeBookmark(exhibitionId)
+                    } else {
+                        bookmarkRepository.addBookmark(exhibitionId)
+                    }
+                    !wasBookmarked
+                }.onSuccess(onCompleted)
+                    .onFailure { error -> log.warn("toggle_bookmark", error) }
             }
         }
     }

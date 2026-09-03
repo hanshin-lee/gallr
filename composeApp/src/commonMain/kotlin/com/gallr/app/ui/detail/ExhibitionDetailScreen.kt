@@ -43,10 +43,10 @@ import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
+import com.gallr.app.platform.rememberOpenExternalUri
 import com.gallr.app.ui.components.BookmarkButton
 import com.gallr.app.ui.components.ExhibitionCurationBadges
 import com.gallr.app.ui.theme.GallrAccent
@@ -82,6 +82,8 @@ fun ExhibitionDetailScreen(
     onShare: suspend () -> Unit = {},
     onGalleryTap: () -> Unit = {},
     onOpenMap: (() -> Unit)? = null,
+    onContactOpened: () -> Unit = {},
+    onTicketOpened: () -> Unit = {},
     isVisited: Boolean = false,
     isVisitSaving: Boolean = false,
     visitSaveFailed: Boolean = false,
@@ -95,6 +97,7 @@ fun ExhibitionDetailScreen(
     // back (scope leaves composition), so a stale share sheet can't surface
     // over an unrelated screen. isSharing blocks concurrent shares on double-tap.
     val shareScope = rememberCoroutineScope()
+    val openExternalUri = rememberOpenExternalUri()
     var isSharing by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
@@ -376,7 +379,6 @@ fun ExhibitionDetailScreen(
                 // ── Contact (tappable mailto: or tel:) ──────────────────
                 val contact = exhibition.contact
                 if (!contact.isNullOrBlank()) {
-                    val uriHandler = LocalUriHandler.current
                     val isEmail = contact.trim().matches(Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"))
                     val isPhone = !isEmail && contact.trim().matches(Regex("^[+\\d\\s()-]+$"))
                     val uri =
@@ -398,10 +400,12 @@ fun ExhibitionDetailScreen(
                         modifier =
                             if (uri != null) {
                                 Modifier.clickable {
-                                    try {
-                                        uriHandler.openUri(uri)
-                                    } catch (error: Exception) {
-                                        exhibitionDetailLog.warn("open_contact_uri", error)
+                                    openExternalUri(uri) { opened ->
+                                        if (opened) {
+                                            onContactOpened()
+                                        } else {
+                                            exhibitionDetailLog.warn("open_contact_uri")
+                                        }
                                     }
                                 }
                             } else {
@@ -413,14 +417,15 @@ fun ExhibitionDetailScreen(
                 // ── Exhibition ticket link ─────────────────────────────
                 val ticketUrl = exhibition.ticketUrl
                 if (!ticketUrl.isNullOrBlank()) {
-                    val uriHandler = LocalUriHandler.current
                     Spacer(Modifier.height(GallrSpacing.md))
                     OutlinedButton(
                         onClick = {
-                            try {
-                                uriHandler.openUri(ticketUrl)
-                            } catch (error: Exception) {
-                                exhibitionDetailLog.warn("open_ticket_uri", error)
+                            openExternalUri(ticketUrl) { opened ->
+                                if (opened) {
+                                    onTicketOpened()
+                                } else {
+                                    exhibitionDetailLog.warn("open_ticket_uri")
+                                }
                             }
                         },
                         shape = RectangleShape,
