@@ -83,7 +83,7 @@ until the smoke journey passes.
 
 | Slice | Required runtime surface |
 | --- | --- |
-| R1 — ownership and free publishing | Owner and Admin workspaces, Gallery Info plus `geocode-address`, public web linkage, `outbox-worker` for media, and `outbox-delivery` for authenticated lifecycle delivery and prompt public rebuilds; during the mobile compatibility window, the Seoul mirror coordinator and Singapore receiver |
+| R1 — ownership and free publishing | Owner and Admin workspaces, Gallery Info plus `geocode-address`, public web linkage, `outbox-worker` for media, and `outbox-delivery` for authenticated lifecycle delivery and coalesced public rebuilds after the fixed quiet window; during the mobile compatibility window, the Seoul mirror coordinator and Singapore receiver |
 | R2 — public impact | R1 plus `record-exhibition-view` and an impact-enabled public-web build |
 | R3 — free Launch Kit beta | R2 plus the free-entitlement migration, `launch-rsvp`, the owner Launch Kit capability, public RSVP capability, environment-matched QR download, private guest list, and check-in |
 | R4 — disabled paid-promotion compatibility surface | Outside the active roadmap; retain its paid-only guards and keep every owner/Admin/server/public/mobile control off |

@@ -33,6 +33,10 @@ All notable changes to gallr will be documented in this file.
   recognisable at a glance instead of every listing looking archival.
 
 ### Fixed
+- **Public-site rebuild bursts no longer create one Vercel build per edit.**
+  Publish, archive, and restore events now coalesce into one durable rebuild
+  request after a 30-second quiet window. An edit committed while a request is
+  processing creates a follow-up, so optimization never drops a late change.
 - **Mobile diagnostic logs no longer expose callback or cache details.** The iOS
   host no longer prints OAuth callback URLs, and catalogue-cache failures now
   pass through Gallr's redacted structured logging boundary instead of emitting

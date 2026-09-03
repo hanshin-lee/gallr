@@ -70,17 +70,6 @@ operator dashboard for discovery, recommendation, route, and intent rates.
 - Do not report unique users, sessions, cross-visit funnels, or retention: the
   aggregate-only event model intentionally has no stable person/device identity.
 
-### Debounce public-site rebuilds triggered by the outbox
-`outbox-delivery` POSTs the Vercel deploy hook once per `exhibition.published`,
-`exhibition.archived`, and `exhibition.restored` event. Now that those builds
-actually run, a heavy staff editing session queues one full Eleventy build plus
-Supabase fetch per event. Steady state is fine; bursts are wasteful.
-- Effort: S (CC: ~1h)
-- Options: coalesce events in the function over a short window, or move the hook
-  POST behind a scheduled drain instead of a per-event fire.
-- Noticed on: shin/gallr-gallery-publish-error-464c65 while investigating the
-  cancelled rebuild that made newly published exhibitions 404 (fixed in #228).
-
 ### Add deterministic homepage visual-regression baselines
 
 Homepage curation is deterministic and the original blocker is gone. Add fixed
