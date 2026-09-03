@@ -7,8 +7,6 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   workers: 1,
-  snapshotPathTemplate:
-    "{testDir}/{testFilePath}-snapshots/{arg}-{projectName}{ext}",
 
   globalSetup: require.resolve("./tests/global-setup.ts"),
   globalTeardown: require.resolve("./tests/global-teardown.ts"),

@@ -10,9 +10,10 @@ Capture three bounded surfaces rather than one oversized page:
 - mobile `.hero` at 390×844;
 - desktop `#now-showing` at 1280×900.
 
-Use CSS-scale screenshots with animation disabled and a small cross-platform
-pixel tolerance for Chromium font rasterization. The existing DOM, WCAG, mobile
-breakpoint, reduced-motion, and interaction tests remain the behavioral gates.
+Use Playwright's platform-specific snapshot names because Chromium font metrics
+change element height between macOS and Ubuntu. Keep a small within-platform
+pixel tolerance for rasterization. The existing DOM, WCAG, mobile breakpoint,
+reduced-motion, and interaction tests remain the behavioral gates.
 
 ## Verification
 
