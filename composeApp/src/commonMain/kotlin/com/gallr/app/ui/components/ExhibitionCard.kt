@@ -72,6 +72,7 @@ fun ExhibitionCard(
     lang: AppLanguage,
     modifier: Modifier = Modifier,
     eventTreatment: EventTreatment? = null,
+    contextLabel: String? = null,
 ) {
     // ── Press state — detectTapGestures, NOT collectIsPressedAsState (CMP bug #3417) ──
     var isPressed by remember { mutableStateOf(false) }
@@ -196,7 +197,7 @@ fun ExhibitionCard(
                     )
                 }.semantics {
                     role = Role.Button
-                    contentDescription = exhibitionCardAccessibilityLabel(exhibition, lang)
+                    contentDescription = exhibitionCardAccessibilityLabel(exhibition, lang, contextLabel)
                     onClick {
                         onTap()
                         true
@@ -270,6 +271,14 @@ fun ExhibitionCard(
                         color = contentColor,
                         modifier = Modifier.padding(top = GallrSpacing.sm),
                     )
+                    contextLabel?.takeIf(String::isNotBlank)?.let { label ->
+                        Spacer(Modifier.height(GallrSpacing.sm))
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = contentColor,
+                        )
+                    }
                     Spacer(Modifier.height(GallrSpacing.xs))
 
                     // ── Venue & city ─────────────────────────────────
@@ -332,9 +341,11 @@ fun ExhibitionCard(
 internal fun exhibitionCardAccessibilityLabel(
     exhibition: Exhibition,
     language: AppLanguage,
+    contextLabel: String? = null,
 ): String =
     listOf(
         exhibition.localizedName(language),
         exhibition.localizedVenueName(language),
         exhibition.localizedDateRange(language),
+        contextLabel.orEmpty(),
     ).filter(String::isNotBlank).joinToString(", ")

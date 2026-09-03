@@ -1,9 +1,12 @@
 package com.gallr.app.ui.discovery
 
 import com.gallr.shared.data.model.AppLanguage
+import com.gallr.shared.data.model.ArtTermCategory
 import com.gallr.shared.data.model.Exhibition
 import com.gallr.shared.recommendation.ExhibitionRecommendation
-import com.gallr.shared.recommendation.RecommendationReason
+import com.gallr.shared.recommendation.RecommendationEvidence
+import com.gallr.shared.recommendation.RecommendationEvidenceAnchor
+import com.gallr.shared.recommendation.RecommendationSignalSource
 
 internal data class RecommendationScreenCopy(
     val title: String,
@@ -21,7 +24,7 @@ internal data class RecommendationScreenCopy(
 
 internal data class RecommendationCardPresentation(
     val exhibition: Exhibition,
-    val reasonLabels: List<String>,
+    val contextLabel: String,
 )
 
 internal fun recommendationScreenCopy(language: AppLanguage): RecommendationScreenCopy =
@@ -60,14 +63,90 @@ internal fun recommendationScreenCopy(language: AppLanguage): RecommendationScre
         }
     }
 
-internal fun localizedRecommendationReasons(
-    reasons: List<RecommendationReason>,
+internal fun recommendationContextLabel(
+    evidence: List<RecommendationEvidence>,
     language: AppLanguage,
-): List<String> =
-    reasons
-        .distinct()
-        .take(MAX_RECOMMENDATION_REASONS)
-        .map { it.label(language) }
+): String {
+    require(evidence.isNotEmpty()) { "personalized recommendations require visible evidence" }
+    val title = if (language == AppLanguage.KO) "추천 이유" else "WHY THIS"
+    val labels =
+        evidence
+            .distinct()
+            .take(MAX_RECOMMENDATION_REASONS)
+            .map { localizedRecommendationEvidence(it, language) }
+    return (listOf(title) + labels).joinToString(" · ")
+}
+
+internal fun localizedRecommendationEvidence(
+    evidence: RecommendationEvidence,
+    language: AppLanguage,
+): String =
+    when (evidence) {
+        is RecommendationEvidence.ArtistMatch -> {
+            val anchor = evidence.anchor.localizedName(language)
+            val artist = evidence.artist.localizedName(language).displayEvidenceValue(language)
+            when (language) {
+                AppLanguage.KO -> {
+                    val action = if (evidence.source == RecommendationSignalSource.SAVED) "저장한" else "방문한"
+                    "$action “$anchor”와 같은 작가: $artist"
+                }
+
+                AppLanguage.EN -> {
+                    "${evidence.source.englishAnchorPrefix()} “$anchor” · SAME ARTIST: $artist"
+                }
+            }
+        }
+
+        is RecommendationEvidence.ArtTermMatch -> {
+            val anchor = evidence.anchor.localizedName(language)
+            val term = evidence.term.localizedName(language).displayEvidenceValue(language)
+            val category = evidence.term.category.localizedEvidenceCategory(language)
+            when (language) {
+                AppLanguage.KO -> {
+                    val action = if (evidence.source == RecommendationSignalSource.SAVED) "저장한" else "방문한"
+                    "$action “$anchor”와 공통 $category: $term"
+                }
+
+                AppLanguage.EN -> {
+                    "${evidence.source.englishAnchorPrefix()} “$anchor” · SHARED $category: $term"
+                }
+            }
+        }
+
+        is RecommendationEvidence.TextSimilarity -> {
+            val anchor = evidence.anchor.localizedName(language)
+            when (language) {
+                AppLanguage.KO -> {
+                    val action = if (evidence.source == RecommendationSignalSource.SAVED) "저장한" else "방문한"
+                    "$action “$anchor”와 비슷한 전시"
+                }
+
+                AppLanguage.EN -> {
+                    "${evidence.source.englishAnchorPrefix()} “$anchor” · SIMILAR EXHIBITION"
+                }
+            }
+        }
+
+        RecommendationEvidence.FollowedGallery -> {
+            if (language == AppLanguage.KO) "팔로우한 갤러리" else "FROM A GALLERY YOU FOLLOW"
+        }
+
+        RecommendationEvidence.Nearby -> {
+            if (language == AppLanguage.KO) "가까운 전시" else "NEARBY"
+        }
+
+        RecommendationEvidence.Featured -> {
+            if (language == AppLanguage.KO) "추천 전시" else "FEATURED"
+        }
+
+        RecommendationEvidence.EditorCurated -> {
+            if (language == AppLanguage.KO) "에디터 큐레이션" else "EDITOR CURATED"
+        }
+
+        RecommendationEvidence.ClosingSoon -> {
+            if (language == AppLanguage.KO) "곧 종료" else "CLOSING SOON"
+        }
+    }
 
 internal fun recommendationCardPresentations(
     recommendations: List<ExhibitionRecommendation>,
@@ -78,9 +157,29 @@ internal fun recommendationCardPresentations(
         .map { recommendation ->
             RecommendationCardPresentation(
                 exhibition = recommendation.exhibition,
-                reasonLabels = localizedRecommendationReasons(recommendation.reasons, language),
+                contextLabel = recommendationContextLabel(recommendation.evidence, language),
             )
         }
+
+private fun RecommendationSignalSource.englishAnchorPrefix(): String =
+    if (this == RecommendationSignalSource.SAVED) "BECAUSE YOU SAVED" else "BECAUSE YOU VISITED"
+
+private fun RecommendationEvidenceAnchor.localizedName(language: AppLanguage): String =
+    when (language) {
+        AppLanguage.KO -> nameKo.ifBlank { nameEn }
+        AppLanguage.EN -> nameEn.ifBlank { nameKo }
+    }
+
+private fun ArtTermCategory.localizedEvidenceCategory(language: AppLanguage): String =
+    when (this) {
+        ArtTermCategory.MEDIUM -> if (language == AppLanguage.KO) "매체" else "MEDIUM"
+        ArtTermCategory.STYLE -> if (language == AppLanguage.KO) "스타일" else "STYLE"
+        ArtTermCategory.THEME -> if (language == AppLanguage.KO) "주제" else "THEME"
+        ArtTermCategory.MOOD -> if (language == AppLanguage.KO) "분위기" else "MOOD"
+    }
+
+private fun String.displayEvidenceValue(language: AppLanguage): String =
+    if (language == AppLanguage.EN) uppercase() else this
 
 private const val MAX_RECOMMENDATION_CARDS = 6
 private const val MAX_RECOMMENDATION_REASONS = 2

@@ -108,6 +108,7 @@ internal fun routeLegLabel(
     stopIndex: Int,
     leg: EstimatedRouteLeg,
     language: AppLanguage,
+    whyThisLabel: String? = null,
 ): String {
     require(stopIndex >= 0) { "stopIndex must not be negative" }
     val origin =
@@ -151,23 +152,28 @@ internal fun routeStopSemanticsLabel(
     exhibition: Exhibition,
     leg: EstimatedRouteLeg,
     language: AppLanguage,
+    whyThisLabel: String? = null,
 ): String {
     require(stopIndex in 0 until stopCount) { "stopIndex must identify a stop" }
     val number = stopIndex + 1
     val name = exhibition.localizedName(language)
     val venue = exhibition.localizedVenueName(language)
     val hours = routeHoursLabel(exhibition.hours, language)
-    return when (language) {
-        AppLanguage.KO -> {
-            "${stopCount}개 중 ${number}번째 정류장. $name. $venue. " +
-                "${routeLegLabel(stopIndex, leg, language)}. $hours."
-        }
+    val routeFacts =
+        when (language) {
+            AppLanguage.KO -> {
+                "${stopCount}개 중 ${number}번째 정류장. $name. $venue. " +
+                    "${routeLegLabel(stopIndex, leg, language)}. $hours."
+            }
 
-        AppLanguage.EN -> {
-            "Stop $number of $stopCount. $name. $venue. " +
-                "${routeLegLabel(stopIndex, leg, language)}. $hours."
+            AppLanguage.EN -> {
+                "Stop $number of $stopCount. $name. $venue. " +
+                    "${routeLegLabel(stopIndex, leg, language)}. $hours."
+            }
         }
-    }
+    return listOf(routeFacts, whyThisLabel?.let { "$it." }.orEmpty())
+        .filter(String::isNotBlank)
+        .joinToString(" ")
 }
 
 internal fun routeStopMapContentDescription(

@@ -80,6 +80,25 @@ class RoutePresentationTest {
     }
 
     @Test
+    fun `personalized route stop semantics include visible why this evidence`() {
+        val route = route()
+        val whyThis = "WHY THIS · SAME ARTIST AS YOUR SAVE: KIMSOOJA"
+
+        assertEquals(
+            "Stop 1 of 2. Exhibition one. Gallery one. " +
+                "FROM START · ~700 M · ~10 MIN. HOURS · 11:00–18:00. $whyThis.",
+            routeStopSemanticsLabel(
+                stopIndex = 0,
+                stopCount = route.stops.size,
+                exhibition = route.stops.first(),
+                leg = route.legs.first(),
+                language = AppLanguage.EN,
+                whyThisLabel = whyThis,
+            ),
+        )
+    }
+
+    @Test
     fun `insufficient and map failure copy is actionable in both languages`() {
         assertEquals(
             "Only 1 exhibition fits this 3-stop route. Reduce the stops or choose another mode.",

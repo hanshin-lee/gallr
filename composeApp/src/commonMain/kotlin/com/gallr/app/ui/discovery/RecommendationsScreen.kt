@@ -190,11 +190,6 @@ fun RecommendationsScreen(
                         }
                     } else {
                         presentations.forEachIndexed { index, presentation ->
-                            if (presentation.reasonLabels.isNotEmpty()) {
-                                item(key = "recommendation-reasons:${presentation.exhibition.id}") {
-                                    RecommendationReasons(presentation.reasonLabels)
-                                }
-                            }
                             item(key = presentation.exhibition.id) {
                                 ExhibitionCard(
                                     exhibition = presentation.exhibition,
@@ -202,6 +197,7 @@ fun RecommendationsScreen(
                                     onBookmarkToggle = { onBookmarkToggle(presentation.exhibition) },
                                     onTap = { onExhibitionTap(presentation.exhibition, index) },
                                     lang = lang,
+                                    contextLabel = presentation.contextLabel,
                                     modifier = Modifier.fillMaxWidth().padding(bottom = GallrSpacing.lg),
                                 )
                             }
@@ -235,16 +231,6 @@ private fun RecommendationHeader(copy: RecommendationScreenCopy) {
         Spacer(Modifier.height(GallrSpacing.md))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
-}
-
-@Composable
-private fun RecommendationReasons(reasonLabels: List<String>) {
-    Text(
-        text = reasonLabels.joinToString(" · "),
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.fillMaxWidth().padding(bottom = GallrSpacing.sm),
-    )
 }
 
 @Composable

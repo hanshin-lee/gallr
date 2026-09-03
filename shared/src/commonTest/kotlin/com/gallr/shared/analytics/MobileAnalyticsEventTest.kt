@@ -46,6 +46,12 @@ class MobileAnalyticsEventTest {
             "taste",
             "score",
             "reason",
+            "evidence",
+            "artist",
+            "art_term",
+            "anchor",
+            "saved_exhibition",
+            "visited_exhibition",
         ).forEach { forbidden -> assertFalse(forbidden in encoded, encoded) }
     }
 
@@ -86,6 +92,9 @@ class MobileAnalyticsEventTest {
         assertTrue("\"distance_band\":\"two_to_five_km\"" in encoded)
         assertFalse("origin" in encoded)
         assertFalse("route_id" in encoded)
+        assertFalse("artist" in encoded)
+        assertFalse("art_term" in encoded)
+        assertFalse("evidence" in encoded)
     }
 
     @Test

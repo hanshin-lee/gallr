@@ -299,6 +299,24 @@ describe("gallr admin", () => {
     expect(screen.getAllByText("새로운 전시").length).toBeGreaterThan(0);
   });
 
+  it("omits unchanged art metadata from unrelated autosaves and includes explicit metadata edits", async () => {
+    const user = userEvent.setup();
+    const repository = new InMemoryAdminExhibitionRepository();
+    const saveDraft = vi.spyOn(repository, "saveDraft");
+    render(<AdminWorkspace repository={repository} staffRole="admin" />);
+
+    await screen.findAllByText("서로 다른 시간");
+    await user.type(screen.getByLabelText("Exhibition name (Korean) *"), " 수정");
+    await waitFor(() => expect(saveDraft).toHaveBeenCalled(), { timeout: 2500 });
+    expect(saveDraft.mock.calls[0][3]).not.toHaveProperty("artMetadata");
+
+    saveDraft.mockClear();
+    await user.click(screen.getByRole("tab", { name: "Art" }));
+    await user.click(screen.getByRole("checkbox", { name: /Photography/ }));
+    await waitFor(() => expect(saveDraft).toHaveBeenCalled(), { timeout: 2500 });
+    expect(saveDraft.mock.calls[0][3]).toHaveProperty("artMetadata.terms.0.id", "photography");
+  });
+
   it("defaults new exhibitions to homepage placement", async () => {
     const user = userEvent.setup();
     render(<App />);
