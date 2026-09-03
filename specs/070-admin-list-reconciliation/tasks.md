@@ -4,4 +4,4 @@
 - [x] Reconcile confirmed saved revisions into completed list snapshots.
 - [x] Clear rows for a current failed list request.
 - [x] Run Admin typecheck, tests, and build.
-- [ ] Open a `develop`-targeted PR and complete review/CI.
+- [x] Open a `develop`-targeted PR and complete review/CI. Completed by PR #244.
