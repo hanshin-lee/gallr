@@ -68,6 +68,9 @@ All notable changes to gallr will be documented in this file.
   submission still awaiting review.
 
 ### Infrastructure
+- The public-web accessibility toolchain now uses Pa11y 10 and its current
+  Puppeteer browser stack, removing six high-severity development-dependency
+  advisories while preserving the full WCAG and Playwright suite.
 - Android and iOS now share dark-launched mobile analytics orchestration for
   surface visits, organic exhibition opens, and completed high-intent actions.
   Both app release flags remain hard-disabled, event creation stays lazy, and
