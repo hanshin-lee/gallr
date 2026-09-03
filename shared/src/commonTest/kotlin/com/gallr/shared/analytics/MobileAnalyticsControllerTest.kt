@@ -114,6 +114,32 @@ class MobileAnalyticsControllerTest {
             assertEquals(listOf("persist:false", "clear"), transitions)
         }
 
+    @Test
+    fun `failed opt out purge stays disabled and can be retried explicitly`() =
+        runTest {
+            val delegate = RecordingRecorder(failClears = 1)
+            val preferences = FakePreferences(initiallyEnabled = true)
+            val controller = MobileAnalyticsController(delegate, preferences, releaseEnabled = true)
+            controller.initialize()
+            controller.record { event(5) }
+
+            assertFailsWith<IllegalStateException> { controller.setUserEnabled(false) }
+            var factoryCalled = false
+            controller.record {
+                factoryCalled = true
+                event(6)
+            }
+
+            assertFalse(preferences.enabled.value)
+            assertFalse(factoryCalled)
+            assertEquals(1, delegate.clears)
+
+            controller.setUserEnabled(false)
+
+            assertEquals(2, delegate.clears)
+            assertTrue(delegate.events.isEmpty())
+        }
+
     private fun event(index: Int) =
         MobileAnalyticsEvent.surfaceViewed(
             eventId = "a5000000-0000-4000-8000-${index.toString().padStart(12, '0')}",

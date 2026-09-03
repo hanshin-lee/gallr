@@ -165,7 +165,7 @@ enum class AnalyticsIntentAction {
     BOOKMARK_REMOVE,
 
     @SerialName("share")
-    SHARE,
+    SHARE_SHEET_OPENED,
 
     @SerialName("open_maps")
     OPEN_MAPS,
