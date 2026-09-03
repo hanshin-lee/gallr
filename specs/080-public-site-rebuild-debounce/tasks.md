@@ -7,7 +7,7 @@
 - [x] T003 Create the chronological migration with the private trigger/helper,
   fixed quiet window, bounded payload, advisory lock, and least privilege.
 - [x] T004 Update `outbox-delivery` routing and operational documentation.
-- [ ] T005 Run lineage, focused and full database/Edge/web verification; record
+- [x] T005 Run lineage, focused and full database/Edge/web verification; record
   any environment-only gate separately without weakening it.
-- [ ] T006 Remove the completed rebuild-debounce entry from `TODOS.md`, update
+- [x] T006 Remove the completed rebuild-debounce entry from `TODOS.md`, update
   `CHANGELOG.md`, and open a reviewed `develop` PR.
