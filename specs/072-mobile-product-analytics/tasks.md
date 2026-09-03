@@ -4,7 +4,7 @@
   add redaction regressions.
 - [x] T002 Add and observe failing closed-event serialization, forbidden-field,
   no-op, queue-cap, TTL, retry, and opt-out tests.
-- [ ] T003 Implement typed shared events, recorder contract, bounded queue, and
+- [x] T003 Implement typed shared events, recorder contract, bounded queue, and
   Ktor batch client.
 - [x] T004 Create the migration with Supabase CLI, then add failing pgTAP tests
   for RLS/grants, aggregate increments, dedupe, quotas, and pruning.

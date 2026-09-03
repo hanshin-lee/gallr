@@ -17,9 +17,11 @@ Typed mobile action
 
 - Closed `MobileAnalyticsEvent` hierarchy and enum dimensions.
 - `AnalyticsRecorder.record()` / `flush()` plus `NoopAnalyticsRecorder`.
-- `DataStoreAnalyticsQueue`, capped at 200 and seven days.
-- `MobileAnalyticsApiClient` using existing Ktor engines and no Authorization
-  header or user/session identity.
+- `DataStoreAnalyticsQueue`, capped at 200 and seven days in a dedicated
+  OS-purgeable cache DataStore.
+- `MobileAnalyticsApiClient` using the existing Ktor engine through a lazy,
+  header-free client with no API key, Authorization, cookie, or user/session
+  identity.
 - Inject at Android/iOS composition roots; capture semantics remain in common
   application orchestration.
 
