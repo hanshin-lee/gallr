@@ -104,6 +104,9 @@ enum class DiscoveryKind {
 
 @Serializable
 enum class PositionBucket {
+    @SerialName("unranked")
+    UNRANKED,
+
     @SerialName("top_three")
     TOP_THREE,
 
@@ -284,7 +287,7 @@ data class MobileAnalyticsEvent private constructor(
             MobileAnalyticsEventName.RECOMMENDATIONS_SHOWN -> {
                 surface != null &&
                     discoveryKind == DiscoveryKind.RECOMMENDATION &&
-                    positionBucket != null &&
+                    positionBucket == null &&
                     resultCount in 0..20 &&
                     entryPoint == null &&
                     exhibitionId == null &&
@@ -397,7 +400,6 @@ data class MobileAnalyticsEvent private constructor(
             platform: AnalyticsPlatform,
             appMajor: Int,
             surface: AnalyticsSurface,
-            positionBucket: PositionBucket,
             resultCount: Int,
         ) = MobileAnalyticsEvent(
             eventId = eventId,
@@ -407,7 +409,6 @@ data class MobileAnalyticsEvent private constructor(
             eventName = MobileAnalyticsEventName.RECOMMENDATIONS_SHOWN,
             surface = surface,
             discoveryKind = DiscoveryKind.RECOMMENDATION,
-            positionBucket = positionBucket,
             resultCount = resultCount,
         )
 

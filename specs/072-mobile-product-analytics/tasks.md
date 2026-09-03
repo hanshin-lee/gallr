@@ -6,13 +6,13 @@
   no-op, queue-cap, TTL, retry, and opt-out tests.
 - [ ] T003 Implement typed shared events, recorder contract, bounded queue, and
   Ktor batch client.
-- [ ] T004 Create the migration with Supabase CLI, then add failing pgTAP tests
+- [x] T004 Create the migration with Supabase CLI, then add failing pgTAP tests
   for RLS/grants, aggregate increments, dedupe, quotas, and pruning.
-- [ ] T005 Implement the private receipt/aggregate/quota schema and transactional
+- [x] T005 Implement the private receipt/aggregate/quota schema and transactional
   service recorder.
-- [ ] T006 Add failing Edge handler/backend tests for validation, body/batch
+- [x] T006 Add failing Edge handler/backend tests for validation, body/batch
   bounds, source identity, sanitized failures, and kill switch.
-- [ ] T007 Implement and configure `mobile-analytics`; extend product-surface
+- [x] T007 Implement and configure `mobile-analytics`; extend product-surface
   configuration validation.
 - [ ] T008 Wire common mobile capture points behind disabled-by-default release
   and user gates without adding a platform analytics SDK.
