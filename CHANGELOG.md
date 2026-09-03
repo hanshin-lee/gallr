@@ -28,6 +28,10 @@ All notable changes to gallr will be documented in this file.
   recognisable at a glance instead of every listing looking archival.
 
 ### Fixed
+- **Mobile diagnostic logs no longer expose callback or cache details.** The iOS
+  host no longer prints OAuth callback URLs, and catalogue-cache failures now
+  pass through Gallr's redacted structured logging boundary instead of emitting
+  exception messages.
 - **Admin exhibition filters no longer show stale rows.** A list response cannot
   overwrite a record saved at a newer revision while that response was in
   flight, and a failed filter request clears the prior filter's table instead
