@@ -59,6 +59,11 @@ All notable changes to gallr will be documented in this file.
   submission still awaiting review.
 
 ### Infrastructure
+- Shared discovery intelligence now includes a zero-network bilingual local
+  recommendation engine and a provider-neutral two-to-five-stop neighborhood
+  route estimator. The representative 1,205-exhibition fixture completes
+  without a model runtime or paid inference service; mobile presentation is a
+  separate follow-up surface.
 - Migration `20260823071500_admin_list_missing_cover_filter` adds the
   six-argument `admin_list_exhibitions` overload with `p_missing_cover_only`
   while keeping the two- and five-argument overloads for deployed clients.
