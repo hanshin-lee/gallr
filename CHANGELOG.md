@@ -72,6 +72,10 @@ All notable changes to gallr will be documented in this file.
   submission still awaiting review.
 
 ### Infrastructure
+- Map presentation now uses current Material 3 tab and kotlinx-datetime APIs,
+  the iOS build guide names the shipped MapLibre package, and `invite-editor`
+  no longer carries an unused Edge Runtime type package or its deprecated
+  transitive fetch stack.
 - Public-web CI now compares deterministic desktop/mobile hero and curated-grid
   screenshots with remote artwork replaced by a fixed test pixel. The homepage
   month also follows the shared Seoul date and the existing test-date override,
