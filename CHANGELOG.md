@@ -72,6 +72,10 @@ All notable changes to gallr will be documented in this file.
   submission still awaiting review.
 
 ### Infrastructure
+- Public-web CI now compares deterministic desktop/mobile hero and curated-grid
+  screenshots with remote artwork replaced by a fixed test pixel. The homepage
+  month also follows the shared Seoul date and the existing test-date override,
+  keeping baselines stable across month and UTC boundaries.
 - The public-web accessibility toolchain now uses Pa11y 10 and its current
   Puppeteer browser stack, removing six high-severity development-dependency
   advisories while preserving the full WCAG and Playwright suite.

@@ -70,15 +70,6 @@ operator dashboard for discovery, recommendation, route, and intent rates.
 - Do not report unique users, sessions, cross-visit funnels, or retention: the
   aggregate-only event model intentionally has no stable person/device identity.
 
-### Add deterministic homepage visual-regression baselines
-
-Homepage curation is deterministic and the original blocker is gone. Add fixed
-visual baselines for the curated card set and diff them in CI.
-
-- Source: `docs/2026-05-11-homepage-curation-decouple-design.md`, follow-up #2.
-- Keep the baseline independent of live catalogue churn by using a reviewed
-  fixture or seed with stable images and dates.
-
 ## Deferred Product Inputs — Not Work-Ready
 
 - Reconsider the square `G` mark only in a deliberate product-wide brand
