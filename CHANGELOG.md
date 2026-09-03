@@ -63,6 +63,11 @@ All notable changes to gallr will be documented in this file.
   submission still awaiting review.
 
 ### Infrastructure
+- Mobile analytics now has a closed shared event contract, disabled/no-op gate,
+  typed factories for all seven events, bounded batch/result validation, a
+  privacy-safe exhibition identifier grammar, and deterministic seven-day/
+  200-event queue normalization. No collection endpoint or production
+  analytics activation is included in this foundation.
 - Shared discovery intelligence now includes a zero-network bilingual local
   recommendation engine and a provider-neutral two-to-five-stop neighborhood
   route estimator. The representative 1,205-exhibition fixture completes
