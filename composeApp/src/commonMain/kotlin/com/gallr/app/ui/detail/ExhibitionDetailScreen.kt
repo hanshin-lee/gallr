@@ -151,6 +151,7 @@ fun ExhibitionDetailScreen(
                     BookmarkButton(
                         isBookmarked = isBookmarked,
                         onToggle = onBookmarkToggle,
+                        language = lang,
                         tintColor = MaterialTheme.colorScheme.onBackground,
                     )
                 },

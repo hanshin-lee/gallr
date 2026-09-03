@@ -5,6 +5,11 @@ All notable changes to gallr will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Mobile discovery now includes private on-device recommendations and
+  neighborhood routes.** Visitors can open an explainable For You list, then
+  build two-to-five-stop routes from the current map center with local
+  distance/time estimates and explicit hours/directions warnings. Ranking and
+  routing need no hosted model, paid API, credential, or promotion input.
 - **Exhibition details now open directly in the platform map app.** Valid
   coordinates produce a bilingual, full-width action backed by thin Android
   and iOS adapters; malformed or missing coordinates never reach the platform.
@@ -82,8 +87,8 @@ All notable changes to gallr will be documented in this file.
 - Shared discovery intelligence now includes a zero-network bilingual local
   recommendation engine and a provider-neutral two-to-five-stop neighborhood
   route estimator. The representative 1,205-exhibition fixture completes
-  without a model runtime or paid inference service; mobile presentation is a
-  separate follow-up surface.
+  without a model runtime or paid inference service; an immutable prepared
+  catalogue index keeps repeated mobile reranking off the UI thread.
 - Migration `20260823071500_admin_list_missing_cover_filter` adds the
   six-argument `admin_list_exhibitions` overload with `p_missing_cover_only`
   while keeping the two- and five-argument overloads for deployed clients.

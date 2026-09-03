@@ -17,6 +17,6 @@
   20, and verify deterministic concurrent reads. The expanded fixture covering
   one 1,205-row preparation plus 20 prepared reranks completed in 175 ms on the
   Android host and 1.595 s on the iOS simulator.
-- [ ] T006 Specify and implement the mobile presentation/ViewModel as a separate
+- [x] T006 Specify and implement the mobile presentation/ViewModel as a separate
   independently reviewable story after the shared engine is stable.
 - [x] T007 Open a `develop`-targeted PR and complete review/CI.

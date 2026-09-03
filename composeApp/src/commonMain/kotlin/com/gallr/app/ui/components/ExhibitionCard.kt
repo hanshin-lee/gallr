@@ -31,6 +31,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -189,6 +194,13 @@ fun ExhibitionCard(
                             if (released) onTap()
                         },
                     )
+                }.semantics {
+                    role = Role.Button
+                    contentDescription = exhibitionCardAccessibilityLabel(exhibition, lang)
+                    onClick {
+                        onTap()
+                        true
+                    }
                 },
     ) {
         // ── Layer 1: Background image (image cards only) ──
@@ -278,6 +290,7 @@ fun ExhibitionCard(
                 BookmarkButton(
                     isBookmarked = isBookmarked,
                     onToggle = onBookmarkToggle,
+                    language = lang,
                     tintColor = bookmarkTintColor,
                 )
             }
@@ -315,3 +328,13 @@ fun ExhibitionCard(
         }
     }
 }
+
+internal fun exhibitionCardAccessibilityLabel(
+    exhibition: Exhibition,
+    language: AppLanguage,
+): String =
+    listOf(
+        exhibition.localizedName(language),
+        exhibition.localizedVenueName(language),
+        exhibition.localizedDateRange(language),
+    ).filter(String::isNotBlank).joinToString(", ")
