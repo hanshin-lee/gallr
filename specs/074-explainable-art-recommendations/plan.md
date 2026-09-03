@@ -120,4 +120,3 @@
    inspection of cards and personalized routes.
 6. Independent review for security, recommendation truthfulness, privacy, and
    backward compatibility before opening the stacked PR.
-

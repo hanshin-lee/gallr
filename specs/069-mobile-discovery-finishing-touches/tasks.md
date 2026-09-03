@@ -12,4 +12,4 @@
 - [x] T006 Run focused and full shared/Compose/Android/iOS-relevant checks.
 - [x] T007 Reverify Profile/My Gallr visit-history tests and remove the completed backlog entry while
   preserving the remaining physical-device evidence gates in specs 060 and 064.
-- [ ] T008 Open a `develop`-targeted PR and complete review/CI.
+- [x] T008 Open a `develop`-targeted PR and complete review/CI. Completed by PR #243.

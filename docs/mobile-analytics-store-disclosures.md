@@ -1,7 +1,7 @@
 # Mobile analytics privacy and store disclosures
 
-**Status:** Required activation record; production collection remains disabled  
-**Last reviewed:** 2026-08-30  
+**Status:** Required activation record; production collection remains disabled
+**Last reviewed:** 2026-08-30
 **Applies to:** Android package `com.gallr.app` and the matching iOS app
 
 This document is the repository source of truth for the first-party mobile
