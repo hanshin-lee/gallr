@@ -7,6 +7,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   workers: 1,
+  snapshotPathTemplate:
+    "{testDir}/{testFilePath}-snapshots/{arg}-{projectName}{ext}",
 
   globalSetup: require.resolve("./tests/global-setup.ts"),
   globalTeardown: require.resolve("./tests/global-teardown.ts"),
@@ -33,9 +35,9 @@ export default defineConfig({
     },
     {
       // Editorial tests verify motion primitives, kinetic word, sticky
-      // header, etc. — these need JS enabled.
+      // header, and deterministic homepage visuals — these need JS enabled.
       name: "chromium-js",
-      testMatch: "**/editorial.test.ts",
+      testMatch: /(editorial|homepage-visual)\.test\.ts/,
       use: { ...devices["Desktop Chrome"], javaScriptEnabled: true },
     },
     {
